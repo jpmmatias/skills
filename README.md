@@ -6,6 +6,10 @@ Agent skills for [Claude Code](https://claude.com/claude-code) and other agents 
 
 A skill that teaches a concept from first principles. It explains *why* things work, builds intuitive mental models, gives small annotated reference examples, and makes hidden mechanisms visible with diagrams and narrated motion scenes.
 
+![A narrated motion scene from a learn course: a terminal types a Jev API call, probability bars grow, and a confidence marker lands in the "confirm" band](media/learn-motion-scene.gif)
+
+<sub>A motion scene from a course made with <code>learn</code>: one <a href="https://docs.typesafe.ai">Jev</a> API call, end to end. In the lesson it's narrated, scrubbable and split into chapters.</sub>
+
 It has two modes:
 
 - **Explain mode** answers a one-off "how does X actually work?" in the terminal. You get the core idea, an ASCII diagram, a small annotated example and verified links to go deeper. No files are created.
