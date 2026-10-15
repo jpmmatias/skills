@@ -65,10 +65,6 @@ cp ~/.claude/skills/learn/themes/<name>.css ~/.config/learn/theme.css
 
 [`themes/joaopdmatias.css`](skills/learn/themes/joaopdmatias.css) is a worked example: a monochrome editorial look with Space Mono headlines and a column grid.
 
-## Credits
-
-`learn` is derived from the [`teach` skill](https://github.com/mattpocock/skills) by Matt Pocock (MIT). This version adds explain mode, first-principles and reference-model guidance, evidence-based visual design, motion scenes, progress tracking and gamification, verified further-learning links, and the starter kit.
-
 ## License
 
 [MIT](LICENSE)
