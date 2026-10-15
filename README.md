@@ -39,6 +39,7 @@ It has two modes:
 `skills/learn/starter/assets/` is copied into every new course. Everything is dependency-free HTML, CSS and JS that opens straight from disk:
 
 - `style.css`: a print-friendly stylesheet with tokens for light and dark mode
+- `theme.css`: the course's look (colours, fonts, headings, corners, scene palette), swappable without touching any lesson
 - `quiz.js`: immediate-feedback quizzes with shuffled options
 - `diagram.js`: step-through diagrams, confidence bands, animated probability bars, a threshold explorer, visual recall drills and faded worked examples
 - `progress.js` + `course.js`: the dashboard, the progress header and evidence-gated milestones
@@ -52,6 +53,17 @@ cp -r skills/skills/learn ~/.claude/skills/learn
 ```
 
 Then in Claude Code run `/learn <topic>`, or just ask how something works.
+
+### Use your own design
+
+Courses can match your website or brand. Ask "make my courses look like my site" and point at it, or write a theme by hand following [`THEME-FORMAT.md`](skills/learn/THEME-FORMAT.md). To make a theme your default for every new course:
+
+```bash
+mkdir -p ~/.config/learn
+cp ~/.claude/skills/learn/themes/<name>.css ~/.config/learn/theme.css
+```
+
+[`themes/joaopdmatias.css`](skills/learn/themes/joaopdmatias.css) is a worked example: a monochrome editorial look with Space Mono headlines and a column grid.
 
 ## Credits
 

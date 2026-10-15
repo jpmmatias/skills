@@ -1,0 +1,55 @@
+/* Theme: joaopdmatias.com
+   Monochrome editorial: warm paper (#f5f1eb) / deep navy-black (#0a0e14),
+   Space Mono uppercase headlines, Geist body, Geist Mono code, square corners,
+   and the site's faint 6-column grid. Black/white is the accent; colour is kept
+   only for meaning (ok/bad, act/confirm/triage) and for the dark motion scenes. */
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=Geist+Mono:wght@400;700&family=Space+Mono:wght@400;700&display=swap");
+
+:root {
+  --bg: #f5f1eb; --fg: #000000; --muted: #666666; --rule: #dcd8d1;
+  --accent: #000000; --code-bg: #e5e1db; --card: #ffffff;
+  --grid: rgba(0, 0, 0, .07);
+
+  --font-body: "Geist", system-ui, sans-serif;
+  --font-head: "Space Mono", ui-monospace, monospace;
+  --font-ui: "Geist", system-ui, sans-serif;
+  --font-label: "Space Mono", ui-monospace, monospace;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --head-weight: 700; --head-transform: uppercase; --head-tracking: .02em;
+  --radius: 0; --radius-sm: 0;
+
+  --sc-bg: #0a0e14; --sc-panel: #12171f; --sc-line: #262c36; --sc-fg: #ffffff; --sc-muted: #999999;
+  --sc-glow: #1a1e24; --sc-chrome: #1a1e24;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0e14; --fg: #ffffff; --muted: #999999; --rule: #262c36;
+    --accent: #ffffff; --code-bg: #1a1e24; --card: #1a1e24;
+    --grid: rgba(255, 255, 255, .07);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a0e14; --fg: #ffffff; --muted: #999999; --rule: #262c36;
+  --accent: #ffffff; --code-bg: #1a1e24; --card: #1a1e24;
+  --grid: rgba(255, 255, 255, .07);
+}
+
+/* Signature details */
+body { font-size: 17px; }
+h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.1; }
+.kicker, th, nav.links, figcaption, .sc-title { font-family: var(--font-label); text-transform: uppercase; letter-spacing: .12em; }
+h1 code, h2 code, h3 code { font: inherit; background: none; padding: 0; }
+nav.links { font-size: .75rem; }
+a { text-underline-offset: 4px; }
+.box, .quiz-q, .sc-player { box-shadow: none; }
+.sc-chapters button { border-radius: 0; }
+.sc-player { border: 1px solid var(--sc-line); }
+
+/* The site's 6-column grid overlay, behind content, hidden on phones */
+body::before {
+  content: ""; position: fixed; top: 0; bottom: 0; left: 50%; z-index: -1; pointer-events: none;
+  width: min(100vw - 2rem, 72rem); transform: translateX(-50%);
+  background: repeating-linear-gradient(to right, transparent 0 calc(100% / 6 - 1px), var(--grid) calc(100% / 6 - 1px) calc(100% / 6));
+}
+@media (max-width: 640px) { body::before { display: none; } }
+@media print { body::before { display: none; } }

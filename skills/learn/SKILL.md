@@ -22,7 +22,7 @@ Treat the current directory as a teaching workspace. The state of their learning
 - `RESOURCES.md`: A list of resources which can be explored to ground your teaching in contextual knowledge, or to acquire knowledge and wisdom. Use the format in [RESOURCES-FORMAT.md](./RESOURCES-FORMAT.md).
 - `./learning-records/*.md`: A directory of learning records, which capture what the user has learned. These are loosely equivalent to architectural decision records in software development - they capture non-obvious lessons and key insights that may need to be revised later, or drive future sessions. These should be used to calculate the zone of proximal development. They are titled `0001-<dash-case-name>.md`, where the number increments each time. Use the format in [LEARNING-RECORD-FORMAT.md](./LEARNING-RECORD-FORMAT.md).
 - `./lessons/*.html`: A directory of lessons. A **lesson** is a single, self-contained HTML output that teaches one tightly-scoped thing tied to the mission. This is the primary unit of teaching in this workspace.
-- `./assets/*`: Reusable **components** shared across lessons. See [Assets](#assets).
+- `./assets/*`: Reusable **components** shared across lessons, plus `theme.css`, the course's look. See [Assets](#assets) and [Theme](#theme).
 - `NOTES.md`: A scratchpad for you to jot down user preferences, or working notes.
 - `index.html`: The course dashboard: mission, milestone map, lesson mastery and review due. See [Goal & Progress Visibility](#goal--progress-visibility).
 - `./assets/course.js`: The course manifest (mission, milestones, lessons) that the dashboard and lesson headers render from.
@@ -202,6 +202,16 @@ Reuse is the default, not the exception. Before authoring a lesson, read `./asse
 **Starter kit:** when you create a new workspace, copy [`./starter/assets/`](./starter/assets/) into it. It contains the shared stylesheet, the quiz, the diagrams (stepper, bands, bars, threshold explorer, faded examples), progress tracking and gamification, the motion-scene player, and a `course.js` template. Each file's header documents its API. When you improve a component in a workspace, consider copying it back into the starter kit.
 
 A shared stylesheet is the first component every workspace earns: every lesson links it, so the lessons look like one consistent course rather than a pile of one-offs. As the workspace grows, so should the component library.
+
+### Theme
+
+Every page links `assets/style.css` and then `assets/theme.css`. The theme restyles the whole course through tokens: colours, fonts, heading style, corner radius and the motion-scene palette. When you create a workspace, pick its theme in this order:
+
+1. A theme the user names (a file in [`./themes/`](./themes/), or "make it look like my site").
+2. The user's personal default at `~/.config/learn/theme.css`, if it exists.
+3. Otherwise keep the starter's default `theme.css`.
+
+Copy the chosen file over `assets/theme.css` and note its name in `NOTES.md`. Never put theme colours or fonts in lessons or components; read the tokens instead, so a later theme swap restyles everything. To build a theme from a website or brand, follow [THEME-FORMAT.md](./THEME-FORMAT.md).
 
 ## The Mission
 
