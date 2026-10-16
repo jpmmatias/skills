@@ -45,6 +45,8 @@ It has two modes:
 - `progress.js` + `course.js`: the dashboard, the progress header and evidence-gated milestones
 - `scene.js`: a narrated, scrubbable motion-scene player in explainer-video style (terminal with syntax highlighting, concentric layers, node-and-box flows)
 
+`skills/learn/starter/examples/scenes-0001-sampling.js` is a complete worked motion scene to copy from. The skill decides per lesson whether a scene is worth building: yes for processes over time and hidden mechanisms, no for static structures or concepts better learned by changing a variable.
+
 ## Install
 
 ```bash

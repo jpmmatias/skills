@@ -68,6 +68,28 @@ Each lesson should recommend a primary source for the user to read or watch. Thi
 
 Each lesson should contain a reminder to ask followup questions to the agent. The agent is their teacher, and can assist with anything that's unclear.
 
+### Decide on motion while planning the lesson
+
+Before writing a lesson, decide explicitly whether it gets a [motion scene](#motion-scenes-explainer-video-style). Not every lesson needs one, but the decision must be made on purpose, never by omission. Learners notice when a mechanism that clearly moves is shown only as a still picture.
+
+**Build a scene** when you're confident the motion will teach better than a still, which means at least one of these holds:
+
+- **Process over time.** The concept *is* a sequence: tokens sampled one by one, a request passing through layers, a retry loop, an event loop tick, a build pipeline.
+- **Cause → effect across parts.** Changing one thing visibly shifts another: load changes batch size, which flips an output, or a config change reroutes traffic.
+- **A hidden mechanism at the wrong scale or speed.** Something the learner can't observe directly: what a server does with their request, memory being allocated, packets on a wire.
+- **The prose wants to say "then… then… then…".** If the explanation is a chain of state changes, show the states changing.
+
+**Skip the scene** (and say why in one line) when:
+
+- The concept is a static structure, a definition, a taxonomy or a comparison. A labelled diagram or table does it in one glance.
+- The learner learns more by *changing a variable* than by watching. Build an interactive explorer instead (a slider, a simulator). Doing beats watching.
+- The lesson is mostly real-world practice (steps, poses, drills) rather than an invisible mechanism.
+- You can't ground it in real data or clearly labelled illustrative values.
+
+Quick test: *at a whiteboard, would you draw this step by step while talking?* If yes, build a scene. If one labelled picture does it, use a static diagram. If the insight comes from fiddling with a value, build an interactive.
+
+Record the decision in `NOTES.md` as one line per lesson, such as `L1: scene (sampling → batching → grade the rate)` or `L2: no scene (static taxonomy; used a sorter instead)`. When the answer is yes, the scene is part of the lesson's definition of done. Never swap it for static diagrams to save effort.
+
 ### Further Learning: Videos, Articles & Resources
 
 Each lesson ends with a short **Go deeper** list of 2–5 curated links, and the reference documents carry the same links. Mix the media:
@@ -154,7 +176,15 @@ Animate only when the motion *is* the concept: data flowing through a system, a 
 
 ### Motion Scenes (Explainer-Video Style)
 
-For a mechanism that unfolds over time or across several parts (a request passing through a system, layers wrapping a core, a process spawning children, memory changing), build a **motion scene**. It's a short, narrated, scrubbable animation in the style of a polished programming explainer video, embedded in the lesson. Use `./assets/scene.js`, which comes with the starter kit. Its header documents the API:
+For a mechanism that unfolds over time or across several parts (a request passing through a system, layers wrapping a core, a process spawning children, memory changing), build a **motion scene**. When to build one is decided per lesson (see [Decide on motion while planning the lesson](#decide-on-motion-while-planning-the-lesson)). It's a short, narrated, scrubbable animation in the style of a polished programming explainer video, embedded in the lesson. Use `./assets/scene.js`, which comes with the starter kit. Its header documents the API, and [`./starter/examples/scenes-0001-sampling.js`](./starter/examples/scenes-0001-sampling.js) is a complete worked example: terminal, probability bars, a server box and five chapters, with real and illustrative data labelled.
+
+Authoring workflow:
+
+1. **Storyboard first.** Write the chapters as one sentence each: what the learner should understand, what moves, and what the final frame shows. If you can't write 3–6 such sentences, the concept probably isn't a scene.
+2. **Lay out the stage** (960×540). A terminal on the left for "what you'd see running it" and the mechanism on the right works for most programming topics.
+3. **Write beats as absolute state.** Every beat runs on every frame, in order, so later beats override earlier ones. When a later chapter re-sets something an earlier beat controls, guard it with `if (p > 0)`.
+4. **Place it where the mental model is introduced.** That's usually right after the intuitive explanation and before the lab or practice, with one line telling the learner how to use it (▶, chapters, narration).
+5. **Verify headlessly.** Render 4–5 timeline positions (mid-chapter and the poster frame), look at the images, and check the console for errors.
 
 - A scene is a **pure function of time**: `setup()` builds the SVG and terminal once, and each beat sets absolute state for progress `p`. That makes play, pause, scrub and chapter jumps all work.
 - Put the scene definitions for a lesson in `./lessons/scenes-NNNN.js`, next to the lesson that uses them.
