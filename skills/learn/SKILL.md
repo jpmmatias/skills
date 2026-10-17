@@ -269,7 +269,8 @@ Every page links `assets/style.css` and then `assets/theme.css`. The theme resty
 
 1. A theme the user names (a file in [`./themes/`](./themes/), or "make it look like my site").
 2. The user's personal default at `~/.config/learn/theme.css`, if it exists.
-3. Otherwise keep the starter's default `theme.css`.
+3. If neither applies but [`./themes/`](./themes/) contains themes beyond the default `theme.css`, ask which one to use (one question, it can go in the setup interview). Offer to save the choice as the personal default at `~/.config/learn/theme.css` so future courses don't ask again. Don't guess from a file's name.
+4. Otherwise keep the starter's default `theme.css`.
 
 Copy the chosen file over `assets/theme.css` and note its name in `NOTES.md`. Never put theme colours or fonts in lessons or components; read the tokens instead, so a later theme swap restyles everything. To build a theme from a website or brand, follow [THEME-FORMAT.md](./THEME-FORMAT.md).
 
@@ -278,6 +279,17 @@ Copy the chosen file over `assets/theme.css` and note its name in `NOTES.md`. Ne
 Every lesson should be tied into the mission - the reason that the user is interested in learning about the topic.
 
 If the user is unclear about the mission, or the `MISSION.md` is not populated, your first job should be to question the user on why they want to learn this.
+
+### The setup interview
+
+When a workspace is new, run one short interview before writing anything, ideally one round of at most four structured questions. A detailed course outline from the user still leaves the *why* unanswered, so ask anyway. Cover:
+
+- **Why**: the real-world outcome (job, portfolio, a project at work, curiosity). This becomes the mission.
+- **Starting point**: what they've already done in this area. Record claimed prior knowledge as a learning record.
+- **For hands-on topics, their environment**: the stack or equipment they'll use, plus accounts, API keys and budget for paid services. Then verify what you can yourself (`which ollama`, `node -v`, whether a key is set) and record it in `NOTES.md` with the date, so [labs](#labs) are designed for the machine they'll actually run on.
+- **Language**: teach in the language the user writes in. If that's unclear (they wrote in one language and asked for another, or mixed languages), confirm it. Record the course language in `NOTES.md` and use it everywhere: lessons, quizzes, the dashboard and feedback. Keep code identifiers and quoted source titles in their original language.
+
+Fold the answers into `MISSION.md` (constraints and out-of-scope) and `NOTES.md`. Don't re-ask anything the user already stated.
 
 Failing to understand the mission will mean knowledge acquisition is not grounded in real-world goals. Lessons will feel too abstract. You will have no way of judging what the user should do next.
 
