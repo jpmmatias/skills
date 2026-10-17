@@ -5,6 +5,8 @@
 // Dashboard:    <div id="dashboard"></div>
 //
 // Practice components call Progress.record(id, correct) on a learner's FIRST attempt.
+// Custom practice widgets: add the attribute data-practice to the widget's root element so it counts
+// toward lesson completion, and call Progress.record from it (built-ins are counted automatically).
 // XP only comes from first-try correct retrieval. Milestones are evidence-gated in course.js and
 // are never unlocked from here. Review is due after expanding intervals (1, 3, 7, 14 days).
 (function () {
@@ -155,7 +157,7 @@
   header();
   dashboard();
   if (lessonN) {
-    expected = document.querySelectorAll('.quiz-q, .band-quiz, .fade, .threshold-explorer[data-target]').length;
+    expected = document.querySelectorAll('.quiz-q, .band-quiz, .fade, .threshold-explorer[data-target], [data-practice]').length;
     if (Object.keys(S.answers).filter((k) => k.startsWith('L' + lessonN + ':')).length >= expected) toasted = true; // already complete: don't re-toast
   }
 })();

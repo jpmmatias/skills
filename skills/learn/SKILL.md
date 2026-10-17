@@ -22,6 +22,8 @@ Treat the current directory as a teaching workspace. The state of their learning
 - `RESOURCES.md`: A list of resources which can be explored to ground your teaching in contextual knowledge, or to acquire knowledge and wisdom. Use the format in [RESOURCES-FORMAT.md](./RESOURCES-FORMAT.md).
 - `./learning-records/*.md`: A directory of learning records, which capture what the user has learned. These are loosely equivalent to architectural decision records in software development - they capture non-obvious lessons and key insights that may need to be revised later, or drive future sessions. These should be used to calculate the zone of proximal development. They are titled `0001-<dash-case-name>.md`, where the number increments each time. Use the format in [LEARNING-RECORD-FORMAT.md](./LEARNING-RECORD-FORMAT.md).
 - `./lessons/*.html`: A directory of lessons. A **lesson** is a single, self-contained HTML output that teaches one tightly-scoped thing tied to the mission. This is the primary unit of teaching in this workspace.
+- `./labs/NN-<name>/`: Runnable hands-on projects for topics where the skill is built by doing real work (programming, data, infrastructure). See [Labs](#labs). Created lazily, only when a lesson needs one.
+- `GLOSSARY.md`: The canonical vocabulary of the course, holding only terms the learner can already use correctly. Use the format in [GLOSSARY-FORMAT.md](./GLOSSARY-FORMAT.md). Created lazily, once the first term is earned.
 - `./assets/*`: Reusable **components** shared across lessons, plus `theme.css`, the course's look. See [Assets](#assets) and [Theme](#theme).
 - `NOTES.md`: A scratchpad for you to jot down user preferences, or working notes.
 - `index.html`: The course dashboard: mission, milestone map, lesson mastery and review due. See [Goal & Progress Visibility](#goal--progress-visibility).
@@ -184,7 +186,7 @@ Authoring workflow:
 2. **Lay out the stage** (960×540). A terminal on the left for "what you'd see running it" and the mechanism on the right works for most programming topics.
 3. **Write beats as absolute state.** Every beat runs on every frame, in order, so later beats override earlier ones. When a later chapter re-sets something an earlier beat controls, guard it with `if (p > 0)`.
 4. **Place it where the mental model is introduced.** That's usually right after the intuitive explanation and before the lab or practice, with one line telling the learner how to use it (▶, chapters, narration).
-5. **Verify headlessly.** Render 4–5 timeline positions (mid-chapter and the poster frame), look at the images, and check the console for errors.
+5. **Verify headlessly.** Run the [workspace check](#verify-before-shipping). It renders every scene at 5 timeline positions. Look at the images and fix anything that overlaps or reads poorly.
 
 - A scene is a **pure function of time**: `setup()` builds the SVG and terminal once, and each beat sets absolute state for progress `p`. That makes play, pause, scrub and chapter jumps all work.
 - Put the scene definitions for a lesson in `./lessons/scenes-NNNN.js`, next to the lesson that uses them.
@@ -199,7 +201,7 @@ Rules (from [Mayer's principles](https://www.devlinpeck.com/content/mayers-princ
 - **Real data only**: terminal output and numbers come from real runs or cited sources. Label anything illustrative as illustrative.
 - **Poster frame**: when paused, the final frame must stand alone as a static diagram, for print and for reduced motion.
 - Keep it under about 20 seconds of motion, with no decorative motion. Watching earns no XP, because it's consumption, not retrieval. Always follow a scene with retrieval practice.
-- Check scenes by rendering several timeline positions headlessly before shipping.
+- Check scenes by rendering several timeline positions headlessly before shipping (the workspace check does this).
 
 ## Goal & Progress Visibility
 
@@ -209,6 +211,21 @@ The learner should always see **where they are going and how far they have come*
 - Every lesson opens with a progress header: the mission in one line, the milestone path with this lesson's milestone highlighted, and the learner's practice stats.
 - `./assets/course.js` is the single source of truth for both. It holds the mission, the milestones (taken from the `MISSION.md` success criteria) and the lesson list. Update it whenever a lesson is added, a learning record is written or the mission changes.
 - **Milestones are evidence-gated.** A milestone becomes `mastered` only when you have reviewed the learner's challenge work and written a learning record for it. Self-scored quiz results never unlock milestones. They show practice, not mastery.
+
+### Milestone challenges and review
+
+Every challenge box (`id="challenge"`) states, before the learner starts:
+
+- **The task**: a real-world transfer of the lesson's skill, not a repeat of the quiz.
+- **What to send back**: the concrete artifacts, such as results files, a diff, a written answer or a photo of the setup.
+- **Pass criteria**: 2–4 observable checks you'll grade against, for example "picks a criterion and justifies its threshold with the measured pass rates" or "the new property catches a failure seen in the results". The learner should be able to self-check against them before sending.
+
+When the learner sends work back, review it against those criteria and nothing else:
+
+1. Go criterion by criterion. Say what the evidence shows for each one, quoting their numbers or words. Feedback is informational: what they can now do, and what is missing.
+2. **All criteria met**: write a learning record with an **Evidence** section, set the milestone to `mastered` in `assets/course.js` with `evidence` pointing at the record (`'LR-0003'`), set the next milestone to `in-progress`, and update the lesson's `canDo` if the review revealed something sharper.
+3. **Some criteria missing**: keep the milestone `in-progress`, name the smallest piece of work that would close each gap, and invite a resubmission. Never pass work on effort or partial credit. A misconception you uncover is worth its own learning record.
+4. Use what the review revealed to pick the next lesson (zone of proximal development).
 
 ## Gamification (Evidence-Based)
 
@@ -232,6 +249,19 @@ Reuse is the default, not the exception. Before authoring a lesson, read `./asse
 **Starter kit:** when you create a new workspace, copy [`./starter/assets/`](./starter/assets/) into it. It contains the shared stylesheet, the quiz, the diagrams (stepper, bands, bars, threshold explorer, faded examples), progress tracking and gamification, the motion-scene player, and a `course.js` template. Each file's header documents its API. When you improve a component in a workspace, consider copying it back into the starter kit.
 
 A shared stylesheet is the first component every workspace earns: every lesson links it, so the lessons look like one consistent course rather than a pile of one-offs. As the workspace grows, so should the component library.
+
+**Custom practice components** must report to progress tracking: put `data-practice` on the widget's root element so it counts toward lesson completion, and call `Progress.record(id, correct)` on the learner's first attempt. Without `data-practice`, the "practice complete" banner never fires.
+
+### Verify before shipping
+
+Before telling the learner a lesson is ready, run the workspace check from the skill's starter kit:
+
+```bash
+npm install --prefix ~/.claude/skills/learn/starter/tools   # once: installs playwright
+node ~/.claude/skills/learn/starter/tools/check.mjs .       # or --only=0003 for one lesson
+```
+
+It loads the dashboard, every lesson and every reference document at desktop and phone width. It reports JS errors, missing local files, horizontal scroll on phones, missing progress headers, challenges and practice, and unregistered scenes. It also screenshots every figure, widget and scene (at 5 timeline points) into `./.check/`. **Look at the screenshots**: passing the script isn't the same as looking right. Fix problems before handing the lesson over. If the check can't run (no browser available), say so instead of claiming the lesson was verified.
 
 ### Theme
 
@@ -279,8 +309,20 @@ For skill acquisition, difficulty is the tool. Effortful retrieval is what build
 
 - Interactive lessons, using quizzes and light in-browser tasks
 - Lessons which guide the user through a list of real-world steps to take (for instance, yoga poses)
+- Hands-on [labs](#labs): runnable projects the learner executes and changes on their own machine
 
 Each of these should be based on a **feedback loop**, where the user receives feedback on their performance. This feedback loop should be as tight as possible, giving feedback immediately - and ideally automatically.
+
+### Labs
+
+For programming and other hands-on technical topics, the real skill is built in a real project, not in the browser. Pair the lesson with a lab in `./labs/NN-<name>/` (NN matches the lesson number):
+
+- **One command to run.** The lab's `README.md` covers setup, the exact run commands and the cost of any paid API calls. Prefer the learner's stated stack, and keep dependencies minimal.
+- **Works without paid services.** Give the lab a free or offline path, such as a local model, a stub or a `fake` mode, so the harness can be smoke-tested without keys or money. Label offline output as synthetic, and never accept it as challenge evidence.
+- **Run it yourself before shipping.** Install it, typecheck or lint it, and run it end to end, at least in offline mode. A lab that fails on the learner's first command destroys trust in the whole course. Say plainly which paths you couldn't run (for example, no API key).
+- **Produces evidence.** The lab writes a results file (JSON or similar) with the configuration it ran under. That file is what the learner sends back for the milestone challenge.
+- **Accumulates toward the mission.** When the mission is to build something, design labs so their code grows into that deliverable instead of being thrown away after each lesson.
+- **Check the environment early.** During the mission interview, find out which tools, accounts and budget the learner has, and record them in `NOTES.md`. Later, verify with a quick command (`which`, version checks) instead of assuming.
 
 For quizzes, each answer should be exactly the same number of words (and characters, if possible). Don't give the user any clues about the answer through formatting.
 
@@ -308,7 +350,7 @@ Some learning topics lend themselves to reference:
 - Exercises and routines for fitness
 - Glossaries for any topic with its own nomenclature
 
-Glossaries, in particular, are an essential reference. Once one is created, it should be adhered to in every lesson.
+Glossaries, in particular, are an essential reference. The canonical glossary lives in `GLOSSARY.md` at the workspace root ([GLOSSARY-FORMAT.md](./GLOSSARY-FORMAT.md)). Promote a term into it only once the learner has used it correctly, typically in challenge work or while you write a learning record. Once it exists, every lesson, quiz and learning record uses its terms, and its aliases-to-avoid stay out of new lessons. A printable `reference/glossary.html` can mirror it, but `GLOSSARY.md` is the source of truth.
 
 ## `NOTES.md`
 
