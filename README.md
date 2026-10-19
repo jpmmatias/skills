@@ -10,6 +10,8 @@ A skill that teaches a concept from first principles. It explains *why* things w
 
 <sub>A motion scene from a course made with <code>learn</code>: one <a href="https://docs.typesafe.ai">Jev</a> API call, end to end. In the lesson it's narrated, scrubbable and split into chapters.</sub>
 
+**New here? Read the [step-by-step guide with screenshots](docs/GUIDE.md).** It has a path for non-technical learners and one for developers.
+
 It has two modes:
 
 - **Explain mode** answers a one-off "how does X actually work?" in the terminal. You get the core idea, an ASCII diagram, a small annotated example and verified links to go deeper. No files are created.
@@ -109,7 +111,7 @@ Pick one method. Two installs of the same skill (for example the plugin and a co
 
 ### Use it
 
-Restart Claude Code (or start a new session), then:
+Restart Claude Code (or start a new session), then follow the [guide](docs/GUIDE.md). In short:
 
 - **Start a course:** make an empty folder, `cd` into it, and run `/learn <topic>`. The skill first asks why you're learning, what you already know and what your setup is, then builds the workspace and the first lesson.
 - **Continue a course:** run `/learn` again in the same folder. It reads `MISSION.md` and your learning records and picks the next lesson.
