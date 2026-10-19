@@ -71,12 +71,41 @@ npx skills list
 
 The CLI sends anonymous install telemetry to skills.sh. Set `DISABLE_TELEMETRY=1` to opt out.
 
+### As a Claude Code plugin
+
+This repo is also a Claude Code plugin marketplace. Inside Claude Code:
+
+```
+/plugin marketplace add jpmmatias/skills
+/plugin install learn@jpmmatias
+```
+
+Or from your shell:
+
+```bash
+claude plugin marketplace add jpmmatias/skills
+claude plugin install learn@jpmmatias
+```
+
+Plugin skills are namespaced, so the command becomes `/learn:learn <topic>`. Updates arrive through `/plugin`. To uninstall, run `claude plugin uninstall learn@jpmmatias`.
+
 ### Manually
 
 ```bash
 git clone https://github.com/jpmmatias/skills.git
 cp -r skills/skills/learn ~/.claude/skills/learn
 ```
+
+### For development (symlink)
+
+If you want to edit the skill, link your clone instead of copying it. Changes take effect in the next session, and `git pull` updates it:
+
+```bash
+git clone https://github.com/jpmmatias/skills.git ~/code/skills
+ln -s ~/code/skills/skills/learn ~/.claude/skills/learn
+```
+
+Pick one method. Two installs of the same skill (for example the plugin and a copy in `~/.claude/skills/`) show up as two separate skills.
 
 ### Use it
 

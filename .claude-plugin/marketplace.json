@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "jpmmatias",
+  "description": "Agent skills by João Pedro Matias",
+  "owner": {
+    "name": "João Pedro Matias",
+    "url": "https://github.com/jpmmatias"
+  },
+  "plugins": [
+    {
+      "name": "learn",
+      "source": ".",
+      "description": "Teach a concept from first principles: mental models, annotated examples, diagrams and narrated motion scenes, with stateful courses that span sessions.",
+      "author": { "name": "João Pedro Matias" },
+      "homepage": "https://github.com/jpmmatias/skills",
+      "repository": "https://github.com/jpmmatias/skills",
+      "license": "MIT",
+      "keywords": ["learning", "teaching", "courses", "education"],
+      "skills": ["./skills/learn"]
+    }
+  ]
+}
