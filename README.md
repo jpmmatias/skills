@@ -51,12 +51,48 @@ It has two modes:
 
 ## Install
 
+### With [skills.sh](https://skills.sh) (recommended)
+
+```bash
+npx skills add jpmmatias/skills --skill learn -g -a claude-code
+```
+
+- `--skill learn` picks the skill from this repo. Run `npx skills add jpmmatias/skills --list` to see what's available.
+- `-g` installs it for your user, so every project can use it. Leave it out to install into the current project only.
+- `-a claude-code` targets Claude Code. Leave it out to choose agents interactively, or use `-a '*'` for every supported agent.
+
+Keep it up to date, or remove it:
+
+```bash
+npx skills update learn -g
+npx skills remove learn -g
+npx skills list
+```
+
+The CLI sends anonymous install telemetry to skills.sh. Set `DISABLE_TELEMETRY=1` to opt out.
+
+### Manually
+
 ```bash
 git clone https://github.com/jpmmatias/skills.git
 cp -r skills/skills/learn ~/.claude/skills/learn
 ```
 
-Then in Claude Code run `/learn <topic>`, or just ask how something works.
+### Use it
+
+Restart Claude Code (or start a new session), then:
+
+- **Start a course:** make an empty folder, `cd` into it, and run `/learn <topic>`. The skill first asks why you're learning, what you already know and what your setup is, then builds the workspace and the first lesson.
+- **Continue a course:** run `/learn` again in the same folder. It reads `MISSION.md` and your learning records and picks the next lesson.
+- **Open your course:** open `index.html` in a browser. Lessons are plain HTML and need no server.
+- **Submit a challenge:** each lesson ends with a challenge. Do it and send the work back in that folder. The agent reviews it against the pass criteria and unlocks the milestone.
+- **One-off explanation:** outside a course folder, just ask "how does X actually work?". You get an answer in the terminal and no files are created.
+
+**Optional:** to let the agent check lessons in a headless browser before handing them over (this needs Playwright):
+
+```bash
+npm install --prefix ~/.claude/skills/learn/starter/tools
+```
 
 ### Use your own design
 
