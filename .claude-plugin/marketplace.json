@@ -17,6 +17,17 @@
       "license": "MIT",
       "keywords": ["learning", "teaching", "courses", "education"],
       "skills": ["./skills/learn"]
+    },
+    {
+      "name": "lesson-panel",
+      "source": ".",
+      "description": "Four-agent review for a learn lesson: an author writes it, then an expert, a novice, and a course-flow reviewer send notes back until all three approve.",
+      "author": { "name": "João Pedro Matias" },
+      "homepage": "https://github.com/jpmmatias/skills",
+      "repository": "https://github.com/jpmmatias/skills",
+      "license": "MIT",
+      "keywords": ["learning", "teaching", "review", "courses"],
+      "skills": ["./skills/lesson-panel"]
     }
   ]
 }

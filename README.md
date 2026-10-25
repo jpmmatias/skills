@@ -2,6 +2,16 @@
 
 Agent skills for [Claude Code](https://claude.com/claude-code) and other agents that support `SKILL.md`.
 
+## `lesson-panel`
+
+Four agents that review one lesson of a course made with `learn`. The author writes the lesson. An expert checks that it is true, a novice checks that a newcomer can learn it, and a course-flow reviewer checks that it belongs in the course. Notes go back to the author until all three approve.
+
+```bash
+npx skills add jpmmatias/skills --skill lesson-panel -g -a claude-code
+```
+
+In a course folder, ask to continue with the lesson panel. The roles live in `skills/lesson-panel/agents/`.
+
 ## `learn`
 
 A skill that teaches a concept from first principles. It explains *why* things work, builds intuitive mental models, gives small annotated reference examples, and makes hidden mechanisms visible with diagrams and narrated motion scenes.
