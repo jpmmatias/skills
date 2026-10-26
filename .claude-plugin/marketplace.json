@@ -28,6 +28,39 @@
       "license": "MIT",
       "keywords": ["learning", "teaching", "review", "courses"],
       "skills": ["./skills/lesson-panel"]
+    },
+    {
+      "name": "curriculum-planner",
+      "source": ".",
+      "description": "Turn a course mission into the milestone map and ordered lesson list in assets/course.js, with a scene or lab decision per lesson, before any lesson is written.",
+      "author": { "name": "João Pedro Matias" },
+      "homepage": "https://github.com/jpmmatias/skills",
+      "repository": "https://github.com/jpmmatias/skills",
+      "license": "MIT",
+      "keywords": ["learning", "teaching", "curriculum", "courses"],
+      "skills": ["./skills/curriculum-planner"]
+    },
+    {
+      "name": "source-researcher",
+      "source": ".",
+      "description": "Fill RESOURCES.md for a lesson with fetched, typed, annotated sources, so the author cites verified links and never invents a URL.",
+      "author": { "name": "João Pedro Matias" },
+      "homepage": "https://github.com/jpmmatias/skills",
+      "repository": "https://github.com/jpmmatias/skills",
+      "license": "MIT",
+      "keywords": ["learning", "teaching", "research", "sources"],
+      "skills": ["./skills/source-researcher"]
+    },
+    {
+      "name": "challenge-reviewer",
+      "source": ".",
+      "description": "Grade a learner's milestone challenge against the lesson's pass criteria, write the learning record, and mark the milestone mastered only when the work earns it.",
+      "author": { "name": "João Pedro Matias" },
+      "homepage": "https://github.com/jpmmatias/skills",
+      "repository": "https://github.com/jpmmatias/skills",
+      "license": "MIT",
+      "keywords": ["learning", "teaching", "review", "milestones"],
+      "skills": ["./skills/challenge-reviewer"]
     }
   ]
 }

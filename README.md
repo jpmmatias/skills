@@ -2,15 +2,33 @@
 
 Agent skills for [Claude Code](https://claude.com/claude-code) and other agents that support `SKILL.md`.
 
-## `lesson-panel`
+## The course pipeline
 
-Four agents that review one lesson of a course made with `learn`. The author writes the lesson. An expert checks that it is true, a novice checks that a newcomer can learn it, and a course-flow reviewer checks that it belongs in the course. Notes go back to the author until all three approve.
+`learn` builds a course on its own. These skills split that work into roles, so each step can run as its own agent. Run them in a course folder, in this order:
+
+| Skill | Step | Writes |
+|---|---|---|
+| `curriculum-planner` | Turn `MISSION.md` into the milestone map and the ordered lesson list, with a scene or lab decision per lesson | `assets/course.js`, `NOTES.md` |
+| `source-researcher` | Fetch and annotate the sources for the next lesson, so the author cites verified links only | `RESOURCES.md` |
+| `lesson-panel` | An author writes the lesson; an expert, a novice and a course-flow reviewer send notes back until all three approve | `lessons/`, `.review/` |
+| `challenge-reviewer` | Grade the learner's challenge against the pass criteria, write the learning record, and unlock the milestone only when the work earns it | `learning-records/`, `assets/course.js` |
+
+Install any of them:
 
 ```bash
+npx skills add jpmmatias/skills --skill curriculum-planner -g -a claude-code
+npx skills add jpmmatias/skills --skill source-researcher -g -a claude-code
 npx skills add jpmmatias/skills --skill lesson-panel -g -a claude-code
+npx skills add jpmmatias/skills --skill challenge-reviewer -g -a claude-code
 ```
 
-In a course folder, ask to continue with the lesson panel. The roles live in `skills/lesson-panel/agents/`.
+### `lesson-panel`
+
+Four roles review one lesson. The author writes it. The expert checks that it is true, the novice checks that a newcomer can learn it, and the flow reviewer checks that it belongs in the course. Notes go back to the author until all three approve. The roles live in `skills/lesson-panel/agents/`.
+
+### `challenge-reviewer`
+
+The learning half. Quiz scores are practice. A milestone becomes `mastered` only when this review finds every pass criterion met in the learner's own work, and a learning record with an **Evidence** section is written for it.
 
 ## `learn`
 
