@@ -9,7 +9,7 @@ Recorded before any change, as the reference point for every later comparison.
 | Baseline commit | `f8aaf973bd1e1af68d59e6442db25d00d6c1ccaa` (2026-10-26, "Add the planner, source researcher and challenge reviewer to the course pipeline.") |
 | Commits in history | 12 |
 | Tracked files | 39 (2,616 text lines; 1.5 MB incl. media) |
-| Environment | Linux container, Node 22.23, npm 10.9, Bun 1.4, Python 3.13, Playwright + Chromium 1243. No `claude` CLI. Only Chromium is available (no Firefox/WebKit), so cross-browser claims below are limited to Chromium unless stated. |
+| Environment | Linux container, Node 22.23, npm 10.9, Bun 1.4, Python 3.13, Playwright + Chromium 1243, Claude Code CLI 2.1.331 (`claude plugin validate` available; an earlier draft of this file wrongly said the CLI was absent — corrected after the DX audit found it). Only Chromium is available (no Firefox/WebKit), so cross-browser claims below are limited to Chromium unless stated. |
 
 ## What exists
 
