@@ -6,48 +6,48 @@ Estimated tokens = bytes × 0.25 (rough; ±15–25% against a real tokenizer). A
 
 | Path | Profile | Main context | All contexts: instructions | All contexts: code to read | All contexts: total | Contexts |
 |---|---|---:|---:|---:|---:|---|
-| explain | all | 3627 | 3627 | 0 | 3627 | main 3627 |
-| new-course | fast | 19388 | 19388 | 0 | 19388 | main 19388 |
-| new-course | balanced | 18586 | 24016 | 0 | 24016 | main 18586, researcher 4007, expert 744, novice 680 |
-| new-course | deep | 11525 | 26493 | 0 | 26493 | main 11525, researcher 4007, author 8802, expert 744, novice 680, flow 736 |
-| continue | fast | 14770 | 14770 | 0 | 14770 | main 14770 |
-| continue | balanced | 14889 | 19398 | 0 | 19398 | main 14889, researcher 3086, expert 744, novice 680 |
-| continue | deep | 6740 | 20787 | 0 | 20787 | main 6740, researcher 3086, author 8802, expert 744, novice 680, flow 736 |
-| panel | balanced | 14505 | 15929 | 0 | 15929 | main 14505, expert 744, novice 680 |
-| panel | deep | 6357 | 17318 | 0 | 17318 | main 6357, author 8802, expert 744, novice 680, flow 736 |
-| challenge | all | 2988 | 2988 | 0 | 2988 | main 2988 |
+| explain | all | 3813 | 3813 | 0 | 3813 | main 3813 |
+| new-course | fast | 21054 | 21054 | 0 | 21054 | main 21054 |
+| new-course | balanced | 20665 | 26208 | 0 | 26208 | main 20665, researcher 4022, expert 820, novice 702 |
+| new-course | deep | 12842 | 28757 | 0 | 28757 | main 12842, researcher 4022, author 9634, expert 820, novice 702, flow 738 |
+| continue | fast | 15831 | 15831 | 0 | 15831 | main 15831 |
+| continue | balanced | 16363 | 20985 | 0 | 20985 | main 16363, researcher 3101, expert 820, novice 702 |
+| continue | deep | 7432 | 22426 | 0 | 22426 | main 7432, researcher 3101, author 9634, expert 820, novice 702, flow 738 |
+| panel | balanced | 15769 | 17290 | 0 | 17290 | main 15769, expert 820, novice 702 |
+| panel | deep | 6837 | 18731 | 0 | 18731 | main 6837, author 9634, expert 820, novice 702, flow 738 |
+| challenge | all | 3427 | 3427 | 0 | 3427 | main 3427 |
 
 ## Files per context
 
-- **explain / all / main** (3627 tokens): `skills/learn/SKILL.md` 1826, `skills/learn/workflows/explain.md` 626, `skills/learn/references/teaching-core.md` 674
-- **new-course / fast / main** (19388 tokens): `skills/learn/SKILL.md` 1826, `skills/learn/workflows/new-course.md` 1071, `skills/learn/MISSION-FORMAT.md` 475, `skills/learn/LEARNING-RECORD-FORMAT.md` 1124, `skills/learn/workflows/plan-course.md` 1028, `skills/learn/workflows/continue-course.md` 807, `skills/learn/workflows/research-sources.md` 818, `skills/learn/RESOURCES-FORMAT.md` 921, `skills/learn/workflows/write-lesson.md` 1081, `skills/learn/references/profiles.md` 402, `skills/learn/references/motion.md` 1088, `skills/learn/references/grounding.md` 2268, `skills/learn/references/lesson-contract.md` 2539, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 1745, `skills/learn/references/labs.md` 412
-- **new-course / balanced / main** (18586 tokens): `skills/learn/SKILL.md` 1826, `skills/learn/workflows/new-course.md` 1071, `skills/learn/MISSION-FORMAT.md` 475, `skills/learn/LEARNING-RECORD-FORMAT.md` 1124, `skills/learn/workflows/plan-course.md` 1028, `skills/learn/workflows/continue-course.md` 807, `skills/learn/workflows/review-panel.md` 1113, `skills/learn/workflows/write-lesson.md` 1081, `skills/learn/references/profiles.md` 402, `skills/learn/references/handoff-contracts.md` 1215, `skills/learn/references/failure-handling.md` 876, `skills/learn/references/motion.md` 1088, `skills/learn/references/lesson-contract.md` 2539, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 1745, `skills/learn/references/labs.md` 412
-- **new-course / balanced / researcher** (4007 tokens): `skills/learn/workflows/research-sources.md` 818, `skills/learn/RESOURCES-FORMAT.md` 921, `skills/learn/references/grounding.md` 2268
-- **new-course / balanced / expert** (744 tokens): `subagents/lesson-expert.md` 744
-- **new-course / balanced / novice** (680 tokens): `subagents/lesson-novice.md` 680
-- **new-course / deep / main** (11525 tokens): `skills/learn/SKILL.md` 1826, `skills/learn/workflows/new-course.md` 1071, `skills/learn/MISSION-FORMAT.md` 475, `skills/learn/LEARNING-RECORD-FORMAT.md` 1124, `skills/learn/workflows/plan-course.md` 1028, `skills/learn/workflows/continue-course.md` 807, `skills/learn/workflows/review-panel.md` 1113, `skills/learn/references/profiles.md` 402, `skills/learn/references/handoff-contracts.md` 1215, `skills/learn/references/failure-handling.md` 876, `skills/learn/references/motion.md` 1088
-- **new-course / deep / researcher** (4007 tokens): `skills/learn/workflows/research-sources.md` 818, `skills/learn/RESOURCES-FORMAT.md` 921, `skills/learn/references/grounding.md` 2268
-- **new-course / deep / author** (8802 tokens): `subagents/lesson-author.md` 653, `skills/learn/workflows/write-lesson.md` 1081, `skills/learn/references/lesson-contract.md` 2539, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 1745, `skills/learn/references/motion.md` 1088, `skills/learn/references/labs.md` 412
-- **new-course / deep / expert** (744 tokens): `subagents/lesson-expert.md` 744
-- **new-course / deep / novice** (680 tokens): `subagents/lesson-novice.md` 680
-- **new-course / deep / flow** (736 tokens): `subagents/lesson-flow.md` 736
-- **continue / fast / main** (14770 tokens): `skills/learn/SKILL.md` 1826, `skills/learn/workflows/continue-course.md` 807, `skills/learn/references/profiles.md` 402, `skills/learn/workflows/research-sources.md` 818, `skills/learn/workflows/write-lesson.md` 1081, `skills/learn/references/grounding.md` 2268, `skills/learn/references/lesson-contract.md` 2539, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 1745, `skills/learn/references/motion.md` 1088, `skills/learn/references/labs.md` 412
-- **continue / balanced / main** (14889 tokens): `skills/learn/SKILL.md` 1826, `skills/learn/workflows/continue-course.md` 807, `skills/learn/references/profiles.md` 402, `skills/learn/workflows/review-panel.md` 1113, `skills/learn/workflows/write-lesson.md` 1081, `skills/learn/references/handoff-contracts.md` 1215, `skills/learn/references/failure-handling.md` 876, `skills/learn/references/lesson-contract.md` 2539, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 1745, `skills/learn/references/motion.md` 1088, `skills/learn/references/labs.md` 412
-- **continue / balanced / researcher** (3086 tokens): `skills/learn/workflows/research-sources.md` 818, `skills/learn/references/grounding.md` 2268
-- **continue / balanced / expert** (744 tokens): `subagents/lesson-expert.md` 744
-- **continue / balanced / novice** (680 tokens): `subagents/lesson-novice.md` 680
-- **continue / deep / main** (6740 tokens): `skills/learn/SKILL.md` 1826, `skills/learn/workflows/continue-course.md` 807, `skills/learn/references/profiles.md` 402, `skills/learn/workflows/review-panel.md` 1113, `skills/learn/references/handoff-contracts.md` 1215, `skills/learn/references/failure-handling.md` 876
-- **continue / deep / researcher** (3086 tokens): `skills/learn/workflows/research-sources.md` 818, `skills/learn/references/grounding.md` 2268
-- **continue / deep / author** (8802 tokens): `subagents/lesson-author.md` 653, `skills/learn/workflows/write-lesson.md` 1081, `skills/learn/references/lesson-contract.md` 2539, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 1745, `skills/learn/references/motion.md` 1088, `skills/learn/references/labs.md` 412
-- **continue / deep / expert** (744 tokens): `subagents/lesson-expert.md` 744
-- **continue / deep / novice** (680 tokens): `subagents/lesson-novice.md` 680
-- **continue / deep / flow** (736 tokens): `subagents/lesson-flow.md` 736
-- **panel / balanced / main** (14505 tokens): `skills/lesson-panel/SKILL.md` 423, `skills/learn/SKILL.md` 1826, `skills/learn/workflows/review-panel.md` 1113, `skills/learn/workflows/write-lesson.md` 1081, `skills/learn/references/handoff-contracts.md` 1215, `skills/learn/references/failure-handling.md` 876, `skills/learn/references/profiles.md` 402, `skills/learn/references/lesson-contract.md` 2539, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 1745, `skills/learn/references/motion.md` 1088, `skills/learn/references/labs.md` 412
-- **panel / balanced / expert** (744 tokens): `subagents/lesson-expert.md` 744
-- **panel / balanced / novice** (680 tokens): `subagents/lesson-novice.md` 680
-- **panel / deep / main** (6357 tokens): `skills/lesson-panel/SKILL.md` 423, `skills/learn/SKILL.md` 1826, `skills/learn/workflows/review-panel.md` 1113, `skills/learn/references/handoff-contracts.md` 1215, `skills/learn/references/failure-handling.md` 876, `skills/learn/references/profiles.md` 402
-- **panel / deep / author** (8802 tokens): `subagents/lesson-author.md` 653, `skills/learn/workflows/write-lesson.md` 1081, `skills/learn/references/lesson-contract.md` 2539, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 1745, `skills/learn/references/motion.md` 1088, `skills/learn/references/labs.md` 412
-- **panel / deep / expert** (744 tokens): `subagents/lesson-expert.md` 744
-- **panel / deep / novice** (680 tokens): `subagents/lesson-novice.md` 680
-- **panel / deep / flow** (736 tokens): `subagents/lesson-flow.md` 736
-- **challenge / all / main** (2988 tokens): `skills/challenge-reviewer/SKILL.md` 358, `skills/learn/workflows/review-challenge.md` 1005, `skills/learn/LEARNING-RECORD-FORMAT.md` 1124
+- **explain / all / main** (3813 tokens): `skills/learn/SKILL.md` 1829, `skills/learn/workflows/explain.md` 810, `skills/learn/references/teaching-core.md` 674
+- **new-course / fast / main** (21054 tokens): `skills/learn/SKILL.md` 1829, `skills/learn/workflows/new-course.md` 1197, `skills/learn/MISSION-FORMAT.md` 475, `skills/learn/LEARNING-RECORD-FORMAT.md` 1276, `skills/learn/workflows/plan-course.md` 1354, `skills/learn/workflows/continue-course.md` 1018, `skills/learn/workflows/research-sources.md` 838, `skills/learn/RESOURCES-FORMAT.md` 921, `skills/learn/workflows/write-lesson.md` 1118, `skills/learn/references/profiles.md` 451, `skills/learn/references/motion.md` 1109, `skills/learn/references/grounding.md` 2262, `skills/learn/references/lesson-contract.md` 2865, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 2145, `skills/learn/references/labs.md` 412
+- **new-course / balanced / main** (20665 tokens): `skills/learn/SKILL.md` 1829, `skills/learn/workflows/new-course.md` 1197, `skills/learn/MISSION-FORMAT.md` 475, `skills/learn/LEARNING-RECORD-FORMAT.md` 1276, `skills/learn/workflows/plan-course.md` 1354, `skills/learn/workflows/continue-course.md` 1018, `skills/learn/workflows/review-panel.md` 1447, `skills/learn/workflows/write-lesson.md` 1118, `skills/learn/references/profiles.md` 451, `skills/learn/references/handoff-contracts.md` 1276, `skills/learn/references/failure-handling.md` 910, `skills/learn/references/motion.md` 1109, `skills/learn/references/lesson-contract.md` 2865, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 2145, `skills/learn/references/labs.md` 412
+- **new-course / balanced / researcher** (4022 tokens): `skills/learn/workflows/research-sources.md` 838, `skills/learn/RESOURCES-FORMAT.md` 921, `skills/learn/references/grounding.md` 2262
+- **new-course / balanced / expert** (820 tokens): `subagents/lesson-expert.md` 820
+- **new-course / balanced / novice** (702 tokens): `subagents/lesson-novice.md` 702
+- **new-course / deep / main** (12842 tokens): `skills/learn/SKILL.md` 1829, `skills/learn/workflows/new-course.md` 1197, `skills/learn/MISSION-FORMAT.md` 475, `skills/learn/LEARNING-RECORD-FORMAT.md` 1276, `skills/learn/workflows/plan-course.md` 1354, `skills/learn/workflows/continue-course.md` 1018, `skills/learn/workflows/review-panel.md` 1447, `skills/learn/references/profiles.md` 451, `skills/learn/references/handoff-contracts.md` 1276, `skills/learn/references/failure-handling.md` 910, `skills/learn/references/motion.md` 1109
+- **new-course / deep / researcher** (4022 tokens): `skills/learn/workflows/research-sources.md` 838, `skills/learn/RESOURCES-FORMAT.md` 921, `skills/learn/references/grounding.md` 2262
+- **new-course / deep / author** (9634 tokens): `subagents/lesson-author.md` 703, `skills/learn/workflows/write-lesson.md` 1118, `skills/learn/references/lesson-contract.md` 2865, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 2145, `skills/learn/references/motion.md` 1109, `skills/learn/references/labs.md` 412
+- **new-course / deep / expert** (820 tokens): `subagents/lesson-expert.md` 820
+- **new-course / deep / novice** (702 tokens): `subagents/lesson-novice.md` 702
+- **new-course / deep / flow** (738 tokens): `subagents/lesson-flow.md` 738
+- **continue / fast / main** (15831 tokens): `skills/learn/SKILL.md` 1829, `skills/learn/workflows/continue-course.md` 1018, `skills/learn/references/profiles.md` 451, `skills/learn/workflows/research-sources.md` 838, `skills/learn/workflows/write-lesson.md` 1118, `skills/learn/references/grounding.md` 2262, `skills/learn/references/lesson-contract.md` 2865, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 2145, `skills/learn/references/motion.md` 1109, `skills/learn/references/labs.md` 412
+- **continue / balanced / main** (16363 tokens): `skills/learn/SKILL.md` 1829, `skills/learn/workflows/continue-course.md` 1018, `skills/learn/references/profiles.md` 451, `skills/learn/workflows/review-panel.md` 1447, `skills/learn/workflows/write-lesson.md` 1118, `skills/learn/references/handoff-contracts.md` 1276, `skills/learn/references/failure-handling.md` 910, `skills/learn/references/lesson-contract.md` 2865, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 2145, `skills/learn/references/motion.md` 1109, `skills/learn/references/labs.md` 412
+- **continue / balanced / researcher** (3101 tokens): `skills/learn/workflows/research-sources.md` 838, `skills/learn/references/grounding.md` 2262
+- **continue / balanced / expert** (820 tokens): `subagents/lesson-expert.md` 820
+- **continue / balanced / novice** (702 tokens): `subagents/lesson-novice.md` 702
+- **continue / deep / main** (7432 tokens): `skills/learn/SKILL.md` 1829, `skills/learn/workflows/continue-course.md` 1018, `skills/learn/references/profiles.md` 451, `skills/learn/workflows/review-panel.md` 1447, `skills/learn/references/handoff-contracts.md` 1276, `skills/learn/references/failure-handling.md` 910
+- **continue / deep / researcher** (3101 tokens): `skills/learn/workflows/research-sources.md` 838, `skills/learn/references/grounding.md` 2262
+- **continue / deep / author** (9634 tokens): `subagents/lesson-author.md` 703, `skills/learn/workflows/write-lesson.md` 1118, `skills/learn/references/lesson-contract.md` 2865, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 2145, `skills/learn/references/motion.md` 1109, `skills/learn/references/labs.md` 412
+- **continue / deep / expert** (820 tokens): `subagents/lesson-expert.md` 820
+- **continue / deep / novice** (702 tokens): `subagents/lesson-novice.md` 702
+- **continue / deep / flow** (738 tokens): `subagents/lesson-flow.md` 738
+- **panel / balanced / main** (15769 tokens): `skills/lesson-panel/SKILL.md` 423, `skills/learn/SKILL.md` 1829, `skills/learn/workflows/review-panel.md` 1447, `skills/learn/workflows/write-lesson.md` 1118, `skills/learn/references/handoff-contracts.md` 1276, `skills/learn/references/failure-handling.md` 910, `skills/learn/references/profiles.md` 451, `skills/learn/references/lesson-contract.md` 2865, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 2145, `skills/learn/references/motion.md` 1109, `skills/learn/references/labs.md` 412
+- **panel / balanced / expert** (820 tokens): `subagents/lesson-expert.md` 820
+- **panel / balanced / novice** (702 tokens): `subagents/lesson-novice.md` 702
+- **panel / deep / main** (6837 tokens): `skills/lesson-panel/SKILL.md` 423, `skills/learn/SKILL.md` 1829, `skills/learn/workflows/review-panel.md` 1447, `skills/learn/references/handoff-contracts.md` 1276, `skills/learn/references/failure-handling.md` 910, `skills/learn/references/profiles.md` 451
+- **panel / deep / author** (9634 tokens): `subagents/lesson-author.md` 703, `skills/learn/workflows/write-lesson.md` 1118, `skills/learn/references/lesson-contract.md` 2865, `skills/learn/references/teaching-core.md` 674, `skills/learn/references/visual-design.md` 610, `skills/learn/references/components.md` 2145, `skills/learn/references/motion.md` 1109, `skills/learn/references/labs.md` 412
+- **panel / deep / expert** (820 tokens): `subagents/lesson-expert.md` 820
+- **panel / deep / novice** (702 tokens): `subagents/lesson-novice.md` 702
+- **panel / deep / flow** (738 tokens): `subagents/lesson-flow.md` 738
+- **challenge / all / main** (3427 tokens): `skills/challenge-reviewer/SKILL.md` 358, `skills/learn/workflows/review-challenge.md` 1293, `skills/learn/LEARNING-RECORD-FORMAT.md` 1276

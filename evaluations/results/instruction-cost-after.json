@@ -1,5 +1,5 @@
 {
-  "measuredAt": "2026-11-25T00:30:53.052Z",
+  "measuredAt": "2026-11-25T11:16:37.823Z",
   "tree": "working tree",
   "sha": null,
   "layout": "v2-router",
@@ -19,17 +19,17 @@
           "files": [
             {
               "file": "skills/learn/SKILL.md",
-              "bytes": 7304,
+              "bytes": 7315,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1826
+              "tokens": 1829
             },
             {
               "file": "skills/learn/workflows/explain.md",
-              "bytes": 2505,
+              "bytes": 3238,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 626
+              "tokens": 810
             },
             {
               "file": "skills/learn/references/teaching-core.md",
@@ -42,23 +42,23 @@
           "missing": [],
           "bytes": {
             "listing": 2006,
-            "instructions": 12503,
+            "instructions": 13247,
             "code": 0
           },
           "tokens": {
             "listing": 502,
-            "instructions": 3126,
+            "instructions": 3312,
             "code": 0,
-            "total": 3627
+            "total": 3813
           }
         }
       ],
       "tokens": {
-        "mainContext": 3627,
+        "mainContext": 3813,
         "listing": 502,
-        "instructions": 3126,
+        "instructions": 3312,
         "code": 0,
-        "total": 3627
+        "total": 3813
       }
     },
     {
@@ -70,17 +70,17 @@
           "files": [
             {
               "file": "skills/learn/SKILL.md",
-              "bytes": 7304,
+              "bytes": 7315,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1826
+              "tokens": 1829
             },
             {
               "file": "skills/learn/workflows/new-course.md",
-              "bytes": 4282,
+              "bytes": 4788,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1071
+              "tokens": 1197
             },
             {
               "file": "skills/learn/MISSION-FORMAT.md",
@@ -91,31 +91,31 @@
             },
             {
               "file": "skills/learn/LEARNING-RECORD-FORMAT.md",
-              "bytes": 4497,
+              "bytes": 5103,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1124
+              "tokens": 1276
             },
             {
               "file": "skills/learn/workflows/plan-course.md",
-              "bytes": 4110,
+              "bytes": 5417,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1028
+              "tokens": 1354
             },
             {
               "file": "skills/learn/workflows/continue-course.md",
-              "bytes": 3226,
+              "bytes": 4071,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 807
+              "tokens": 1018
             },
             {
               "file": "skills/learn/workflows/research-sources.md",
-              "bytes": 3270,
+              "bytes": 3353,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 818
+              "tokens": 838
             },
             {
               "file": "skills/learn/RESOURCES-FORMAT.md",
@@ -126,38 +126,38 @@
             },
             {
               "file": "skills/learn/workflows/write-lesson.md",
-              "bytes": 4325,
+              "bytes": 4471,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1081
+              "tokens": 1118
             },
             {
               "file": "skills/learn/references/profiles.md",
-              "bytes": 1606,
+              "bytes": 1804,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 402
+              "tokens": 451
             },
             {
               "file": "skills/learn/references/motion.md",
-              "bytes": 4351,
+              "bytes": 4434,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/plan-course.md",
-              "tokens": 1088
+              "tokens": 1109
             },
             {
               "file": "skills/learn/references/grounding.md",
-              "bytes": 9072,
+              "bytes": 9049,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/research-sources.md",
-              "tokens": 2268
+              "tokens": 2262
             },
             {
               "file": "skills/learn/references/lesson-contract.md",
-              "bytes": 10157,
+              "bytes": 11459,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 2539
+              "tokens": 2865
             },
             {
               "file": "skills/learn/references/teaching-core.md",
@@ -175,10 +175,10 @@
             },
             {
               "file": "skills/learn/references/components.md",
-              "bytes": 6980,
+              "bytes": 8580,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 1745
+              "tokens": 2145
             },
             {
               "file": "skills/learn/references/labs.md",
@@ -191,23 +191,23 @@
           "missing": [],
           "bytes": {
             "listing": 2006,
-            "instructions": 75545,
+            "instructions": 82209,
             "code": 0
           },
           "tokens": {
             "listing": 502,
-            "instructions": 18886,
+            "instructions": 20552,
             "code": 0,
-            "total": 19388
+            "total": 21054
           }
         }
       ],
       "tokens": {
-        "mainContext": 19388,
+        "mainContext": 21054,
         "listing": 502,
-        "instructions": 18886,
+        "instructions": 20552,
         "code": 0,
-        "total": 19388
+        "total": 21054
       }
     },
     {
@@ -219,17 +219,17 @@
           "files": [
             {
               "file": "skills/learn/SKILL.md",
-              "bytes": 7304,
+              "bytes": 7315,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1826
+              "tokens": 1829
             },
             {
               "file": "skills/learn/workflows/new-course.md",
-              "bytes": 4282,
+              "bytes": 4788,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1071
+              "tokens": 1197
             },
             {
               "file": "skills/learn/MISSION-FORMAT.md",
@@ -240,73 +240,73 @@
             },
             {
               "file": "skills/learn/LEARNING-RECORD-FORMAT.md",
-              "bytes": 4497,
+              "bytes": 5103,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1124
+              "tokens": 1276
             },
             {
               "file": "skills/learn/workflows/plan-course.md",
-              "bytes": 4110,
+              "bytes": 5417,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1028
+              "tokens": 1354
             },
             {
               "file": "skills/learn/workflows/continue-course.md",
-              "bytes": 3226,
+              "bytes": 4071,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 807
+              "tokens": 1018
             },
             {
               "file": "skills/learn/workflows/review-panel.md",
-              "bytes": 4452,
+              "bytes": 5788,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1113
+              "tokens": 1447
             },
             {
               "file": "skills/learn/workflows/write-lesson.md",
-              "bytes": 4325,
+              "bytes": 4471,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1081
+              "tokens": 1118
             },
             {
               "file": "skills/learn/references/profiles.md",
-              "bytes": 1606,
+              "bytes": 1804,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 402
+              "tokens": 451
             },
             {
               "file": "skills/learn/references/handoff-contracts.md",
-              "bytes": 4861,
+              "bytes": 5105,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1215
+              "tokens": 1276
             },
             {
               "file": "skills/learn/references/failure-handling.md",
-              "bytes": 3505,
+              "bytes": 3638,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 876
+              "tokens": 910
             },
             {
               "file": "skills/learn/references/motion.md",
-              "bytes": 4351,
+              "bytes": 4434,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/plan-course.md",
-              "tokens": 1088
+              "tokens": 1109
             },
             {
               "file": "skills/learn/references/lesson-contract.md",
-              "bytes": 10157,
+              "bytes": 11459,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 2539
+              "tokens": 2865
             },
             {
               "file": "skills/learn/references/teaching-core.md",
@@ -324,10 +324,10 @@
             },
             {
               "file": "skills/learn/references/components.md",
-              "bytes": 6980,
+              "bytes": 8580,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 1745
+              "tokens": 2145
             },
             {
               "file": "skills/learn/references/labs.md",
@@ -340,14 +340,14 @@
           "missing": [],
           "bytes": {
             "listing": 2006,
-            "instructions": 72337,
+            "instructions": 80654,
             "code": 0
           },
           "tokens": {
             "listing": 502,
-            "instructions": 18084,
+            "instructions": 20164,
             "code": 0,
-            "total": 18586
+            "total": 20665
           }
         },
         {
@@ -355,10 +355,10 @@
           "files": [
             {
               "file": "skills/learn/workflows/research-sources.md",
-              "bytes": 3270,
+              "bytes": 3353,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 818
+              "tokens": 838
             },
             {
               "file": "skills/learn/RESOURCES-FORMAT.md",
@@ -369,23 +369,23 @@
             },
             {
               "file": "skills/learn/references/grounding.md",
-              "bytes": 9072,
+              "bytes": 9049,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/research-sources.md",
-              "tokens": 2268
+              "tokens": 2262
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 16026,
+            "instructions": 16086,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 4007,
+            "instructions": 4022,
             "code": 0,
-            "total": 4007
+            "total": 4022
           }
         },
         {
@@ -393,23 +393,23 @@
           "files": [
             {
               "file": "subagents/lesson-expert.md",
-              "bytes": 2976,
+              "bytes": 3279,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 744
+              "tokens": 820
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2976,
+            "instructions": 3279,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 744,
+            "instructions": 820,
             "code": 0,
-            "total": 744
+            "total": 820
           }
         },
         {
@@ -417,32 +417,32 @@
           "files": [
             {
               "file": "subagents/lesson-novice.md",
-              "bytes": 2718,
+              "bytes": 2807,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 680
+              "tokens": 702
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2718,
+            "instructions": 2807,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 680,
+            "instructions": 702,
             "code": 0,
-            "total": 680
+            "total": 702
           }
         }
       ],
       "tokens": {
-        "mainContext": 18586,
+        "mainContext": 20665,
         "listing": 502,
-        "instructions": 23514,
+        "instructions": 25707,
         "code": 0,
-        "total": 24016
+        "total": 26208
       }
     },
     {
@@ -454,17 +454,17 @@
           "files": [
             {
               "file": "skills/learn/SKILL.md",
-              "bytes": 7304,
+              "bytes": 7315,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1826
+              "tokens": 1829
             },
             {
               "file": "skills/learn/workflows/new-course.md",
-              "bytes": 4282,
+              "bytes": 4788,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1071
+              "tokens": 1197
             },
             {
               "file": "skills/learn/MISSION-FORMAT.md",
@@ -475,72 +475,72 @@
             },
             {
               "file": "skills/learn/LEARNING-RECORD-FORMAT.md",
-              "bytes": 4497,
+              "bytes": 5103,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1124
+              "tokens": 1276
             },
             {
               "file": "skills/learn/workflows/plan-course.md",
-              "bytes": 4110,
+              "bytes": 5417,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1028
+              "tokens": 1354
             },
             {
               "file": "skills/learn/workflows/continue-course.md",
-              "bytes": 3226,
+              "bytes": 4071,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 807
+              "tokens": 1018
             },
             {
               "file": "skills/learn/workflows/review-panel.md",
-              "bytes": 4452,
+              "bytes": 5788,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1113
+              "tokens": 1447
             },
             {
               "file": "skills/learn/references/profiles.md",
-              "bytes": 1606,
+              "bytes": 1804,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 402
+              "tokens": 451
             },
             {
               "file": "skills/learn/references/handoff-contracts.md",
-              "bytes": 4861,
+              "bytes": 5105,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1215
+              "tokens": 1276
             },
             {
               "file": "skills/learn/references/failure-handling.md",
-              "bytes": 3505,
+              "bytes": 3638,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 876
+              "tokens": 910
             },
             {
               "file": "skills/learn/references/motion.md",
-              "bytes": 4351,
+              "bytes": 4434,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/plan-course.md",
-              "tokens": 1088
+              "tokens": 1109
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 2006,
-            "instructions": 44094,
+            "instructions": 49363,
             "code": 0
           },
           "tokens": {
             "listing": 502,
-            "instructions": 11024,
+            "instructions": 12341,
             "code": 0,
-            "total": 11525
+            "total": 12842
           }
         },
         {
@@ -548,10 +548,10 @@
           "files": [
             {
               "file": "skills/learn/workflows/research-sources.md",
-              "bytes": 3270,
+              "bytes": 3353,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 818
+              "tokens": 838
             },
             {
               "file": "skills/learn/RESOURCES-FORMAT.md",
@@ -562,23 +562,23 @@
             },
             {
               "file": "skills/learn/references/grounding.md",
-              "bytes": 9072,
+              "bytes": 9049,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/research-sources.md",
-              "tokens": 2268
+              "tokens": 2262
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 16026,
+            "instructions": 16086,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 4007,
+            "instructions": 4022,
             "code": 0,
-            "total": 4007
+            "total": 4022
           }
         },
         {
@@ -586,24 +586,24 @@
           "files": [
             {
               "file": "subagents/lesson-author.md",
-              "bytes": 2613,
+              "bytes": 2812,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 653
+              "tokens": 703
             },
             {
               "file": "skills/learn/workflows/write-lesson.md",
-              "bytes": 4325,
+              "bytes": 4471,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1081
+              "tokens": 1118
             },
             {
               "file": "skills/learn/references/lesson-contract.md",
-              "bytes": 10157,
+              "bytes": 11459,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 2539
+              "tokens": 2865
             },
             {
               "file": "skills/learn/references/teaching-core.md",
@@ -621,17 +621,17 @@
             },
             {
               "file": "skills/learn/references/components.md",
-              "bytes": 6980,
+              "bytes": 8580,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 1745
+              "tokens": 2145
             },
             {
               "file": "skills/learn/references/motion.md",
-              "bytes": 4351,
+              "bytes": 4434,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 1088
+              "tokens": 1109
             },
             {
               "file": "skills/learn/references/labs.md",
@@ -644,14 +644,14 @@
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 35207,
+            "instructions": 38537,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 8802,
+            "instructions": 9634,
             "code": 0,
-            "total": 8802
+            "total": 9634
           }
         },
         {
@@ -659,23 +659,23 @@
           "files": [
             {
               "file": "subagents/lesson-expert.md",
-              "bytes": 2976,
+              "bytes": 3279,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 744
+              "tokens": 820
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2976,
+            "instructions": 3279,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 744,
+            "instructions": 820,
             "code": 0,
-            "total": 744
+            "total": 820
           }
         },
         {
@@ -683,23 +683,23 @@
           "files": [
             {
               "file": "subagents/lesson-novice.md",
-              "bytes": 2718,
+              "bytes": 2807,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 680
+              "tokens": 702
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2718,
+            "instructions": 2807,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 680,
+            "instructions": 702,
             "code": 0,
-            "total": 680
+            "total": 702
           }
         },
         {
@@ -707,32 +707,32 @@
           "files": [
             {
               "file": "subagents/lesson-flow.md",
-              "bytes": 2944,
+              "bytes": 2951,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 736
+              "tokens": 738
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2944,
+            "instructions": 2951,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 736,
+            "instructions": 738,
             "code": 0,
-            "total": 736
+            "total": 738
           }
         }
       ],
       "tokens": {
-        "mainContext": 11525,
+        "mainContext": 12842,
         "listing": 502,
-        "instructions": 25991,
+        "instructions": 28256,
         "code": 0,
-        "total": 26493
+        "total": 28757
       }
     },
     {
@@ -744,52 +744,52 @@
           "files": [
             {
               "file": "skills/learn/SKILL.md",
-              "bytes": 7304,
+              "bytes": 7315,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1826
+              "tokens": 1829
             },
             {
               "file": "skills/learn/workflows/continue-course.md",
-              "bytes": 3226,
+              "bytes": 4071,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 807
+              "tokens": 1018
             },
             {
               "file": "skills/learn/references/profiles.md",
-              "bytes": 1606,
+              "bytes": 1804,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 402
+              "tokens": 451
             },
             {
               "file": "skills/learn/workflows/research-sources.md",
-              "bytes": 3270,
+              "bytes": 3353,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 818
+              "tokens": 838
             },
             {
               "file": "skills/learn/workflows/write-lesson.md",
-              "bytes": 4325,
+              "bytes": 4471,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1081
+              "tokens": 1118
             },
             {
               "file": "skills/learn/references/grounding.md",
-              "bytes": 9072,
+              "bytes": 9049,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/research-sources.md",
-              "tokens": 2268
+              "tokens": 2262
             },
             {
               "file": "skills/learn/references/lesson-contract.md",
-              "bytes": 10157,
+              "bytes": 11459,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 2539
+              "tokens": 2865
             },
             {
               "file": "skills/learn/references/teaching-core.md",
@@ -807,17 +807,17 @@
             },
             {
               "file": "skills/learn/references/components.md",
-              "bytes": 6980,
+              "bytes": 8580,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 1745
+              "tokens": 2145
             },
             {
               "file": "skills/learn/references/motion.md",
-              "bytes": 4351,
+              "bytes": 4434,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 1088
+              "tokens": 1109
             },
             {
               "file": "skills/learn/references/labs.md",
@@ -830,23 +830,23 @@
           "missing": [],
           "bytes": {
             "listing": 2006,
-            "instructions": 57072,
+            "instructions": 61317,
             "code": 0
           },
           "tokens": {
             "listing": 502,
-            "instructions": 14268,
+            "instructions": 15329,
             "code": 0,
-            "total": 14770
+            "total": 15831
           }
         }
       ],
       "tokens": {
-        "mainContext": 14770,
+        "mainContext": 15831,
         "listing": 502,
-        "instructions": 14268,
+        "instructions": 15329,
         "code": 0,
-        "total": 14770
+        "total": 15831
       }
     },
     {
@@ -858,59 +858,59 @@
           "files": [
             {
               "file": "skills/learn/SKILL.md",
-              "bytes": 7304,
+              "bytes": 7315,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1826
+              "tokens": 1829
             },
             {
               "file": "skills/learn/workflows/continue-course.md",
-              "bytes": 3226,
+              "bytes": 4071,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 807
+              "tokens": 1018
             },
             {
               "file": "skills/learn/references/profiles.md",
-              "bytes": 1606,
+              "bytes": 1804,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 402
+              "tokens": 451
             },
             {
               "file": "skills/learn/workflows/review-panel.md",
-              "bytes": 4452,
+              "bytes": 5788,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1113
+              "tokens": 1447
             },
             {
               "file": "skills/learn/workflows/write-lesson.md",
-              "bytes": 4325,
+              "bytes": 4471,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1081
+              "tokens": 1118
             },
             {
               "file": "skills/learn/references/handoff-contracts.md",
-              "bytes": 4861,
+              "bytes": 5105,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1215
+              "tokens": 1276
             },
             {
               "file": "skills/learn/references/failure-handling.md",
-              "bytes": 3505,
+              "bytes": 3638,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 876
+              "tokens": 910
             },
             {
               "file": "skills/learn/references/lesson-contract.md",
-              "bytes": 10157,
+              "bytes": 11459,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 2539
+              "tokens": 2865
             },
             {
               "file": "skills/learn/references/teaching-core.md",
@@ -928,17 +928,17 @@
             },
             {
               "file": "skills/learn/references/components.md",
-              "bytes": 6980,
+              "bytes": 8580,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 1745
+              "tokens": 2145
             },
             {
               "file": "skills/learn/references/motion.md",
-              "bytes": 4351,
+              "bytes": 4434,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 1088
+              "tokens": 1109
             },
             {
               "file": "skills/learn/references/labs.md",
@@ -951,14 +951,14 @@
           "missing": [],
           "bytes": {
             "listing": 2006,
-            "instructions": 57548,
+            "instructions": 63446,
             "code": 0
           },
           "tokens": {
             "listing": 502,
-            "instructions": 14387,
+            "instructions": 15862,
             "code": 0,
-            "total": 14889
+            "total": 16363
           }
         },
         {
@@ -966,30 +966,30 @@
           "files": [
             {
               "file": "skills/learn/workflows/research-sources.md",
-              "bytes": 3270,
+              "bytes": 3353,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 818
+              "tokens": 838
             },
             {
               "file": "skills/learn/references/grounding.md",
-              "bytes": 9072,
+              "bytes": 9049,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/research-sources.md",
-              "tokens": 2268
+              "tokens": 2262
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 12342,
+            "instructions": 12402,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 3086,
+            "instructions": 3101,
             "code": 0,
-            "total": 3086
+            "total": 3101
           }
         },
         {
@@ -997,23 +997,23 @@
           "files": [
             {
               "file": "subagents/lesson-expert.md",
-              "bytes": 2976,
+              "bytes": 3279,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 744
+              "tokens": 820
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2976,
+            "instructions": 3279,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 744,
+            "instructions": 820,
             "code": 0,
-            "total": 744
+            "total": 820
           }
         },
         {
@@ -1021,32 +1021,32 @@
           "files": [
             {
               "file": "subagents/lesson-novice.md",
-              "bytes": 2718,
+              "bytes": 2807,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 680
+              "tokens": 702
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2718,
+            "instructions": 2807,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 680,
+            "instructions": 702,
             "code": 0,
-            "total": 680
+            "total": 702
           }
         }
       ],
       "tokens": {
-        "mainContext": 14889,
+        "mainContext": 16363,
         "listing": 502,
-        "instructions": 18896,
+        "instructions": 20484,
         "code": 0,
-        "total": 19398
+        "total": 20985
       }
     },
     {
@@ -1058,58 +1058,58 @@
           "files": [
             {
               "file": "skills/learn/SKILL.md",
-              "bytes": 7304,
+              "bytes": 7315,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1826
+              "tokens": 1829
             },
             {
               "file": "skills/learn/workflows/continue-course.md",
-              "bytes": 3226,
+              "bytes": 4071,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 807
+              "tokens": 1018
             },
             {
               "file": "skills/learn/references/profiles.md",
-              "bytes": 1606,
+              "bytes": 1804,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 402
+              "tokens": 451
             },
             {
               "file": "skills/learn/workflows/review-panel.md",
-              "bytes": 4452,
+              "bytes": 5788,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1113
+              "tokens": 1447
             },
             {
               "file": "skills/learn/references/handoff-contracts.md",
-              "bytes": 4861,
+              "bytes": 5105,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1215
+              "tokens": 1276
             },
             {
               "file": "skills/learn/references/failure-handling.md",
-              "bytes": 3505,
+              "bytes": 3638,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 876
+              "tokens": 910
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 2006,
-            "instructions": 24954,
+            "instructions": 27721,
             "code": 0
           },
           "tokens": {
             "listing": 502,
-            "instructions": 6239,
+            "instructions": 6930,
             "code": 0,
-            "total": 6740
+            "total": 7432
           }
         },
         {
@@ -1117,30 +1117,30 @@
           "files": [
             {
               "file": "skills/learn/workflows/research-sources.md",
-              "bytes": 3270,
+              "bytes": 3353,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 818
+              "tokens": 838
             },
             {
               "file": "skills/learn/references/grounding.md",
-              "bytes": 9072,
+              "bytes": 9049,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/research-sources.md",
-              "tokens": 2268
+              "tokens": 2262
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 12342,
+            "instructions": 12402,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 3086,
+            "instructions": 3101,
             "code": 0,
-            "total": 3086
+            "total": 3101
           }
         },
         {
@@ -1148,24 +1148,24 @@
           "files": [
             {
               "file": "subagents/lesson-author.md",
-              "bytes": 2613,
+              "bytes": 2812,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 653
+              "tokens": 703
             },
             {
               "file": "skills/learn/workflows/write-lesson.md",
-              "bytes": 4325,
+              "bytes": 4471,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1081
+              "tokens": 1118
             },
             {
               "file": "skills/learn/references/lesson-contract.md",
-              "bytes": 10157,
+              "bytes": 11459,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 2539
+              "tokens": 2865
             },
             {
               "file": "skills/learn/references/teaching-core.md",
@@ -1183,17 +1183,17 @@
             },
             {
               "file": "skills/learn/references/components.md",
-              "bytes": 6980,
+              "bytes": 8580,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 1745
+              "tokens": 2145
             },
             {
               "file": "skills/learn/references/motion.md",
-              "bytes": 4351,
+              "bytes": 4434,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 1088
+              "tokens": 1109
             },
             {
               "file": "skills/learn/references/labs.md",
@@ -1206,14 +1206,14 @@
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 35207,
+            "instructions": 38537,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 8802,
+            "instructions": 9634,
             "code": 0,
-            "total": 8802
+            "total": 9634
           }
         },
         {
@@ -1221,23 +1221,23 @@
           "files": [
             {
               "file": "subagents/lesson-expert.md",
-              "bytes": 2976,
+              "bytes": 3279,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 744
+              "tokens": 820
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2976,
+            "instructions": 3279,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 744,
+            "instructions": 820,
             "code": 0,
-            "total": 744
+            "total": 820
           }
         },
         {
@@ -1245,23 +1245,23 @@
           "files": [
             {
               "file": "subagents/lesson-novice.md",
-              "bytes": 2718,
+              "bytes": 2807,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 680
+              "tokens": 702
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2718,
+            "instructions": 2807,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 680,
+            "instructions": 702,
             "code": 0,
-            "total": 680
+            "total": 702
           }
         },
         {
@@ -1269,32 +1269,32 @@
           "files": [
             {
               "file": "subagents/lesson-flow.md",
-              "bytes": 2944,
+              "bytes": 2951,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 736
+              "tokens": 738
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2944,
+            "instructions": 2951,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 736,
+            "instructions": 738,
             "code": 0,
-            "total": 736
+            "total": 738
           }
         }
       ],
       "tokens": {
-        "mainContext": 6740,
+        "mainContext": 7432,
         "listing": 502,
-        "instructions": 20285,
+        "instructions": 21924,
         "code": 0,
-        "total": 20787
+        "total": 22426
       }
     },
     {
@@ -1313,52 +1313,52 @@
             },
             {
               "file": "skills/learn/SKILL.md",
-              "bytes": 7304,
+              "bytes": 7315,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1826
+              "tokens": 1829
             },
             {
               "file": "skills/learn/workflows/review-panel.md",
-              "bytes": 4452,
+              "bytes": 5788,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1113
+              "tokens": 1447
             },
             {
               "file": "skills/learn/workflows/write-lesson.md",
-              "bytes": 4325,
+              "bytes": 4471,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1081
+              "tokens": 1118
             },
             {
               "file": "skills/learn/references/handoff-contracts.md",
-              "bytes": 4861,
+              "bytes": 5105,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1215
+              "tokens": 1276
             },
             {
               "file": "skills/learn/references/failure-handling.md",
-              "bytes": 3505,
+              "bytes": 3638,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 876
+              "tokens": 910
             },
             {
               "file": "skills/learn/references/profiles.md",
-              "bytes": 1606,
+              "bytes": 1804,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 402
+              "tokens": 451
             },
             {
               "file": "skills/learn/references/lesson-contract.md",
-              "bytes": 10157,
+              "bytes": 11459,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 2539
+              "tokens": 2865
             },
             {
               "file": "skills/learn/references/teaching-core.md",
@@ -1376,17 +1376,17 @@
             },
             {
               "file": "skills/learn/references/components.md",
-              "bytes": 6980,
+              "bytes": 8580,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 1745
+              "tokens": 2145
             },
             {
               "file": "skills/learn/references/motion.md",
-              "bytes": 4351,
+              "bytes": 4434,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 1088
+              "tokens": 1109
             },
             {
               "file": "skills/learn/references/labs.md",
@@ -1399,14 +1399,14 @@
           "missing": [],
           "bytes": {
             "listing": 2006,
-            "instructions": 56015,
+            "instructions": 61068,
             "code": 0
           },
           "tokens": {
             "listing": 502,
-            "instructions": 14004,
+            "instructions": 15267,
             "code": 0,
-            "total": 14505
+            "total": 15769
           }
         },
         {
@@ -1414,23 +1414,23 @@
           "files": [
             {
               "file": "subagents/lesson-expert.md",
-              "bytes": 2976,
+              "bytes": 3279,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 744
+              "tokens": 820
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2976,
+            "instructions": 3279,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 744,
+            "instructions": 820,
             "code": 0,
-            "total": 744
+            "total": 820
           }
         },
         {
@@ -1438,32 +1438,32 @@
           "files": [
             {
               "file": "subagents/lesson-novice.md",
-              "bytes": 2718,
+              "bytes": 2807,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 680
+              "tokens": 702
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2718,
+            "instructions": 2807,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 680,
+            "instructions": 702,
             "code": 0,
-            "total": 680
+            "total": 702
           }
         }
       ],
       "tokens": {
-        "mainContext": 14505,
+        "mainContext": 15769,
         "listing": 502,
-        "instructions": 15427,
+        "instructions": 16789,
         "code": 0,
-        "total": 15929
+        "total": 17290
       }
     },
     {
@@ -1482,51 +1482,51 @@
             },
             {
               "file": "skills/learn/SKILL.md",
-              "bytes": 7304,
+              "bytes": 7315,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1826
+              "tokens": 1829
             },
             {
               "file": "skills/learn/workflows/review-panel.md",
-              "bytes": 4452,
+              "bytes": 5788,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1113
+              "tokens": 1447
             },
             {
               "file": "skills/learn/references/handoff-contracts.md",
-              "bytes": 4861,
+              "bytes": 5105,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1215
+              "tokens": 1276
             },
             {
               "file": "skills/learn/references/failure-handling.md",
-              "bytes": 3505,
+              "bytes": 3638,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 876
+              "tokens": 910
             },
             {
               "file": "skills/learn/references/profiles.md",
-              "bytes": 1606,
+              "bytes": 1804,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 402
+              "tokens": 451
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 2006,
-            "instructions": 23421,
+            "instructions": 25343,
             "code": 0
           },
           "tokens": {
             "listing": 502,
-            "instructions": 5855,
+            "instructions": 6336,
             "code": 0,
-            "total": 6357
+            "total": 6837
           }
         },
         {
@@ -1534,24 +1534,24 @@
           "files": [
             {
               "file": "subagents/lesson-author.md",
-              "bytes": 2613,
+              "bytes": 2812,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 653
+              "tokens": 703
             },
             {
               "file": "skills/learn/workflows/write-lesson.md",
-              "bytes": 4325,
+              "bytes": 4471,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1081
+              "tokens": 1118
             },
             {
               "file": "skills/learn/references/lesson-contract.md",
-              "bytes": 10157,
+              "bytes": 11459,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 2539
+              "tokens": 2865
             },
             {
               "file": "skills/learn/references/teaching-core.md",
@@ -1569,17 +1569,17 @@
             },
             {
               "file": "skills/learn/references/components.md",
-              "bytes": 6980,
+              "bytes": 8580,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 1745
+              "tokens": 2145
             },
             {
               "file": "skills/learn/references/motion.md",
-              "bytes": 4351,
+              "bytes": 4434,
               "kind": "instructions",
               "via": "Load/Read in skills/learn/workflows/write-lesson.md",
-              "tokens": 1088
+              "tokens": 1109
             },
             {
               "file": "skills/learn/references/labs.md",
@@ -1592,14 +1592,14 @@
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 35207,
+            "instructions": 38537,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 8802,
+            "instructions": 9634,
             "code": 0,
-            "total": 8802
+            "total": 9634
           }
         },
         {
@@ -1607,23 +1607,23 @@
           "files": [
             {
               "file": "subagents/lesson-expert.md",
-              "bytes": 2976,
+              "bytes": 3279,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 744
+              "tokens": 820
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2976,
+            "instructions": 3279,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 744,
+            "instructions": 820,
             "code": 0,
-            "total": 744
+            "total": 820
           }
         },
         {
@@ -1631,23 +1631,23 @@
           "files": [
             {
               "file": "subagents/lesson-novice.md",
-              "bytes": 2718,
+              "bytes": 2807,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 680
+              "tokens": 702
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2718,
+            "instructions": 2807,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 680,
+            "instructions": 702,
             "code": 0,
-            "total": 680
+            "total": 702
           }
         },
         {
@@ -1655,32 +1655,32 @@
           "files": [
             {
               "file": "subagents/lesson-flow.md",
-              "bytes": 2944,
+              "bytes": 2951,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 736
+              "tokens": 738
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 0,
-            "instructions": 2944,
+            "instructions": 2951,
             "code": 0
           },
           "tokens": {
             "listing": 0,
-            "instructions": 736,
+            "instructions": 738,
             "code": 0,
-            "total": 736
+            "total": 738
           }
         }
       ],
       "tokens": {
-        "mainContext": 6357,
+        "mainContext": 6837,
         "listing": 502,
-        "instructions": 16817,
+        "instructions": 18229,
         "code": 0,
-        "total": 17318
+        "total": 18731
       }
     },
     {
@@ -1699,39 +1699,39 @@
             },
             {
               "file": "skills/learn/workflows/review-challenge.md",
-              "bytes": 4018,
+              "bytes": 5170,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1005
+              "tokens": 1293
             },
             {
               "file": "skills/learn/LEARNING-RECORD-FORMAT.md",
-              "bytes": 4497,
+              "bytes": 5103,
               "kind": "instructions",
               "via": "declared",
-              "tokens": 1124
+              "tokens": 1276
             }
           ],
           "missing": [],
           "bytes": {
             "listing": 2006,
-            "instructions": 9945,
+            "instructions": 11703,
             "code": 0
           },
           "tokens": {
             "listing": 502,
-            "instructions": 2486,
+            "instructions": 2926,
             "code": 0,
-            "total": 2988
+            "total": 3427
           }
         }
       ],
       "tokens": {
-        "mainContext": 2988,
+        "mainContext": 3427,
         "listing": 502,
-        "instructions": 2486,
+        "instructions": 2926,
         "code": 0,
-        "total": 2988
+        "total": 3427
       }
     }
   ]

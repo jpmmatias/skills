@@ -1,6 +1,6 @@
 {
   "workspace": "transformers",
-  "scoredAt": "2026-11-25T01:19:58.079Z",
+  "scoredAt": "2026-11-25T11:16:38.021Z",
   "course": {
     "id": "transformers-example",
     "schemaVersion": 2,
@@ -160,7 +160,7 @@
       "title": "MCQ: 3–5 options, exactly one correct, no all/none of the above",
       "status": "pass",
       "evidence": [
-        "8 MCQ(s): 3–5 options, one correct"
+        "7 MCQ(s): 3–5 options, one correct"
       ]
     },
     {
@@ -280,8 +280,8 @@
       "title": "Load budget: ≤5 <dfn>, ≤1 scene, ≤~1,500 words",
       "status": "warn",
       "evidence": [
-        "L1: 0 <dfn>, 0 scene(s), ~1626 words (≤5, ≤1, ≤~1,500)",
-        "L2: 0 <dfn>, 0 scene(s), ~1578 words (≤5, ≤1, ≤~1,500)"
+        "L1: 0 <dfn>, 0 scene(s), ~1692 words (≤5, ≤1, ≤~1,500)",
+        "L2: 0 <dfn>, 0 scene(s), ~1684 words (≤5, ≤1, ≤~1,500)"
       ]
     },
     {
@@ -301,25 +301,25 @@
       "title": "Coverage: numeric/factual paragraphs cited or marked (partial M)",
       "status": "warn",
       "evidence": [
-        "L1: 1/2 — 19 citation(s); 29 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 1 · Read your prompt as the model does\", \"gpt2 · with token ids The 464 ␣cat 3797 ␣sat 3332 ␣on 319 ␣t\"",
-        "L2: 1/2 — 16 citation(s); 63 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 2 · Compute one attention head\", \"After lesson 1, every token is a vector that knows only itse\"",
-        "L3: 1/2 — 18 citation(s); 31 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 3 · Explain a streamed reply\", \"Start: x , one 768-wide vector per token (lesson 1's embeddi\""
+        "L1: 1/2 — 20 citation(s); 28 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 1 · Read your prompt as the model does\", \"gpt2 · with token ids The 464 ␣cat 3797 ␣sat 3332 ␣on 319 ␣t\"",
+        "L2: 1/2 — 18 citation(s); 63 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 2 · Compute one attention head\", \"After lesson 1, every token is a vector that knows only itse\"",
+        "L3: 1/2 — 20 citation(s); 31 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 3 · Explain a streamed reply\", \"Start: x , one 768-wide vector per token (lesson 1's embeddi\""
       ],
       "perLesson": [
         {
           "n": 1,
           "score": 1,
-          "evidence": "19 citation(s); 29 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 1 · Read your prompt as the model does\", \"gpt2 · with token ids The 464 ␣cat 3797 ␣sat 3332 ␣on 319 ␣t\""
+          "evidence": "20 citation(s); 28 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 1 · Read your prompt as the model does\", \"gpt2 · with token ids The 464 ␣cat 3797 ␣sat 3332 ␣on 319 ␣t\""
         },
         {
           "n": 2,
           "score": 1,
-          "evidence": "16 citation(s); 63 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 2 · Compute one attention head\", \"After lesson 1, every token is a vector that knows only itse\""
+          "evidence": "18 citation(s); 63 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 2 · Compute one attention head\", \"After lesson 1, every token is a vector that knows only itse\""
         },
         {
           "n": 3,
           "score": 1,
-          "evidence": "18 citation(s); 31 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 3 · Explain a streamed reply\", \"Start: x , one 768-wide vector per token (lesson 1's embeddi\""
+          "evidence": "20 citation(s); 31 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 3 · Explain a streamed reply\", \"Start: x , one 768-wide vector per token (lesson 1's embeddi\""
         }
       ],
       "score": 1

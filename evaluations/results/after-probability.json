@@ -1,6 +1,6 @@
 {
   "workspace": "probability",
-  "scoredAt": "2026-11-25T01:19:58.306Z",
+  "scoredAt": "2026-11-25T11:16:38.333Z",
   "course": {
     "id": "probability-example",
     "schemaVersion": 2,
@@ -250,7 +250,7 @@
       "title": "No vague or evaluative-only criteria",
       "status": "pass",
       "evidence": [
-        "10 criteria, none vague"
+        "11 criteria, none vague"
       ]
     },
     {
@@ -280,9 +280,9 @@
       "title": "Load budget: ≤5 <dfn>, ≤1 scene, ≤~1,500 words",
       "status": "warn",
       "evidence": [
-        "L1: 0 <dfn>, 0 scene(s), ~1628 words (≤5, ≤1, ≤~1,500)",
-        "L2: 0 <dfn>, 0 scene(s), ~1656 words (≤5, ≤1, ≤~1,500)",
-        "L3: 0 <dfn>, 0 scene(s), ~1567 words (≤5, ≤1, ≤~1,500)"
+        "L1: 0 <dfn>, 0 scene(s), ~1747 words (≤5, ≤1, ≤~1,500)",
+        "L2: 0 <dfn>, 0 scene(s), ~1989 words (≤5, ≤1, ≤~1,500)",
+        "L3: 0 <dfn>, 0 scene(s), ~1670 words (≤5, ≤1, ≤~1,500)"
       ]
     },
     {
@@ -303,8 +303,8 @@
       "status": "warn",
       "evidence": [
         "L1: 1/2 — 3 citation(s); 44 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 1 · Simulate a metric\", \"A discrete random variable takes values you can list. Its PM\"",
-        "L2: 1/2 — 3 citation(s); 71 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 2 · Size the noise\", \"How this page is grounded: every formula is derived here fro\"",
-        "L3: 1/2 — 3 citation(s); 24 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 3 · Weigh a signal\", \"“The test catches 90% of cases” and “a positive result is 90\""
+        "L2: 1/2 — 3 citation(s); 76 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 2 · Size the noise\", \"Why this matters for your mission: a conversion rate is an a\"",
+        "L3: 1/2 — 2 citation(s); 25 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 3 · Weigh a signal\", \"“The test catches 90% of cases” and “a positive result is 90\""
       ],
       "perLesson": [
         {
@@ -315,12 +315,12 @@
         {
           "n": 2,
           "score": 1,
-          "evidence": "3 citation(s); 71 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 2 · Size the noise\", \"How this page is grounded: every formula is derived here fro\""
+          "evidence": "3 citation(s); 76 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 2 · Size the noise\", \"Why this matters for your mission: a conversion rate is an a\""
         },
         {
           "n": 3,
           "score": 1,
-          "evidence": "3 citation(s); 24 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 3 · Weigh a signal\", \"“The test catches 90% of cases” and “a positive result is 90\""
+          "evidence": "2 citation(s); 25 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 3 · Weigh a signal\", \"“The test catches 90% of cases” and “a positive result is 90\""
         }
       ],
       "score": 1
@@ -373,8 +373,8 @@
       "status": "warn",
       "evidence": [
         "L1: 1/2 — 0/2 cited sources verified; 2 .unverified marker(s)",
-        "L2: 1/2 — 0/2 cited sources verified; 1 .unverified marker(s)",
-        "L3: 1/2 — 0/1 cited sources verified; 2 .unverified marker(s)"
+        "L2: 1/2 — 0/2 cited sources verified; 2 .unverified marker(s)",
+        "L3: 1/2 — 0/1 cited sources verified; 1 .unverified marker(s)"
       ],
       "perLesson": [
         {
@@ -385,12 +385,12 @@
         {
           "n": 2,
           "score": 1,
-          "evidence": "0/2 cited sources verified; 1 .unverified marker(s)"
+          "evidence": "0/2 cited sources verified; 2 .unverified marker(s)"
         },
         {
           "n": 3,
           "score": 1,
-          "evidence": "0/1 cited sources verified; 2 .unverified marker(s)"
+          "evidence": "0/1 cited sources verified; 1 .unverified marker(s)"
         }
       ],
       "score": 1
