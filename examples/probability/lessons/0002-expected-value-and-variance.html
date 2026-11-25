@@ -26,7 +26,7 @@
     <div id="progress"></div>
   </header>
 
-  <p><strong>Why this matters for your mission:</strong> a conversion rate is an average, and the standard error of an average tells you how big a day-to-day or arm-to-arm difference pure noise produces, which is exactly what you need before calling an A/B result.</p>
+  <p><strong>Why this matters for your mission:</strong> a conversion rate is an average, and the standard error of an average tells you how much pure noise moves one day’s or one arm’s number. The difference between two independent arms wobbles √2 times as much, because their variances add. Both are what you need before calling an A/B result.</p>
 
   <p class="note">How this page is grounded: every formula is derived here from the PMF of lesson 1, every number was recomputed by a script while writing the page, and the simulation below checks the central result, σ/√n, in front of you. The books under <a href="#deeper">Go deeper</a> could not be opened while this example was written, so they are marked unverified.</p>
 
@@ -83,15 +83,15 @@
 
   <h2>Rules for sums</h2>
   <p>Metrics are usually sums: revenue is the sum over orders, a conversion count is the sum of 0/1 outcomes. Two rules carry you through, and the difference between them matters.</p>
-  <p class="formula">E[X + Y] = E[X] + E[Y] &nbsp;&nbsp;always<br>E[aX + b] = a·E[X] + b &nbsp;·&nbsp; Var(aX + b) = a²·Var(X)<br>Var(X + Y) = Var(X) + Var(Y) &nbsp;&nbsp;only when X and Y are independent</p>
-  <p>Expectation is <strong>linear</strong> with no conditions, because E[X + Y] is a weighted sum over pairs of values and the sum splits into the X part and the Y part. Variance needs independence. Two dice show why:</p>
+  <p class="formula">E[X + Y] = E[X] + E[Y] &nbsp;&nbsp;always<br>E[aX + b] = a·E[X] + b &nbsp;·&nbsp; Var(aX + b) = a²·Var(X)<br>Var(X + Y) = Var(X) + Var(Y) &nbsp;&nbsp;when X and Y are independent (more generally, whenever Cov(X, Y) = 0)</p>
+  <p>Expectation is <strong>linear</strong> with no conditions, because E[X + Y] is a weighted sum over pairs of values and the sum splits into the X part and the Y part. Variance needs more: independence, or at least zero covariance. Two dice show why:</p>
   <div class="ba">
     <div class="good"><span class="tag">Independent</span><p>Two separate dice, X and Y. The sum has E = 3.5 + 3.5 = 7 and Var = 35/12 + 35/12 = 35/6 ≈ 5.83 (σ ≈ 2.42). Listing all 36 equally likely pairs gives the same 35/6.</p></div>
     <div class="bad"><span class="tag">Dependent</span><p>One die X and Y = 7 − X, its opposite face. E[X + Y] = 7 still holds. But X + Y is always exactly 7, so Var(X + Y) = 0, not 5.83: the rule for variances fails.</p></div>
   </div>
-  <p><strong>Why does this line exist?</strong> Why does the variance rule carry the condition “only when independent” while the expectation rule does not?</p>
+  <p><strong>Why does this line exist?</strong> Why does the variance rule carry a condition (independence) while the expectation rule does not?</p>
   <details class="answer"><summary>Show the reason</summary>
-    <p>Expanding the square gives Var(X + Y) = Var(X) + Var(Y) + 2·Cov(X, Y), where the covariance Cov(X, Y) = E[(X − μ<sub>X</sub>)(Y − μ<sub>Y</sub>)] measures whether the two move together. Independence makes it 0. For Y = 7 − X it is −35/12, which exactly cancels the two variances. Expectation has no square, so no cross term ever appears.</p>
+    <p>Expanding the square gives Var(X + Y) = Var(X) + Var(Y) + 2·Cov(X, Y), where the covariance Cov(X, Y) = E[(X − μ<sub>X</sub>)(Y − μ<sub>Y</sub>)] measures whether the two move together. Independence makes it 0 (and any pair with zero covariance adds the same way, even if dependent). For Y = 7 − X it is −35/12, so 2·Cov(X, Y) = −35/6 exactly cancels the two variances of 35/12 each. Expectation has no square, so no cross term ever appears.</p>
   </details>
 
   <h2>Why averages wobble less: σ/√n</h2>
@@ -111,7 +111,7 @@
   <p>What you should see: the bracket halves from 0.85 to 0.43, the simulated standard deviation stays within a few percent of σ/√n at every n, and as n grows the histogram turns into a narrow bell (checked while writing: with seeds 7, 8 and 9, the simulated standard deviations were within 6% of σ/√n at every n). The bell shape is the central limit theorem, <span class="unverified" title="Not independently verified">which the textbooks below prove</span><sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>; this lesson needs only the σ/√n you derived. For a bell, about two-thirds of the means fall inside the bracket; the readout counts the actual share.</p>
 
   <h3>Back to your dashboard: a conversion rate is a mean</h3>
-  <p>A conversion rate over n visitors is the mean of n 0/1 outcomes, so everything above applies with σ = √(p(1 − p)). Statistics texts call this the standard error of a sample proportion<sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>:</p>
+  <p>A conversion rate over n visitors is the mean of n 0/1 outcomes, so everything above applies with σ = √(p(1 − p)). <span class="unverified" title="Not independently verified">Applied-statistics texts call this the standard error of a sample proportion</span><sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>:</p>
   <p class="formula">SE = √(p(1 − p) / n)</p>
   <p>With an <strong>illustrative</strong> 10% conversion rate (σ = 0.3):</p>
   <div class="table-wrap">
@@ -125,7 +125,12 @@
       </tbody>
     </table>
   </div>
-  <p>So a day with 2,500 visitors that reads 10.5% instead of 10% has moved by less than one standard error: that is ordinary noise. To halve the noise, from 0.6 to 0.3 points, you need 4 × 2,500 = 10,000 visitors.</p>
+  <p>Real daily numbers often wobble more than this table predicts: the true rate itself shifts with the weekday or a campaign, n changes from day to day, and the same users come back. The SE is the floor that sampling alone sets.</p>
+  <p>So a day with 2,500 visitors that reads 10.5% instead of 10% has moved by less than one standard error: well within what noise alone produces. To halve the noise, from 0.6 to 0.3 points, you need 4 × 2,500 = 10,000 visitors.</p>
+  <h3>Comparing two arms</h3>
+  <p>An A/B test looks at a <em>difference</em>: rate B − rate A. The two arms have different visitors, so their rates are independent, and the rules for sums apply. Var(−A) = (−1)²·Var(A) = Var(A), so the variances add even though the rates are subtracted:</p>
+  <p class="formula">SE(B − A) = √(SE<sub>A</sub>² + SE<sub>B</sub>²)</p>
+  <p>With 2,500 visitors in each arm at about 10%, each arm has SE 0.6 points, and the difference has SE √(0.6² + 0.6²) ≈ 0.85 points: √2 times one arm’s noise. An observed lift of half a point between such arms is well within what noise alone produces. Turning that comparison into a decision rule is the job of a hypothesis test, which this course leaves out; the SE is the number such a test is built on.</p>
 
   <section class="practice" aria-labelledby="practice-h">
     <h2 id="practice-h">Check yourself</h2>
@@ -135,13 +140,13 @@
   <section class="challenge" id="challenge" data-kind="milestone" data-milestone="m2" aria-labelledby="challenge-h">
     <p class="kicker">Milestone challenge · Size the noise</p>
     <h2 id="challenge-h">Predict the wobble of one of your metrics</h2>
-    <p>Pick a daily metric from your own dashboard that is an average or a rate (conversion rate, average order value, error rate). From one typical day of raw per-user data, compute σ (for a rate, √(p(1 − p))), n and the standard error σ/√n. Then take the metric’s daily values over at least 14 comparable days and compute their standard deviation. If you cannot share real data, simulate 14 days with your lesson 1 sampler and say so.</p>
+    <p>Pick a daily metric from your own dashboard that is an average or a rate (conversion rate, average order value, error rate). From one typical day of raw per-user data, compute σ (for a rate, √(p(1 − p))), n and the standard error σ/√n. Then take the metric’s daily values over at least 14 comparable days and compute their standard deviation. If you cannot share real data, simulate 14 days with your lesson 1 sampler, letting the true rate itself change from day to day (for example a p between 9% and 11%), and say so.</p>
     <h3>What to send back</h3>
     <p>The metric’s name and definition; n, σ and the SE for one day, with the arithmetic or the script; the list of daily values and their standard deviation; your answer on how many users halve the SE.</p>
     <h3>Pass criteria</h3>
     <ol class="criteria">
       <li>n, σ (with how it was computed) and SE = σ/√n are reported for one day, and the arithmetic reproduces the SE to 2 significant figures.</li>
-      <li>The standard deviation of at least 14 daily values is reported next to the SE, with one sentence saying which is larger and by what factor.</li>
+      <li>The standard deviation of at least 14 daily values is reported next to the SE, with one sentence saying which is larger and by what factor, and, if the factor is above 1.5, one named reason (the true rate changes by day, n changes by day, or users are counted more than once).</li>
       <li>The number of users needed to halve the SE is stated and equals 4 × the day’s n.</li>
     </ol>
     <p>When you are done, send your work to your teacher in the terminal.</p>

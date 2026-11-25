@@ -29,7 +29,7 @@ Learncraft.practice(1, [
   { id: 'l1-lln-streak', type: 'choice', objective: 'l1.o2',
     prompt: 'A fair coin gives 7 heads in its first 10 flips. You keep flipping to 10,000. What happens to the share of heads?',
     options: [
-      { text: 'It heads toward 0.5, because the early 7 of 10 get swamped', correct: true, why: 'The surplus of 2 heads stays, but divided by 10,000 flips it is negligible. That is how frequencies converge.' },
+      { text: 'It heads toward 0.5, as the early 7 of 10 become negligible', correct: true, why: 'Later flips neither cancel nor keep the 2 extra heads; they add their own ±noise. Divided by 10,000 flips, any such surplus is tiny. That is how frequencies converge.' },
       { text: 'Tails must now come up more often to even things out', why: 'The flips are independent: the coin has no memory, so later flips are still 50/50. This is the gambler’s fallacy.' },
       { text: 'It stays near 0.7, since the run showed a biased coin', why: 'The coin is fair by assumption. Ten flips are far too few to pin a share; 7 or more heads happens about 17% of the time.' },
       { text: 'It drifts at random and settles on no particular value', why: 'Each share wobbles less as flips accumulate: that settling on P(heads) is the law of large numbers.' },

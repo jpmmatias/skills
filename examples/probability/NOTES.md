@@ -6,7 +6,7 @@ theme: default (assets/theme.css unchanged)
 example: true — shipped example course; no learner, no diagnostic, no learning records, no progress
 diagnostic: not applicable (example course)
 environment: none needed. Every experiment runs in the browser from file:// with the seeded generator `Learncraft.rng`; the challenges ask for a short script in the learner's own language (JavaScript or Python).
-sources: unverified — the authoring session (2026-11-25) could not open any source host (DNS blocked by the network allowlist). See `RESOURCES.md` → Verification debt.
+sources: pending — the authoring session (2026-11-25) could not open any source host (DNS blocked by the network allowlist). See `RESOURCES.md` → Verification debt.
 
 ## Per-lesson decisions
 
@@ -24,5 +24,7 @@ Every number a lesson states was recomputed by a Node script during authoring (f
 
 ## Upstream
 
-- `Learncraft.explorable` has no built-in "new seed" control; each figure here adds its own button and calls `update()`. A `reseed` option on `explorable` would save every course this code.
+- `Learncraft.explorable` has `reseed()` but no built-in *New seed* button; each figure here adds its own button (and keeps its own seed, because it draws its sample from a cached per-seed stream rather than the `rng` passed to `render`).
+- `Learncraft.histogram` joins the expected values with a dashed polyline, which suggests values between the integers; for a PMF, dots or a short tick per bar would be more faithful (review CP-25).
+- `diagram.js` bars: `data-bars` keys that look like integers ("1", "2") are reordered ahead of other keys by JavaScript object ordering; accept an array of pairs or document it.
 - A `recall` item has one `tolerance` for all its accepted answers, so an item cannot accept both `0.16` and `16` (percent) with sensible tolerances. These lessons ask for one unit explicitly in the prompt.

@@ -19,7 +19,8 @@
     var r = Math.round(v * 10) / 10;
     return Number.isInteger(r) ? r.toLocaleString('en-US') : r.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   }
-  function pc(v) { return (v * 100).toLocaleString('en-US', { maximumFractionDigits: 1 }) + '%'; }
+  // percentages: two significant figures below 10% (0.99%, 9.2%), one decimal above (52.6%)
+  function pc(v) { var x = v * 100; return (x > 0 && x < 10 ? x.toLocaleString('en-US', { maximumSignificantDigits: 2 }) : x.toLocaleString('en-US', { maximumFractionDigits: 1 })) + '%'; }
   function people(seed) { var r = L.rng(seed), a = new Float64Array(SIM * 2); for (var i = 0; i < a.length; i++) a[i] = r(); return a; }
 
   L.register('bayes-tree', {

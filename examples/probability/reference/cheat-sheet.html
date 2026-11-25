@@ -43,12 +43,14 @@
         <tr><td>sample from a PMF</td><td>first x with <code>u &lt; P(X ≤ x)</code>, u uniform in [0, 1)</td><td>one u per draw</td></tr>
         <tr><td>linearity</td><td><code>E[X + Y] = E[X] + E[Y]</code>, <code>E[aX + b] = a·E[X] + b</code></td><td>always</td></tr>
         <tr><td>scaling</td><td><code>Var(aX + b) = a² · Var(X)</code></td><td>always</td></tr>
-        <tr><td>variance of a sum</td><td><code>Var(X + Y) = Var(X) + Var(Y)</code></td><td>X, Y independent</td></tr>
+        <tr><td>variance of a sum</td><td><code>Var(X + Y) = Var(X) + Var(Y)</code></td><td>X, Y independent (or uncorrelated); in general add 2·Cov(X, Y)</td></tr>
         <tr><td>0/1 outcome (Bernoulli)</td><td><code>E = p</code>, <code>Var = p(1 − p)</code></td><td></td></tr>
         <tr><td>mean of n draws</td><td><code>E[X̄] = μ</code>, <code>SE = σ / √n</code></td><td>independent draws</td></tr>
         <tr><td>conversion rate</td><td><code>SE = √(p(1 − p) / n)</code></td><td>independent visitors</td></tr>
+        <tr><td>difference of two arms</td><td><code>SE(B − A) = √(SE_A² + SE_B²)</code>; equal arms: √2 × one arm’s SE</td><td>independent arms</td></tr>
         <tr><td>conditional probability</td><td><code>P(A | B) = P(A and B) / P(B)</code></td><td>P(B) &gt; 0</td></tr>
         <tr><td>Bayes’ rule</td><td><code>P(H | +) = P(+ | H)·P(H) / [P(+ | H)·P(H) + P(+ | not H)·P(not H)]</code></td><td></td></tr>
+        <tr><td>base rate where half the positives are real</td><td><code>FPR / (sensitivity + FPR)</code></td><td></td></tr>
       </tbody>
     </table>
   </div>
@@ -58,8 +60,8 @@
     <li>Check a PMF adds up to 1 before using it; a total that is off means a missing or double-counted outcome.</li>
     <li>Seed every simulation and print the seed, so a surprising run can be repeated.</li>
     <li>A short streak is swamped, not corrected: draws have no memory. This holds only for independent draws.</li>
-    <li>Four times the data halves the noise (σ/√n). It breaks when observations are not independent, such as several sessions from one user.</li>
-    <li>Before trusting a positive, ask for the base rate. Translate to counts out of 1,000 or 10,000 and count the false positives. When the condition is rare, specificity matters more than sensitivity.</li>
+    <li>Four times the data halves the noise (σ/√n). A difference between two independent arms carries √2 times one arm’s noise. It breaks when observations are not independent, such as several sessions from one user.</li>
+    <li>Before trusting a positive, ask for the base rate. Translate to counts out of 1,000 or 10,000 and count the false positives. When the condition is rare, specificity matters more than sensitivity for how far you can trust a positive (for trusting a negative, it is the other way round).</li>
   </ol>
   <footer>Sources: <a href="../RESOURCES.md">RESOURCES.md</a> (none could be opened while this example was written; the formulas are derived in the lessons).</footer>
 </main>

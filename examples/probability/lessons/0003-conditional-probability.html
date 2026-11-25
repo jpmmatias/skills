@@ -56,7 +56,7 @@
 
   <h2>Worked example: a screening test, with natural frequencies</h2>
   <p>A condition affects 1% of people. A test flags 90% of people who have it (sensitivity) and clears 91% of people who do not (specificity), so it wrongly flags 9% of them. All three numbers are <strong>illustrative</strong>. You test positive. What is the chance you have the condition?</p>
-  <p><span class="unverified" title="Not independently verified">A common answer is “about 90%”</span><sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>, but 90% is the sensitivity, P(+ | condition), the reverse of what was asked. Translate the percentages into counts of one imagined population instead:</p>
+  <p>The tempting answer is “about 90%”, but 90% is the sensitivity, P(+ | condition), the reverse of what was asked. Translate the percentages into counts of one imagined population instead:</p>
   <ol class="anno-list">
     <li>Start from 10,000 people.</li>
     <li>Base rate: 1% have the condition, 100 people; 9,900 do not.</li>
@@ -64,7 +64,7 @@
     <li>False-positive rate: 9% of the 9,900 test positive, 891 people.</li>
     <li>Everyone who tests positive: 90 + 891 = 981. Of them, 90 have the condition: 90 / 981 ≈ 9.2%.</li>
   </ol>
-  <p>A positive result raised the chance from 1% to about 9%, a big jump, and yet more than 9 out of 10 positives are false alarms, because the 9,900 healthy people produce ten times as many positives as the 100 sick ones. Ignoring the base rate this way is called <strong>base-rate neglect</strong>. <span class="unverified" title="Not independently verified">Gigerenzer and Hoffrage argued, with experiments, that people reach the correct answer far more often when the same information is given as natural frequencies like these than as probabilities</span><sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>.</p>
+  <p>A positive result raised the chance from 1% to about 9%, a big jump, and yet more than 9 out of 10 positives are false alarms, because the 9,900 healthy people produce ten times as many positives as the 100 sick ones. Ignoring the base rate this way is called <strong>base-rate neglect</strong>. <span class="unverified" title="Not independently verified">Gigerenzer and Hoffrage reported experiments in which more people reached the correct answer when the same information was given as natural frequencies like these than when it was given as probabilities</span><sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>.</p>
 
   <h3>The same computation as Bayes’ rule</h3>
   <p>Write the tree’s arithmetic with probabilities and you get Bayes’ rule. The numerator is the true-positive branch; the denominator, P(+), adds both positive branches (the law of total probability):</p>
@@ -78,10 +78,10 @@
   <p>Top: the exact natural-frequency tree for 10,000 people, with the two positive groups outlined. Bottom: one <strong>simulated</strong> population of 1,000 people from a seeded generator, grouped by outcome (filled dots have the condition and test positive, rings are false positives). The exact answer and the simulated one differ by sampling noise, as in lesson 1.</p>
   <p><strong>Predict first:</strong> with sensitivity 90% and specificity 91%, at what base rate does P(condition | +) reach 50%? Then slide the base rate from 0.1% up to 50%. Afterwards, set the base rate back to 1% and raise the specificity to 99.9%.</p>
   <div data-lc="bayes-tree" id="bayes" data-seed="7"></div>
-  <p>What you should see, with sensitivity 90% and specificity 91%: P(condition | +) is 0.99% at a base rate of 0.1%, 9.2% at 1%, 53% at 10% and 91% at 50%. It crosses 50% near a base rate of 9.1% (0.09 / 0.99), where true and false positives are equally many. At a 1% base rate, raising the specificity to 99.9% cuts the false positives from 891 to 9.9 per 10,000 and lifts P(condition | +) to 90%: when the condition is rare, specificity matters more than sensitivity.</p>
+  <p>What you should see, with sensitivity 90% and specificity 91%: P(condition | +) is about 1% (0.99%) at a base rate of 0.1%, 9.2% at 1%, 53% at 10% and 91% at 50%. It crosses 50% near a base rate of 9.1% (0.09 / 0.99), where true and false positives are equally many. In general, half the positives are real when sensitivity × base rate = false-positive rate × (1 − base rate), that is at base rate = FPR / (sensitivity + FPR). At a 1% base rate, raising the specificity to 99.9% cuts the false positives from 891 to 9.9 per 10,000 and lifts P(condition | +) to 90%, while even a perfect 100% sensitivity at 91% specificity would lift it only to about 10%: when the condition is rare, specificity matters more than sensitivity for how far you can trust a positive. (For trusting a negative, it is the other way round.)</p>
 
   <h3>Your turn: how many A/B “wins” are real?</h3>
-  <p>The same tree answers your mission’s question. Suppose, as <strong>illustrative</strong> numbers, 10% of the changes your team tests truly help; your tests have 80% power (they detect a real improvement 80% of the time) and flag 5% of changes that do nothing as winners. Fill in the tree for 1,000 experiments before opening the answer.</p>
+  <p>The same tree answers your mission’s question. Suppose, as <strong>illustrative</strong> numbers, 10% of the changes your team tests truly help; your tests have 80% power (they detect a real improvement 80% of the time) and flag 5% of changes that do nothing as winners (a one-sided 5% test; a two-sided 5% test flags 2.5% as wins and 2.5% as losses, and power here means the power for the size of improvement a helpful change typically has). Fill in the tree for 1,000 experiments before opening the answer.</p>
   <div class="table-wrap">
     <table>
       <thead><tr><th scope="col">group</th><th scope="col" class="num">experiments</th><th scope="col" class="num">flagged as wins</th></tr></thead>
@@ -110,7 +110,7 @@
     <p>The three inputs and their sources; the tree with its four leaf counts; the Bayes’ rule computation; the simulation script, its seed and its output; one sentence on what base rate would make half of the flags real.</p>
     <h3>Pass criteria</h3>
     <ol class="criteria">
-      <li>The four leaf counts of the tree add up to 1,000, and P(real | flagged) is shown as true flags / all flags, as a fraction and as a percentage.</li>
+      <li>The four leaf counts of the tree, kept unrounded (decimals allowed), add up to 1,000, and P(real | flagged) is shown as true flags / all flags, as a fraction and as a percentage.</li>
       <li>Bayes’ rule with the same three inputs gives the same percentage as the tree, to within 0.1 percentage point.</li>
       <li>The simulation prints its seed and the number of flagged cases m, and its P(real | flagged) lies within 3 standard errors of the exact value, using SE = √(q(1 − q)/m) from lesson 2 with q the exact value.</li>
       <li>The base rate at which half of the flags would be real is stated, and the tree recomputed at that base rate shows equal numbers of true and false flags.</li>

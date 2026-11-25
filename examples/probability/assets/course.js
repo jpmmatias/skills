@@ -25,10 +25,10 @@ window.COURSE = {
     },
     {
       n: 2, file: 'lessons/0002-expected-value-and-variance.html', title: 'Expected value and variance', milestones: ['m2'],
-      canDo: 'compute the expected value and variance of a discrete distribution, combine them for sums, and compute the standard error of a sample mean',
+      canDo: 'compute the expected value and variance of a discrete distribution, combine them for sums, and compute the standard error of a sample mean and of an A/B difference',
       objectives: [
         { id: 'l2.o1', text: 'Compute E[X] and Var(X) of a discrete distribution and combine them for sums of variables' },
-        { id: 'l2.o2', text: 'Compute the standard error σ/√n of a sample mean and predict how it changes with n' },
+        { id: 'l2.o2', text: 'Compute the standard error σ/√n of a sample mean, and of the difference between two independent means, and predict how it changes with n' },
       ],
       practice: 'lessons/0002.practice.js',
     },
