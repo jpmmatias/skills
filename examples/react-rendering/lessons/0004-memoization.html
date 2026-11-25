@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Lesson 4 · When memoization skips work</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body data-lesson="4">
+<main>
+  <nav class="links" aria-label="Course"><a href="../index.html">← Course map</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a> <a href="../review.html">Review</a></nav>
+
+  <header>
+    <p class="kicker">Lesson 4 · Diagnose with evidence</p>
+    <h1>When memoization skips work</h1>
+    <p class="lede">A render that changes nothing on screen is not automatically a problem, and <code>memo</code>, <code>useMemo</code> and <code>useCallback</code> do nothing at all when one prop is new on every render. This lesson shows when they actually skip work, and how to tell from evidence whether that matters.</p>
+    <div id="progress"></div>
+  </header>
+
+  <p><strong>Why this matters for your mission:</strong> “pick the fix the evidence supports” usually comes down to one question: will this memoization skip anything, and is what it skips worth the extra code?</p>
+
+  <h2>A re-render is not a DOM update</h2>
+  <p>Lesson 1’s rule is the most useful sentence in any performance discussion: React only changes the DOM where the output differs<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. A component that “re-renders 40 times” may have touched the DOM zero times. The cost of a wasted render is the time spent calling it and its children, so the question is always <em>how long</em>, which the Profiler measures (its <code>actualDuration</code> counts milliseconds spent rendering a subtree in one update<sup class="cite"><a href="../RESOURCES.md#s21" data-src="S21">21</a></sup>).</p>
+  <div data-practice-item="l4-interleave-dom"></div>
+
+  <h2>What memo compares</h2>
+  <p><code>memo(Component)</code> lets React skip re-rendering a child when its parent re-renders, if every prop is equal by <code>Object.is</code> to last time. It never stops a re-render caused by the component’s own state or by a context it reads, and the docs call it “a performance optimization, not a guarantee”<sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>. Its weak spot is identity: an object or function created during render is a new value every time, which makes <code>memo</code> “completely useless”<sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>. That is what <code>useCallback</code> (for functions) and <code>useMemo</code> (for values) are for: keeping the same identity across renders until a dependency changes<sup class="cite"><a href="../RESOURCES.md#s17" data-src="S17">17</a></sup><sup class="cite"><a href="../RESOURCES.md#s16" data-src="S16">16</a></sup>.</p>
+  <p class="note">This lesson assumes <b>React Compiler is off</b>, as do the practice items and the model below. With the compiler on, two of these predictions change; the box at the end of the lesson says which, and how to check your app.</p>
+
+  <h3>Worked example: memo that does nothing</h3>
+  <pre tabindex="0"><code>const List = memo(function List({ items, onPick }) { … });
+
+function App() {
+  const [theme, setTheme] = useState('light');
+  // ↓ a new function on every App render
+  return &lt;List items={ITEMS} onPick={id =&gt; select(id)} /&gt;;
+}</code></pre>
+  <p><code>ITEMS</code> is a module-level constant, so it is equal every time; <code>onPick</code> is not. Every <code>App</code> render passes a new function, <code>memo</code> sees a changed prop, and <code>List</code> renders anyway, along with every row. <b>Why does the arrow function count as changed when its code is identical?</b> Answer for yourself, then try it below: turn on <code>memo</code> for <code>List</code> alone, toggle the theme, and see whether <code>List</code> renders.</p>
+  <figure>
+    <div data-lc="render-sim" data-mode="memo" data-trigger="theme" data-goal></div>
+    <figcaption>The lesson 2 model with optimizations, compiler off. A thin outer frame marks a component wrapped in <code>memo</code>; dashed = skipped by <code>memo</code>. <b>Goal:</b> make both updates render only two components each. Then check whether the DOM changes are any different.</figcaption>
+  </figure>
+  <p>Now the faded version: fix the example so <code>memo</code> can do its job.</p>
+  <div data-practice-item="l4-fade-usecallback"></div>
+  <div data-practice-item="l4-inline-object"></div>
+
+  <h3>When is it worth it?</h3>
+  <p>The reference pages give short, overlapping lists<sup class="cite"><a href="../RESOURCES.md#s16" data-src="S16">16</a></sup><sup class="cite"><a href="../RESOURCES.md#s17" data-src="S17">17</a></sup><sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>:</p>
+  <ol>
+    <li><b><code>memo</code></b> helps when a component re-renders often with the same props and its rendering is expensive. If there is no perceptible lag, it is unnecessary.</li>
+    <li><b><code>useCallback</code> / <code>useMemo</code></b> help when the value goes to a <code>memo</code> component, or is a dependency of another Hook (such as an Effect that should not re-run).</li>
+    <li><b><code>useMemo</code></b> also helps for a calculation that is noticeably slow and whose inputs rarely change. Measure it: wrap it in <code>console.time</code>; the docs suggest about 1&nbsp;ms or more as worth memoizing, tested with CPU throttling because your machine is faster than your users’<sup class="cite"><a href="../RESOURCES.md#s16" data-src="S16">16</a></sup>.</li>
+  </ol>
+  <p>Outside those cases there is “no benefit”, and also “no significant harm”, apart from less readable code<sup class="cite"><a href="../RESOURCES.md#s16" data-src="S16">16</a></sup>. Remember lesson 2’s exception too: JSX a wrapper receives as <code>children</code> is not re-rendered when only the wrapper’s state changes<sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>, which often removes the need for <code>memo</code> altogether.</p>
+  <div data-practice-item="l4-usememo-when"></div>
+  <div data-practice-item="l4-interleave-children"></div>
+
+  <div class="box">
+    <p class="kicker">Status note: React Compiler (checked November 2026)</p>
+    <p>React Compiler reached its first stable release, 1.0, on October 7, 2025<sup class="cite"><a href="../RESOURCES.md#s19" data-src="S19">19</a></sup>. It is a <b>build-time tool</b> (mainly a Babel plugin), not part of the React runtime, and it works with React 17 and up<sup class="cite"><a href="../RESOURCES.md#s18" data-src="S18">18</a></sup><sup class="cite"><a href="../RESOURCES.md#s19" data-src="S19">19</a></sup>. It is optional, but new projects can start with it on: Expo SDK 54 and up enables it by default, and <code>create-vite</code> and <code>create-next-app</code> offer templates with it enabled<sup class="cite"><a href="../RESOURCES.md#s19" data-src="S19">19</a></sup>. It automatically applies the equivalent of <code>memo</code>, <code>useMemo</code> and <code>useCallback</code> to components and hooks (not to every function); <code>useMemo</code> and <code>useCallback</code> remain as escape hatches, and for existing code the docs advise leaving existing memoization in place or testing carefully before removing it<sup class="cite"><a href="../RESOURCES.md#s18" data-src="S18">18</a></sup>.</p>
+    <p>With the compiler on, renders, commits and Effects still work as taught, but two predictions change: objects and functions created in a component are cached between renders instead of being new every time, and a child whose props did not change is usually skipped without <code>memo</code><sup class="cite"><a href="../RESOURCES.md#s18" data-src="S18">18</a></sup>. The practice items and the render model in this course assume the compiler is off. To check your app, look in React DevTools: components the compiler optimized show a “Memo ✨” badge<sup class="cite"><a href="../RESOURCES.md#s28" data-src="S28">28</a></sup>.</p>
+  </div>
+
+  <section class="challenge" id="challenge" data-kind="milestone" data-milestone="m2" aria-labelledby="challenge-h">
+    <p class="kicker">Milestone challenge · Diagnose with evidence</p>
+    <h2 id="challenge-h">One surprising render, explained and fixed (or left alone)</h2>
+    <p>In your own app, find one component that renders more often than you expect, or one Effect that runs more often than you expect. Collect evidence for one interaction: for a component, record it in the React DevTools Profiler (or the React Performance tracks of your browser’s Performance panel, React 19.2+ in development<sup class="cite"><a href="../RESOURCES.md#s29" data-src="S29">29</a></sup><sup class="cite"><a href="../RESOURCES.md#s30" data-src="S30">30</a></sup>); for an Effect, count how many times a <code>console.log</code> in its setup prints. Decide on the cause using the rules from this course, make at most <b>one</b> change, and collect the same evidence again. “No change, because it is cheap” is a valid outcome if the numbers support it. If the Components panel shows a “Memo ✨” badge next to your components, React Compiler is on: say so, because it skips renders that rules 1–3 predict<sup class="cite"><a href="../RESOURCES.md#s18" data-src="S18">18</a></sup><sup class="cite"><a href="../RESOURCES.md#s28" data-src="S28">28</a></sup>.</p>
+    <h3>What to send back</h3>
+    <p>The before and after evidence (Profiler screenshots or exports, or the two console logs), the diff of your one change (or the measurement that justified no change), and a three-sentence explanation: what rendered or ran, why, and what the change did.</p>
+    <h3>Pass criteria</h3>
+    <ol class="criteria">
+      <li>The before evidence names one interaction and the target: for a component, the number of commits in which the Profiler shows it rendered; for an Effect, the number of times the <code>console.log</code> in its setup prints.</li>
+      <li>The explanation names one cause from the course (own state, parent rendered, a new function or object prop, an Effect setting state, or Strict Mode in development) and points to the line of code it comes from.</li>
+      <li>The after evidence for the same interaction, collected the same way, shows a lower count, or, for “no change”, the before recording shows the target’s render time in milliseconds next to the threshold you used.</li>
+      <li>If the cause was Strict Mode, the claim is backed by the same count in a production build, or by the setup → cleanup → setup pattern in the console (the Profiler shows one commit either way).</li>
+    </ol>
+    <p>When you are done, send your work to your teacher in the terminal.</p>
+  </section>
+
+  <h2>Go deeper</h2>
+  <p><b>Primary source:</b> <a href="https://react.dev/reference/react/memo">memo</a> on react.dev (docs, 7 min), especially “Should you add memo everywhere?” and the principles that make most memoization unnecessary.</p>
+  <ul class="deeper">
+    <li><a href="https://react.dev/reference/react/useMemo">useMemo reference</a> <span>Docs, 16 min. How to tell whether a calculation is expensive, with the <code>console.time</code> recipe and CPU throttling.</span></li>
+    <li><a href="https://react.dev/reference/dev-tools/react-performance-tracks">React Performance tracks</a> <span>Docs, 6 min. React’s render and Effect timings in the browser’s Performance panel (React 19.2+, development and profiling builds only).</span></li>
+    <li><a href="https://react.dev/blog/2025/10/07/react-compiler-1">React Compiler v1.0</a> <span>Release post, 7 min. What the stable compiler does, the React 17/18 setup, and why to pin its version.</span></li>
+    <li><a href="https://www.youtube.com/watch?v=zyVRg2QR6LA&amp;t=20274s">Exploring React Performance</a> <span>Talk by Joe Savona (React team) at React Conf 2025, inside the day-1 stream. <span class="unverified" title="Not independently verified">Not watched when this course was written (the video host was blocked), so no lesson claim rests on it.</span></span></li>
+  </ul>
+  <p>Stuck on something, or curious about a case in your code? Ask your agent a follow-up question in the terminal.</p>
+  <nav class="links" aria-label="Lessons"><a href="0003-effects-and-strict-mode.html">← Previous: Effects and Strict Mode</a> <a href="../index.html">Course map</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+  <footer>Sources: <a href="../RESOURCES.md">RESOURCES.md</a> · Example course: no learner progress is included.</footer>
+</main>
+<script src="../assets/core.js"></script>
+<script src="../assets/store.js"></script>
+<script src="../assets/course.js"></script>
+<script src="0004.practice.js"></script>
+<script src="../assets/progress.js"></script>
+<script src="../assets/practice.js"></script>
+<script src="../assets/viz.js"></script>
+<script src="0002.figures.js"></script>
+</body>
+</html>

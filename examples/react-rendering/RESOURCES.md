@@ -26,8 +26,7 @@ Claims L1:
 - L1-C5 · consensus · S3 · "A component returns React elements: lightweight descriptions of UI, not DOM nodes."
 - L1-C6 · consensus · S2 · "The same component type at the same position keeps its state; a different type at that position resets the whole subtree's state."
 - L1-C7 · consensus · S2, S5 · "A different key makes React treat the component as a different one, so its state resets; random keys recreate components and DOM every render."
-- L1-C8 · supported · S4 · "'Reconciliation' is the legacy docs' name for this comparison, and the docs call the algorithm an implementation detail."
-- L1-C9 · consensus · S1 · "In Strict Mode during development React calls each component function twice."
+- L1-C8 · supported · S4 · "'Reconciliation' is the name the legacy docs used (React's source still uses it) for this comparison, and the docs call the algorithm an implementation detail."
 
 ### Lesson 2 — How a state update spreads
 Researched 2026-11-25 · online (GitHub sources) · 7 of 7 sources read
@@ -41,7 +40,7 @@ Researched 2026-11-25 · online (GitHub sources) · 7 of 7 sources read
 - [S9] [React v18.0](https://react.dev/blog/2022/03/29/react-v18) — React team / react.dev blog · article 15 min read · tier T1 · verified 2026-11-25 · version: React 18.0 (behaviour kept in 19) · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/blog/2022/03/29/react-v18.md
   Section "New Feature: Automatic Batching": before React 18 only updates inside React event handlers were batched; updates in promises, `setTimeout` and native event handlers now batch too. Section "New Strict Mode Behaviors": React 18 added the development-only unmount-and-remount check on first mount. Use for: the version notes on batching (L2) and on Strict Mode (L3).
 - [S10] [Automatic batching for fewer renders in React 18](https://github.com/reactwg/react-18/discussions/21) — Dan Abramov (React team) / React 18 Working Group · article (length not measured) · tier T1 · verified 2026-11-25 · version: React 18+
-  The design note behind automatic batching: "Starting in React 18 with createRoot, all updates will be automatically batched, no matter where they originate from"; `flushSync` opts out. Fetched directly from github.com. Use for: the `createRoot` condition and the opt-out.
+  The design note behind automatic batching: "Starting in React 18 with createRoot, all updates will be automatically batched, no matter where they originate from"; `flushSync` opts out. Fetched directly from github.com. The same sentence and the `flushSync` opt-out also appear in the pinned S27, so the lesson cites both. Use for: the `createRoot` condition and the opt-out.
 - [S27] [How to Upgrade to React 18](https://react.dev/blog/2022/03/08/react-18-upgrade-guide) — React team / react.dev blog · article 10 min read · tier T1 · verified 2026-11-25 · version: React 18 · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/blog/2022/03/08/react-18-upgrade-guide.md
   Section "Automatic Batching" and the `ReactDOM.render` deprecation: an app that keeps `ReactDOM.render` on React 18 "will behave as if it's running React 17". Use for: the condition on automatic batching.
 - [S11] [memo](https://react.dev/reference/react/memo) — React team / react.dev · docs 7 min read · tier T1 · verified 2026-11-25 · version: React 19 · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/reference/react/memo.md
@@ -51,15 +50,16 @@ Claims L2:
 - L2-C1 · consensus · S6 · "Calling a setter does not change the variable in the running handler; it requests a new render, and the new value appears in the next render."
 - L2-C2 · consensus · S6 · "A state variable's value never changes within a render, even in a timeout scheduled from the handler."
 - L2-C3 · consensus · S7 · "React processes state updates after all code in the event handler has run: several setters in one handler cause one re-render."
-- L2-C4 · consensus · S7 · "Updater functions are queued and applied in order during the next render; setNumber(number + 5) then setNumber(n => n + 1) from 0 gives 6."
+- L2-C4 · consensus · S7, S8 · "Updater functions are queued and applied in order to work out the next render's state (they must be pure, since exactly when React calls them is not part of the contract); setNumber(number + 5) then setNumber(n => n + 1) from 0 gives 6."
 - L2-C5 · consensus · S7 · "React does not batch across separate intentional events such as two clicks."
 - L2-C6 · consensus · S9, S10, S27, S15 · "Since React 18 with createRoot, updates inside timeouts, promises and native handlers batch too; before React 18 (or with the legacy ReactDOM.render on 18) only React event handlers batched; React 19 removed ReactDOM.render. flushSync opts out."
-- L2-C7 · consensus · S1, S11 · "By default a re-render renders the updated component and every component nested inside it."
+- L2-C7 · consensus · S1, S11 · "By default a re-render renders the updated component and every component it creates, all the way down."
 - L2-C8 · consensus · S1 · "Components that render with the same output cause no DOM changes."
 - L2-C9 · consensus · S8 · "Setting a state to a value identical by Object.is skips re-rendering the component and its children, though React may still call the component first."
+- L2-C10 · consensus · S11 · "When a wrapper updates its own state, JSX it received as children does not need to re-render."
 
-### Lesson 3 — Effects, Strict Mode and memoization
-Researched 2026-11-25 · online (GitHub sources) · 11 of 12 sources read
+### Lesson 3 — Effects and Strict Mode
+Researched 2026-11-25 · online (GitHub sources) · 5 of 5 sources read
 
 - [S12] [Synchronizing with Effects](https://react.dev/learn/synchronizing-with-effects) — React team / react.dev · docs 26 min read · tier T1 · verified 2026-11-25 · version: React 19 · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/learn/synchronizing-with-effects.md
   "Effects run at the end of a commit after the screen updates"; in development with Strict Mode React remounts every component once after mount, so an Effect runs setup → cleanup → setup; production runs setup once; the fix is a cleanup, not a ref guard. Use for: effect timing and the development double-run. **Primary source for L3**
@@ -69,6 +69,21 @@ Researched 2026-11-25 · online (GitHub sources) · 11 of 12 sources read
   Development-only checks: components render an extra time (the component body and the functions passed to `useState`, to `set` functions, to `useMemo` and to `useReducer`; not event handlers), Effects and ref callbacks run an extra setup+cleanup; "All of these checks are development-only and do not impact the production build." Use for: the Strict Mode table.
 - [S15] [React 19 Upgrade Guide](https://react.dev/blog/2024/04/25/react-19-upgrade-guide) — React team / react.dev blog · article 12 min read · tier T1 · verified 2026-11-25 · version: React 19 · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/blog/2024/04/25/react-19-upgrade-guide.md
   Section "StrictMode changes": during the development double render `useMemo` and `useCallback` reuse the memoized results from the first render, and ref callbacks are double-invoked on initial mount. Use for: the React 18 → 19 version note.
+- [S20] [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect) — React team / react.dev · docs 21 min read · tier T1 · verified 2026-11-25 · version: React 19 · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/learn/you-might-not-need-an-effect.md
+  An Effect that sets state right after commit "restarts the whole process from scratch"; compute derived data during rendering instead; user events belong in event handlers. Use for: the extra-render cost of state-setting Effects.
+
+Claims L3:
+- L3-C1 · consensus · S12 · "Effects run at the end of a commit, after the screen updates."
+- L3-C2 · supported · S13 · "For updates not caused by an interaction React generally lets the browser paint before running the Effect; for an interaction such as a click it may run the Effect before paint."
+- L3-C3 · consensus · S1, S12, S14 · "In development, Strict Mode calls the component body twice on every render and runs each Effect's setup and cleanup one extra time on mount; event handlers are not repeated; production runs everything once."
+- L3-C4 · consensus · S9, S15 · "React 18 introduced the development-only remount check; React 19 changed Strict Mode: useMemo/useCallback reuse the first render's result during the double render, and ref callbacks are double-invoked on mount."
+- L3-C5 · consensus · S20 · "An Effect that sets state right after commit causes another full render pass; derived values belong in rendering."
+- L3-C6 · consensus · S13 · "useLayoutEffect blocks paint; it is needed only when an Effect must finish before the screen is painted."
+- L3-C7 · consensus · S6 · "An Effect sees the state snapshot of the render it belongs to, like an event handler." (reasoning from S6's rule that every function created in a render sees that render's state)
+
+### Lesson 4 — When memoization skips work
+Researched 2026-11-25 · online (GitHub sources) · 12 of 12 sources read (S26 retired: could not be opened, see Gaps)
+
 - [S16] [useMemo](https://react.dev/reference/react/useMemo) — React team / react.dev · docs 16 min read · tier T1 · verified 2026-11-25 · version: React 19 · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/reference/react/useMemo.md
   `useMemo` is "only valuable in a few cases": a noticeably slow calculation whose dependencies rarely change, a value passed to a `memo` component, or a value used as another Hook's dependency; how to measure with `console.time` (about 1 ms or more is worth memoizing) and CPU throttling. Use for: when `useMemo` helps; the measurement advice.
 - [S17] [useCallback](https://react.dev/reference/react/useCallback) — React team / react.dev · docs 10 min read · tier T1 · verified 2026-11-25 · version: React 19 · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/reference/react/useCallback.md
@@ -77,8 +92,8 @@ Researched 2026-11-25 · online (GitHub sources) · 11 of 12 sources read
   The compiler is a build-time tool that applies the equivalent of manual memoization; it memoizes components and hooks, not every function; `useMemo`/`useCallback` remain as escape hatches; for existing code, leave existing memoization or test carefully before removing it. Use for: the compiler section.
 - [S19] [React Compiler v1.0](https://react.dev/blog/2025/10/07/react-compiler-1) — React team / react.dev blog · article 7 min read · tier T1 · verified 2026-11-25 · version: React Compiler 1.0 (October 7, 2025) · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/blog/2025/10/07/react-compiler-1.md
   First stable release; works with React 17 and up (17/18 need a `target` setting and `react-compiler-runtime`); recommends pinning an exact compiler version without good test coverage. Use for: the status and version note.
-- [S20] [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect) — React team / react.dev · docs 21 min read · tier T1 · verified 2026-11-25 · version: React 19 · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/learn/you-might-not-need-an-effect.md
-  An Effect that sets state right after commit "restarts the whole process from scratch"; compute derived data during rendering instead; user events belong in event handlers. Use for: the extra-render cost of state-setting Effects.
+- [S28] [React Compiler: Installation](https://react.dev/learn/react-compiler/installation) — React team / react.dev · docs 3 min read · tier T1 · verified 2026-11-25 · version: React Compiler 1.x · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/learn/react-compiler/installation.md
+  Section "Verify Your Setup → Check React DevTools": components optimized by the compiler "will show a “Memo ✨” badge in React DevTools". Use for: how a learner checks whether the compiler is on.
 - [S21] [&lt;Profiler&gt;](https://react.dev/reference/react/Profiler) — React team / react.dev · docs 2 min read · tier T1 · verified 2026-11-25 · version: React 19 · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/reference/react/Profiler.md
   `onRender` reports `phase` (`mount`, `update`, `nested-update`), `actualDuration` and `baseDuration`; profiling is disabled in production builds by default; points to the DevTools Profiler tab. Use for: the challenge's measurement options.
 - [S22] [Introducing the React Profiler](https://legacy.reactjs.org/blog/2018/09/10/introducing-the-react-profiler.html) — Brian Vaughn / legacy.reactjs.org blog · article 7 min read · tier T1 · verified 2026-11-25 · version: React 16.5 era DevTools; today's Profiler UI differs in detail · open copy: https://github.com/reactjs/legacy.reactjs.org/blob/075d4170f2af03115d16507f1a61e5d3a5d78702/content/blog/2018-09-10-introducing-the-react-profiler.md
@@ -89,21 +104,20 @@ Researched 2026-11-25 · online (GitHub sources) · 11 of 12 sources read
   The docs cover the latest major; the page lists 19.3 as the latest version at the commit read. Use for: the "which React" note.
 - [S25] [React Conf 2025 Recap](https://react.dev/blog/2025/10/16/react-conf-2025-recap) — React team / react.dev blog · article 4 min read · tier T1 · verified 2026-11-25 · version: October 2025 · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/blog/2025/10/16/react-conf-2025-recap.md
   Lists the conference talks with links into the day-1 and day-2 streams, including "Exploring React Performance" (Joe Savona). Use for: locating S26.
-- [S26] [Exploring React Performance (React Conf 2025, day-1 stream)](https://www.youtube.com/watch?v=zyVRg2QR6LA&t=20274s) — Joe Savona / React Conf · talk, segment of the day-1 stream (length not checked) · tier T2 · unverified (blocked: www.youtube.com)
-  Listed in S25 as the React team's talk on its performance research. Not watched: nothing in the lessons rests on it. Offered only as optional viewing.
+- [S29] [React Performance tracks](https://react.dev/reference/dev-tools/react-performance-tracks) — React team / react.dev · docs 6 min read · tier T1 · verified 2026-11-25 · version: React 19.2+ · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/reference/dev-tools/react-performance-tracks.md
+  React-specific tracks in the browser Performance panel: Scheduler (render, commit phases) and Components (render and Effect durations as flamegraphs); enabled by default in development, available in profiling builds, disabled in production builds by default. Use for: an alternative evidence source in the m2 challenge.
+- [S30] [React 19.2](https://react.dev/blog/2025/10/01/react-19-2) — React team / react.dev blog · article 8 min read · tier T1 · verified 2026-11-25 · version: React 19.2 · open copy: https://github.com/reactjs/react.dev/blob/15653c0f9b95d6c4845e614e5bcc94c7ee2128f6/src/content/blog/2025/10/01/react-19-2.md
+  Release post; its description and section "Performance Tracks" say React 19.2 adds React Performance Tracks. Use for: the "19.2+" version scope of S29.
 
-Claims L3:
-- L3-C1 · consensus · S12 · "Effects run at the end of a commit, after the screen updates."
-- L3-C2 · supported · S13 · "For updates not caused by an interaction React generally lets the browser paint before running the Effect; for an interaction such as a click it may run the Effect before paint."
-- L3-C3 · consensus · S12, S14 · "In development, Strict Mode renders components an extra time and runs each Effect's setup and cleanup one extra time; production runs setup once."
-- L3-C4 · consensus · S9, S15 · "React 18 introduced the development-only remount check; React 19 changed Strict Mode: useMemo/useCallback reuse the first render's result during the double render, and ref callbacks are double-invoked on mount."
-- L3-C5 · consensus · S1 · "A re-render does not imply a DOM update: React changes only nodes whose output differs."
-- L3-C6 · consensus · S11 · "memo skips a re-render caused by the parent when every prop is Object.is-equal; it does not stop re-renders from the component's own state or a context it reads, and it is not a guarantee."
-- L3-C7 · consensus · S11, S16, S17 · "A function or object created during render is a new value each time, which defeats memo; useCallback/useMemo help only for memo props, Hook dependencies, or noticeably slow calculations."
-- L3-C8 · consensus · S16 · "Measure first: the docs suggest console.time and memoizing calculations that take about 1 ms or more, with CPU throttling on."
-- L3-C9 · consensus · S18, S19 · "React Compiler 1.0 (stable since October 2025) is an opt-in build-time tool that applies the equivalent of memo/useMemo/useCallback; it works with React 17+, and useMemo/useCallback remain as escape hatches."
-- L3-C10 · consensus · S20 · "An Effect that sets state right after commit causes another full render pass."
-- L3-C11 · supported · S22, S21 · "The DevTools Profiler groups work by commit; in its flame chart, components that did not render in a commit are grayed out."
+Claims L4:
+- L4-C1 · consensus · S1 · "A re-render does not imply a DOM update: React changes only nodes whose output differs."
+- L4-C2 · consensus · S11 · "memo skips a re-render caused by the parent when every prop is Object.is-equal; it does not stop re-renders from the component's own state or a context it reads, and it is not a guarantee."
+- L4-C3 · consensus · S11, S16, S17 · "A function or object created during render is a new value each time, which defeats memo; useCallback/useMemo help only for memo props, Hook dependencies, or noticeably slow calculations."
+- L4-C4 · consensus · S16 · "Measure first: the docs suggest console.time and memoizing calculations that take about 1 ms or more, with CPU throttling on."
+- L4-C5 · consensus · S18, S19 · "React Compiler 1.0 (stable since October 2025) is an optional build-time tool (on by default in Expo SDK 54+, offered by create-vite and create-next-app templates) that applies the equivalent of memo/useMemo/useCallback; it works with React 17+, and useMemo/useCallback remain as escape hatches."
+- L4-C6 · consensus · S18, S28 · "With the compiler on, values created during render are cached and unchanged children can be skipped without memo; DevTools marks compiled components with a Memo ✨ badge."
+- L4-C7 · supported · S22, S21 · "The DevTools Profiler groups work by commit; in its flame chart, components that did not render in a commit are grayed out."
+- L4-C8 · consensus · S29, S30 · "React 19.2+ shows React Performance tracks (render and Effect timings) in the browser Performance panel in development and profiling builds, not in production builds by default."
 
 ## Wisdom (Communities)
 
@@ -111,11 +125,11 @@ Claims L3:
 
 ## Gaps
 
-- No video was verified for any lesson: www.youtube.com was blocked in the authoring session (S26 is listed unverified).
-- L3-C11: the current DevTools Profiler UI is documented only in the 2018 legacy post (S22); react.dev has no page on reading the Profiler tab. Lessons describe it loosely ("components that did not render appear grayed out") and ask the learner to say what their own version shows.
+- No video was verified for any lesson: www.youtube.com was blocked in the authoring session. S26 ("Exploring React Performance", Joe Savona, React Conf 2025, day-1 stream at https://www.youtube.com/watch?v=zyVRg2QR6LA&t=20274s, located through S25) could not be opened, so its id is retired from Knowledge; lesson 4 links it as optional viewing inside an `unverified` span.
+- L4-C7: the current DevTools Profiler UI is documented only in the 2018 legacy post (S22); react.dev has no page on reading the Profiler tab (S29 documents the newer Performance tracks instead). Lessons describe it loosely ("components that did not render appear grayed out") and ask the learner to say what their own version shows.
 - The DevTools settings "Highlight updates when components render" and "Record why each component rendered while profiling" are not documented on react.dev or in S22; the lessons do not rely on them.
 
 ## Verification debt
 
-- S1–S9, S11–S25, S27: read from the official source repositories because react.dev and legacy.reactjs.org did not resolve; whoever next has access should open each canonical URL and confirm the rendered page matches.
+- S1–S9, S11–S25, S27–S30: read from the official source repositories because react.dev and legacy.reactjs.org did not resolve; whoever next has access should open each canonical URL and confirm the rendered page matches.
 - S26: blocked host (www.youtube.com) on 2026-11-25; watch the segment and record its length before relying on it.

@@ -101,3 +101,38 @@ The `react.dev`, `legacy.reactjs.org` and `www.youtube.com` hosts did not resolv
 4. **`Learncraft.explorable` takes range sliders only.** Choice and toggle parameters would have let render-sim reuse the explorable's readout, announce and target plumbing (proposal in NOTES.md → Upstream).
 5. **check.mjs element screenshots are taken only at the 900px viewport.** The 390px and dark runs save only a full page, so phone layout problems inside figures are easy to miss without a separate script.
 6. **The starter assets changed during the session** (`core.js`, `store.js`). The copy in `assets/` was re-synced at the end. Any later runtime change needs another re-sync of the example's `assets/`.
+
+## Revision 1 (review response)
+
+Review: `docs/audit/reviews/course-react.md`. All edits are in `examples/react-rendering/`; in `assets/`, only `course.js` changed. Items whose prompt or answers changed got new ids. Nothing committed.
+
+| CR | Sev | Outcome |
+|---|---|---|
+| CR-01 | P1 | **Fixed.** L2 Rule 3 is now "a render renders every component it creates" and covers the `children` case with S11's quote. Also fixed: the cheat sheet rule, and a new ledger claim L2-C10. Practised in the new `l4-interleave-children`. The simulator needed no change: it never uses `children` and creates every child inside its parent. `NOTES.md` now says so. |
+| CR-02 | P1 | **Fixed.** The compiler is described as optional, with Expo SDK 54+ on by default and the `create-vite`/`create-next-app` templates offering it (S19). Updated in L4, the cheat sheet version row, L4-C5 and `NOTES.md`. |
+| CR-03 | P1 | **Fixed.** L4 states the course assumes the compiler is off. A box lists the two predictions that change with it on. Learners check through the DevTools "Memo ✨" badge, which both milestone challenges and the cheat sheet now mention. Added S28 (React Compiler: Installation), which I read from its source file at the pinned commit 15653c0 → verified. New claim L4-C6. |
+| CR-04 | P1 | **Fixed.** `l2-order-spread-2` step 2 is now "React calls Counter, and useState returns the new count", using the reviewer's `why`. The L2 prose no longer says when the updater runs ("the queue is applied in order to work out the next render's state … updaters must be pure", S7 + S8). |
+| CR-05 | P2 | **Fixed.** L1 now asks "which steps still happen if the output is identical", and the flow summary no longer gives the answer. L3 asks "after a click, can the Effect run before paint?", with a neutral summary and edge label. The answer to the L2 queue question moved into `l2-fade-queue`'s why. The L2 simulator prompt now asks for a prediction on the theme toggle, which is not shown at first paint. `l1-same-output-dom` is replaced by the Clock transfer item `l1-same-output-clock`. |
+| CR-06 | P2 | **Fixed.** New ids: `l1-define-render-2`, `l2-children-default-2`, and `l4-usememo-when` (formerly `l3-usememo-when`), using the reviewer's options. The scorer's AS4 check now **passes**. |
+| CR-07 | P2 | **Fixed by splitting.** L3 is now "Effects and Strict Mode", with l3.o1 (Effect timing and useLayoutEffect) and l3.o2 (Strict Mode), 3 items each plus an interleaved item, and a new lesson challenge: one Effect, two builds. New L4 "When memoization skips work" has l4.o1 plus 2 interleaved items and milestone m2. `course.js`, `NOTES.md` decisions, the RESOURCES blocks and ledgers, the index and the cheat sheet are updated. The scorer's AS15 word-budget warning is gone. |
+| CR-08 | P2 | **Fixed.** L3 has a useLayoutEffect paragraph (S13), the recall item `l3-layout-recall`, ledger L3-C6, and a cheat sheet mention. |
+| CR-09 | P2 | **Fixed.** The m2 criteria now use the reviewer's text: Effects are counted with `console.log`, and Strict Mode is backed by a production-build count or the console pattern. |
+| CR-10 | P3 | **Fixed.** The render caption now reads "compares the result … to decide what to keep", and the L3 edge label "diff" became "compare". |
+| CR-11 | P3 | **Fixed.** Covered by the new item `l1-same-output-clock`, which asks what "ends up different" and mentions form-input attribute rewrites in its why. |
+| CR-12 | P3 | **Fixed.** The fixes:<br>• The Effect caption includes "and those with no dependency array".<br>• The Strict Mode row says "called twice, on every render".<br>• The React 18 ref-callback note now says the double call is a React 19 change (cited to S15, not run).<br>• The table caption scopes rows to the first mount. |
+| CR-13 | P3 | **Fixed.** The fixes:<br>• S27 is cited next to S10 for the batching claim (both places) and in L2-C6; the S10 annotation says so.<br>• The cheat-sheet Effect row cites S12 and S20.<br>• "short, overlapping lists".<br>• S26 is retired from Knowledge to Gaps, and the lesson link keeps its `unverified` span.<br>• L1-C9 is folded into L3-C3. |
+| CR-14 | P3 | **Fixed.** "reconciliation" is now "the name the legacy docs used (and React's source still uses)" in L1, the cheat sheet and L1-C8. Children are compared "position by position (or by key …)". A new key "resets that component and everything inside it". |
+| CR-15 | P3 | **Fixed.** The fixes:<br>• `l1-branch-same-type-2`: "It is reset: the component re-rendered".<br>• `l2-batch-timeout-2` drops the Strict Mode distractor (3 options).<br>• `l2-children-default-2` has no Strict Mode option.<br>• The fade label is now "the attribute name".<br>• The Fiber aside moved to a footnote. |
+| CR-16 | P3 | **Fixed.** Added S29 (React Performance tracks) and S30 (React 19.2 post, for the "19.2+" scope), both read at the pinned commit → verified. They are allowed as m2 evidence, appear in L4 Go deeper and on the cheat sheet (off in production builds), and back ledger claim L4-C8. |
+
+**Declined:** the scorer's **G1 warning** (6–15 "numeric paragraphs" per lesson), which is not a review item. The heuristic counts digits in lesson kickers ("Lesson 1"), version numbers and code samples. `data-grounding` is not defined in the lesson contract, so I did not add it.
+
+**Lesson 3 has 7 items.** This is the same constraint as before: 2 objectives × 3 items + 1 interleaved item.
+
+**Validation after the revision:**
+- `node scripts/validate.mjs --strict`: 0 errors, 0 warnings.
+- The workspace lint is clean.
+- `check.mjs`: all 7 pages clean, with axe from `~/.cache/learncraft/tools` (L3: 7 items, L4: 5 items).
+- `score-workspace.mjs`: 22 pass, 1 warn (G1), 0 fail, 1 n/a. AS4 and AS15 both pass.
+- **Screenshots:** I looked at the changed parts at 1280 and 390, light and dark: the L3 flow, the Strict Mode table, the L4 compiler box, the m2 challenge and the simulator. `.check/` is deleted.
+- **Keyboard pass:** all **24** items done with the keyboard only, all right on the first try. The L4 simulator goal was reached with Space/Enter, and the radio was switched with the arrow keys.

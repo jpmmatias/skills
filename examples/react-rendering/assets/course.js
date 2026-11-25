@@ -36,13 +36,21 @@ window.COURSE = {
       practice: 'lessons/0002.practice.js',
     },
     {
-      n: 3, file: 'lessons/0003-effects-and-memo.html', title: 'Effects, Strict Mode and memoization', milestones: ['m2'],
-      canDo: 'place effects after commit, recognise development-only double calls, and choose when memoization skips work',
+      n: 3, file: 'lessons/0003-effects-and-strict-mode.html', title: 'Effects and Strict Mode', milestones: ['m2'],
+      canDo: 'place Effects after the commit and tell development-only double calls apart from real bugs',
       objectives: [
-        { id: 'l3.o1', text: 'Place useEffect after commit in the update sequence and predict what Strict Mode repeats in development' },
-        { id: 'l3.o2', text: 'Choose whether memo, useMemo or useCallback will skip work, given the props and the evidence' },
+        { id: 'l3.o1', text: 'Place useEffect and useLayoutEffect in the update sequence and predict when an Effect causes another render' },
+        { id: 'l3.o2', text: 'Predict what Strict Mode repeats in development and what a production build runs once' },
       ],
       practice: 'lessons/0003.practice.js',
+    },
+    {
+      n: 4, file: 'lessons/0004-memoization.html', title: 'When memoization skips work', milestones: ['m2'],
+      canDo: 'choose whether memo, useMemo or useCallback will skip work, and back the choice with Profiler evidence',
+      objectives: [
+        { id: 'l4.o1', text: 'Choose whether memo, useMemo or useCallback will skip work, given the props and the evidence' },
+      ],
+      practice: 'lessons/0004.practice.js',
     },
   ],
   strings: {},

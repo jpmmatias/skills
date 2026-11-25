@@ -31,7 +31,7 @@ function handleClick() {
   setNumber(number + 1);   // still 0                    → "replace with 1"
   setNumber(number + 1);   // still 0                    → "replace with 1"
 }</code></pre>
-  <p>Substitute the snapshot value: all three lines say <code>setNumber(0 + 1)</code>, so the next render has <code>number === 1</code>, not 3<sup class="cite"><a href="../RESOURCES.md#s6" data-src="S6">6</a></sup>. To build on the <em>pending</em> value instead, pass an updater function. React queues it and, during the next render, runs the queue in order<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup>:</p>
+  <p>Substitute the snapshot value: all three lines say <code>setNumber(0 + 1)</code>, so the next render has <code>number === 1</code>, not 3<sup class="cite"><a href="../RESOURCES.md#s6" data-src="S6">6</a></sup>. To build on the <em>pending</em> value instead, pass an updater function. React queues it, and the queue is applied in order to work out the next render’s state<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup>. Updaters must be pure<sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>, so exactly when React calls one never changes the result:</p>
   <div class="table-wrap">
     <table>
       <caption class="lc-muted">Queue for <code>setNumber(number + 5); setNumber(n =&gt; n + 1);</code> starting from 0, as in the docs<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup></caption>
@@ -42,7 +42,7 @@ function handleClick() {
       </tbody>
     </table>
   </div>
-  <p><b>Why does the first row ignore <code>n</code>?</b> Decide before you read on. (A plain value replaces whatever is pending; only a function receives it.)</p>
+  <p><b>Why does the first row ignore <code>n</code>?</b> Decide before you read on; the feedback on the fill-in item below explains it.</p>
   <div data-practice-item="l2-snapshot-log"></div>
   <div data-practice-item="l2-fade-queue"></div>
 
@@ -50,16 +50,16 @@ function handleClick() {
   <p>React “waits until <em>all</em> code in the event handlers has run before processing your state updates”, so several set calls in one handler, even to different state variables or different components, produce one re-render<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup>. Separate intentional events, such as two clicks, are not batched together: each is handled on its own<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup>.</p>
   <div class="box">
     <p class="kicker">Version note: changed in React 18</p>
-    <p>Before React 18, only updates inside React event handlers were batched; updates in promises, <code>setTimeout</code> or native event listeners each caused their own render. Since React 18, with the root created by <code>createRoot</code>, all updates are batched automatically no matter where they come from<sup class="cite"><a href="../RESOURCES.md#s9" data-src="S9">9</a></sup><sup class="cite"><a href="../RESOURCES.md#s10" data-src="S10">10</a></sup>. <code>flushSync</code> is the opt-out when you must update the screen earlier<sup class="cite"><a href="../RESOURCES.md#s10" data-src="S10">10</a></sup>. On React 18, an app still mounted with the legacy <code>ReactDOM.render</code> behaves as if it were running React 17, so it does not get automatic batching<sup class="cite"><a href="../RESOURCES.md#s27" data-src="S27">27</a></sup>; React 19 removed <code>ReactDOM.render</code>, so every React 19 root batches this way<sup class="cite"><a href="../RESOURCES.md#s15" data-src="S15">15</a></sup>.</p>
+    <p>Before React 18, only updates inside React event handlers were batched; updates in promises, <code>setTimeout</code> or native event listeners each caused their own render. Since React 18, with the root created by <code>createRoot</code>, all updates are batched automatically no matter where they come from<sup class="cite"><a href="../RESOURCES.md#s9" data-src="S9">9</a></sup><sup class="cite"><a href="../RESOURCES.md#s10" data-src="S10">10</a></sup><sup class="cite"><a href="../RESOURCES.md#s27" data-src="S27">27</a></sup>. <code>flushSync</code> is the opt-out when you must update the screen earlier<sup class="cite"><a href="../RESOURCES.md#s10" data-src="S10">10</a></sup><sup class="cite"><a href="../RESOURCES.md#s27" data-src="S27">27</a></sup>. On React 18, an app still mounted with the legacy <code>ReactDOM.render</code> behaves as if it were running React 17, so it does not get automatic batching<sup class="cite"><a href="../RESOURCES.md#s27" data-src="S27">27</a></sup>; React 19 removed <code>ReactDOM.render</code>, so every React 19 root batches this way<sup class="cite"><a href="../RESOURCES.md#s15" data-src="S15">15</a></sup>.</p>
   </div>
-  <div data-practice-item="l2-batch-timeout"></div>
+  <div data-practice-item="l2-batch-timeout-2"></div>
 
-  <h2>Rule 3: a render renders everything inside it</h2>
-  <p>When a component renders, React renders the components it returns, and their children, all the way down<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. The memo reference states the default bluntly: “React normally re-renders a component whenever its parent re-renders”<sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>. Props do not have to change. Components <em>above</em> or <em>beside</em> the one that updated are not called at all.</p>
+  <h2>Rule 3: a render renders every component it creates</h2>
+  <p>When a component renders, React renders the components it returns, and their children, all the way down<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. The memo reference states the default bluntly: “React normally re-renders a component whenever its parent re-renders”<sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>. Props do not have to change. One case follows from the definition: JSX that a component receives from its parent (for example as <code>children</code>) was created by the parent’s render, not by this one, so when only this component’s state changes React does not call it again. The memo reference recommends exactly this: when a wrapper “updates its own state, React knows that its children don’t need to re-render”<sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>. Components <em>above</em> or <em>beside</em> the one that updated are not called at all.</p>
   <p>Combine this with lesson 1 and you have the core of the course: many components can render while very few DOM nodes change, because the commit only touches nodes whose output differs<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>.</p>
 
   <h3>Try it: which components render?</h3>
-  <p>The figure models a small app: <code>App</code> holds a <code>theme</code>; <code>Counter</code> holds a <code>count</code> and shows it in <code>Display</code>; <code>List</code> shows three rows. Pick an update. <b>Predict first</b>: how many components will render, and how many DOM nodes will change? Then compare.</p>
+  <p>The figure models a small app: <code>App</code> holds a <code>theme</code>; <code>Counter</code> holds a <code>count</code> and shows it in <code>Display</code>; <code>List</code> shows three rows. The figure starts on <b>+1</b>. <b>Predict first</b> for the theme toggle, before you select it: how many components will render, and how many DOM nodes will change? Then compare.</p>
   <pre tabindex="0"><code>function App() {
   const [theme, setTheme] = useState('light');
   return (&lt;&gt;
@@ -80,16 +80,16 @@ function Counter() {
     <div data-lc="render-sim" data-mode="basic" data-trigger="count"></div>
     <figcaption>A simplified model of rules 1–3, not React itself. Filled = rendered; faded = not called; “DOM ✎” = a DOM node changed in the commit.</figcaption>
   </figure>
-  <p>With <b>+1</b>, three components render (<code>Counter</code> and the two it returns) and one DOM node changes. With <b>theme</b>, all nine render, yet still one DOM node changes: the header’s class. Eight of those renders produced the same output as before. Whether that is a problem is a question of cost, measured with the Profiler; lesson 3 covers how <code>memo</code> skips such renders and when that is worth it.</p>
+  <p>With <b>+1</b>, three components render (<code>Counter</code> and the two it returns) and one DOM node changes. With <b>theme</b>, all nine render, yet still one DOM node changes: the header’s class. Eight of those renders produced the same output as before. Whether that is a problem is a question of cost, measured with the Profiler; lesson 4 covers how <code>memo</code> skips such renders and when that is worth it.</p>
   <p class="note">One shortcut exists: if you set a state to a value identical to the current one (by <code>Object.is</code>), React skips re-rendering that component and its children, although it may still need to call the component once before skipping the children<sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>.</p>
-  <div data-practice-item="l2-children-default"></div>
+  <div data-practice-item="l2-children-default-2"></div>
   <div data-practice-item="l2-count-renders"></div>
-  <div data-practice-item="l2-order-spread"></div>
+  <div data-practice-item="l2-order-spread-2"></div>
 
   <section class="challenge" id="challenge" data-kind="milestone" data-milestone="m1" aria-labelledby="challenge-h">
     <p class="kicker">Milestone challenge · Predict a render</p>
     <h2 id="challenge-h">Predict, then profile, one update in your app</h2>
-    <p>Pick one interaction in your own app that updates state (a toggle, typing in a field, selecting a row). <b>Before recording anything</b>, write down which components you expect to render and which DOM nodes you expect to change. Then install React Developer Tools if you have not<sup class="cite"><a href="../RESOURCES.md#s23" data-src="S23">23</a></sup>, open the <b>Profiler</b> panel, record that one interaction, and select the commit it produced. The flame chart lists the components React rendered in that commit; components that did not render are shown greyed out<sup class="cite"><a href="../RESOURCES.md#s22" data-src="S22">22</a></sup> (the panel has changed since that description was written, so say what your version shows).</p>
+    <p>Pick one interaction in your own app that updates state (a toggle, typing in a field, selecting a row). <b>Before recording anything</b>, write down which components you expect to render and which DOM nodes you expect to change. Then install React Developer Tools if you have not<sup class="cite"><a href="../RESOURCES.md#s23" data-src="S23">23</a></sup>, open the <b>Profiler</b> panel, record that one interaction, and select the commit it produced. If the Components panel shows a “Memo ✨” badge next to your components, React Compiler is on: say so in your prediction, because it skips renders that rules 1–3 predict<sup class="cite"><a href="../RESOURCES.md#s18" data-src="S18">18</a></sup><sup class="cite"><a href="../RESOURCES.md#s28" data-src="S28">28</a></sup>. The flame chart lists the components React rendered in that commit; components that did not render are shown greyed out<sup class="cite"><a href="../RESOURCES.md#s22" data-src="S22">22</a></sup> (the panel has changed since that description was written, so say what your version shows).</p>
     <h3>What to send back</h3>
     <p>Your written prediction (as it was before you recorded), a screenshot of the Profiler commit, and a short table: component · predicted · observed · rule.</p>
     <h3>Pass criteria</h3>
@@ -110,7 +110,7 @@ function Counter() {
     <li><a href="https://react.dev/reference/react/useState">useState reference</a> <span>Docs, 13 min. The caveats section is the precise contract for set functions, including the equal-value shortcut.</span></li>
   </ul>
   <p>Stuck on something, or curious about a case in your code? Ask your agent a follow-up question in the terminal.</p>
-  <nav class="links" aria-label="Lessons"><a href="0001-render-and-commit.html">← Previous: What “render” means</a> <a href="0003-effects-and-memo.html">Next: Effects, Strict Mode and memoization →</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+  <nav class="links" aria-label="Lessons"><a href="0001-render-and-commit.html">← Previous: What “render” means</a> <a href="0003-effects-and-strict-mode.html">Next: Effects and Strict Mode →</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
   <footer>Sources: <a href="../RESOURCES.md">RESOURCES.md</a> · Example course: no learner progress is included.</footer>
 </main>
 <script src="../assets/core.js"></script>
