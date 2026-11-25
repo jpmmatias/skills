@@ -91,3 +91,38 @@ test('check.mjs reports a self-removing handler even under the canonical CSP', {
     assert.doesNotMatch(out, /NOT enforced/);
   } finally { w.cleanup(); }
 });
+
+// NEW-12: an inline script placed before the CSP meta, hidden from the tokenizer by a comment that opens and closes
+// inside attribute values, runs before any policy applies, removes itself and forges the page globals the
+// previous check read. The raw head-order lint and the protocol-level evidence must both catch it.
+const PRE_CSP = (forge) => (m) => `<meta name="a" content="<!--"><script>${forge
+  ? "var D=Object.defineProperty,n=function(){},z=function(){return []};D(window,'__lcMut',{get:z,set:n});D(window,'__lcCsp',{get:z,set:n});"
+  : ''}document.currentScript.remove();document.title='PWNED';</script><meta name="b" content="-->">${m}`;
+
+test('lint rejects anything but the charset and viewport metas before the CSP meta (NEW-12)', { skip: missingStarter() || false }, async () => {
+  for (const edit of [PRE_CSP(false), (m) => `​${m}`, (m) => `<span></span>${m}`, (m) => `<img src="data:,">${m}`]) {
+    const w = variant(edit);
+    try { assert.ok((await cspErrors(w.ws)).some((f) => f.rule === 'csp-late'), `expected csp-late for ${edit('META').slice(0, 40)}`); }
+    finally { w.cleanup(); }
+  }
+});
+
+test('check.mjs catches a pre-CSP inline script that removes itself and forges the page globals (NEW-12)', { skip: missingStarter() || noBrowser }, () => {
+  const w = variant(PRE_CSP(true));
+  try {
+    const { code, out } = runCheck(w.ws);
+    assert.equal(code, 1, out);
+    assert.match(out, /inline script\(s\) or handler\(s\) compiled in the page/);
+  } finally { w.cleanup(); }
+});
+
+test('the enforcement probe covers inline handlers, not only inline scripts', { skip: missingStarter() || noBrowser }, () => {
+  // script-src-attr 'unsafe-inline' lets handlers run while inline <script> stays blocked. The page has no handler of
+  // its own, so only the probe's handler can reveal the gap: a probe that tests scripts alone would miss it.
+  const w = variant((m) => m.replace("connect-src 'none'", "connect-src 'none'; script-src-attr 'unsafe-inline'"));
+  try {
+    const { code, out } = runCheck(w.ws);
+    assert.equal(code, 1, out);
+    assert.match(out, /NOT enforced/);
+  } finally { w.cleanup(); }
+});

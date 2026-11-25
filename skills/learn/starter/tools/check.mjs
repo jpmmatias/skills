@@ -152,6 +152,14 @@ for (const rel of pages) {
     const tag = `[${pass.key}]`;
     const ctx = await browser.newContext({ viewport: { width: pass.width, height: 900 }, colorScheme: pass.colorScheme, reducedMotion: pass.reducedMotion || 'no-preference' });
     const page = await ctx.newPage();
+    // Evidence the page cannot reach or forge (NEW-12): the DevTools protocol reports every script the browser
+    // compiles. Under the template CSP no inline code may compile in the page's own world, so an inline <script>
+    // or handler shows up here (with the page's URL) however the page hides itself or rewrites its globals.
+    const pageUrl = pathToFileURL(join(ws, rel)).href;
+    const cdp = await ctx.newCDPSession(page);
+    const compiled = [];
+    cdp.on('Debugger.scriptParsed', (e) => { if (e.executionContextAuxData?.isDefault) compiled.push({ id: e.scriptId, url: e.url, len: e.length, line: e.startLine }); });
+    await cdp.send('Debugger.enable');
     let quiet = false; // axe's own requests are not the page's problems
     page.on('pageerror', (e) => problems.push(`${tag} JS error: ${e.message}`));
     // Every CSP violation is an error: under the template policy a clean page has none (NEW-01).
@@ -190,21 +198,39 @@ for (const rel of pages) {
     const info = await page.evaluate(domAudit);
     for (const v of await page.evaluate(() => window.__lcCsp || []).catch(() => [])) problems.push(`${tag} CSP violation: ${v}`);
     for (const v of await page.evaluate(() => window.__lcMut || []).catch(() => [])) problems.push(`${tag} security: ${v}`);
-    // Prove the CSP is enforced, rather than trusting how the <meta> looks (NEW-08): an inline script and an inline
-    // handler inserted now must both be blocked. Runs after the page's own violations were collected.
+    // Prove the CSP is enforced, rather than trusting how the <meta> looks (NEW-08, NEW-12). The probe runs in an
+    // isolated world, where page code cannot patch the DOM methods it uses, and its outcome is read from the
+    // protocol, not from page globals: an inline script it inserts compiles only if the CSP allows inline code.
     if (pass.key === 'light-900') {
       quiet = true; // the browser logs the blocked probe as a console error: that is the expected outcome
-      const probe = await page.evaluate(() => {
-        const s = document.createElement('script'); s.textContent = 'window.__lcProbeInline = 1'; document.head.append(s);
-        const d = document.createElement('div'); d.setAttribute('onclick', 'window.__lcProbeAttr = 1'); document.body.append(d); d.click();
-        s.remove(); d.remove();
-        return { inline: window.__lcProbeInline === 1, attr: window.__lcProbeAttr === 1 };
-      }).catch((e) => ({ error: e.message.split('\n')[0] }));
+      const token = `__lcProbe_${Math.random().toString(36).slice(2)}`;
+      const before = compiled.length;
+      let probeError = null;
+      try {
+        const { frameTree } = await cdp.send('Page.getFrameTree');
+        const { executionContextId } = await cdp.send('Page.createIsolatedWorld', { frameId: frameTree.frame.id, worldName: 'learncraft-check' });
+        await cdp.send('Runtime.evaluate', { contextId: executionContextId, expression:
+          `(() => { const s = document.createElement('script'); s.textContent = 'void "${token}"'; document.head.append(s); s.remove();
+                    const d = document.createElement('div'); d.setAttribute('onclick', 'void "${token}"'); document.body.append(d); d.click(); d.remove(); })()` });
+      } catch (e) { probeError = e.message.split('\n')[0]; }
       await page.waitForTimeout(50);
       quiet = false;
-      if (probe.error) problems.push(`security: CSP enforcement probe failed to run (${probe.error})`);
-      else if (probe.inline || probe.attr) problems.push(`security: the Content-Security-Policy is NOT enforced on this page (${[probe.inline && 'an inline script ran', probe.attr && 'an inline handler ran'].filter(Boolean).join(', ')}); use the exact <meta> from the page template, directly in <head>`);
+      let probeRan = false;
+      for (const c of compiled.slice(before)) {
+        if (c.url === pageUrl) { probeRan = true; break; } // the probe's handler compiles with the page's URL
+        if (c.url === '') {
+          const src = await cdp.send('Debugger.getScriptSource', { scriptId: c.id }).then((r) => r.scriptSource).catch(() => '');
+          if (src.includes(token)) { probeRan = true; break; }
+        }
+      }
+      if (probeError) problems.push(`security: CSP enforcement probe failed to run (${probeError})`);
+      else if (probeRan) problems.push('security: the Content-Security-Policy is NOT enforced on this page (inline code inserted by the check ran); use the exact <meta> from the page template, directly in <head>');
+      compiled.splice(before); // the probe's own scripts are not the page's
     }
+    // Any inline code the page itself compiled (an inline <script> anywhere, even one that ran before the CSP <meta>,
+    // removed itself or forged the page's globals; or an inline handler that fired) is an error.
+    const inline = compiled.filter((c) => c.url === pageUrl);
+    if (inline.length) problems.push(`${tag} security: ${inline.length} inline script(s) or handler(s) compiled in the page (first at line ${inline[0].line + 1}); courses may only run script files`);
     if (pass.key === 'light-900') for (const f of await page.evaluate(securityAudit, wsUrl + '/').catch((e) => [`security audit failed: ${e.message.split('\n')[0]}`])) problems.push(`security: ${f}`);
     if (info.scrollWidth > pass.width + 1) problems.push(`${tag} horizontal scroll: page is ${info.scrollWidth}px wide`);
     for (const e of info.errors) problems.push(`${tag} component failed to mount: ${e}`);

@@ -317,7 +317,7 @@ const SCRIPTISH = /^(script-src|script-src-attr|script-src-elem|default-src|work
  * The CSP <meta> every page must carry (the templates have it): exactly one, in <head>, before any script or
  * stylesheet, and exactly the template policy (CANONICAL_CSP). Even markup the regex lint misses cannot run under it.
  */
-export function cspProblems(all) {
+export function cspProblems(all, raw = null) {
   // Browsers match http-equiv exactly (ASCII case-insensitive, no trimming): a value with surrounding spaces or a
   // non-breaking space is IGNORED by the browser, so it must not satisfy this check (NEW-08). Near-misses are errors.
   const looksLike = (t) => t.name === 'meta' && /content-security-policy/i.test(t.attrs['http-equiv'] || '');
@@ -335,6 +335,20 @@ export function cspProblems(all) {
   const wrapper = all.find((t) => /^(noscript|template|svg|math|object|iframe)$/.test(t.name) && t.start < meta.start && (!head || t.start > head.start));
   if (wrapper) out.push({ rule: 'csp-late', message: `the Content-Security-Policy <meta> must be a direct child of <head>; inside <${wrapper.name}> the browser ignores it` });
   if (early || (head && meta.start < head.start)) out.push({ rule: 'csp-late', message: `the Content-Security-Policy <meta> must be in <head>, before any script or stylesheet${early ? ` (found after <${early.name}>)` : ''}` });
+  // Raw-text check, independent of the tag tokenizer (NEW-12): between <head> and the CSP <meta> only the template's
+  // charset and viewport metas and whitespace may appear. Anything else (a script hidden from the tokenizer, an
+  // element or a stray character that moves the meta out of <head>) could run, or void the CSP, before it applies.
+  if (typeof raw === 'string') {
+    const h = /<head(?:\s[^>]*)?>/i.exec(raw);
+    const m = /<meta\s+http-equiv="Content-Security-Policy"/i.exec(raw);
+    if (!h || !m || m.index < h.index) out.push({ rule: 'csp-late', message: 'the Content-Security-Policy <meta> must come right after <head> (after the charset and viewport metas only)' });
+    else {
+      const between = raw.slice(h.index + h[0].length, m.index)
+        .replace(/<meta\s+charset="[^"<>]*"\s*\/?>/i, '')
+        .replace(/<meta\s+name="viewport"\s+content="[^"<>]*"\s*\/?>/i, '');
+      if (/[^ \t\r\n\f]/.test(between)) out.push({ rule: 'csp-late', message: `only <meta charset> and <meta name="viewport"> may come before the Content-Security-Policy <meta> in <head>; found ${JSON.stringify(between.trim().slice(0, 60))}` });
+    }
+  }
   const { dir, dup } = parseCsp(meta.attrs.content);
   const diffs = [];
   for (const [k, v] of CANON) {
@@ -561,7 +575,7 @@ export async function inspectWorkspace(wsDir) {
     // v2 pages come from templates that carry the CSP: missing or weak is an error. A v1 (pre-template) course gets
     // the same findings as warnings, so an old course still opens but the gap is reported.
     const cspLevel = course && course.schemaVersion >= 2 ? 'error' : 'warn';
-    for (const p of cspProblems(all)) add(cspLevel, p.rule, rel, p.message + (cspLevel === 'warn' ? ' (an error from schemaVersion 2)' : ''));
+    for (const p of cspProblems(all, raw)) add(cspLevel, p.rule, rel, p.message + (cspLevel === 'warn' ? ' (an error from schemaVersion 2)' : ''));
 
     // scripts, handlers, URLs and navigation (security; SR-03) -----------------------------------
     for (const t of all) {

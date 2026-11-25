@@ -28,7 +28,7 @@ The repository was a well-intentioned set of agent skills (`learn` plus four pip
 - **Security and accessibility.** Two independent security reviews and two rounds of fixes:
   - an exact content-security policy, enforced by the linter and by a real-DOM browser check;
   - sandboxed data loaders;
-  - 279 tests.
+  - 282 tests.
   - axe reports 0 violations on all 19 example pages (Chromium).
 - **Product.** A new name chosen by the owner after a naming audit, a rewritten README and guide, compatibility and upgrade docs, and three example courses, each independently reviewed for accuracy and revised.
 
@@ -96,7 +96,7 @@ skills/learn/SKILL.md            router (80 lines): intent → mode → profile 
   starter/tools/                 check.mjs (browser), lint-workspace.mjs, load-data.mjs (sandboxed loader)
 skills/{curriculum-planner,source-researcher,lesson-panel,challenge-reviewer}/   thin wrappers that require learn
 subagents/lesson-{author,expert,novice,flow}.md                                  native reviewers (from the role files)
-schemas/ (7)  scripts/validate.mjs  tests/ (9 files, 279 tests)  evaluations/  examples/ (3 courses)  .github/
+schemas/ (7)  scripts/validate.mjs  tests/ (9 files, 282 tests)  evaluations/  examples/ (3 courses)  .github/
 ```
 
 Decisions and their reasons are in [DECISIONS.md](DECISIONS.md):
@@ -123,7 +123,7 @@ Decisions and their reasons are in [DECISIONS.md](DECISIONS.md):
 **Completed**
 - All P0 and P1 findings; all P2 findings except those listed under remaining tasks.
 - 27 skills-review findings: 19 applied fully, 5 partially, 3 not applied, with reasons in `handoffs/skills-fixes.md`.
-- 13 + 7 + 4 security findings over three review rounds: all fixed or reduced, with residuals documented in `SECURITY.md`. The third round's fixes (NEW-08…NEW-10) were made by the orchestrator and verified against the reviewer's own PoCs, but have **not yet been re-verified by the independent reviewer**.
+- 13 + 7 + 4 + 1 security findings over four review rounds: all fixed or reduced, with residuals documented in `SECURITY.md`. NEW-08…NEW-10 were re-verified independently (NEW-09 and NEW-10 fixed; NEW-08 superseded by NEW-12). The NEW-12 fix was made by the orchestrator and checked against all of the reviewer's PoCs; its independent re-verification is recorded in the review file.
 - Three courses × one independent review plus one re-check each.
 
 **Remaining tasks (not done)**
@@ -142,7 +142,7 @@ Details: [VALIDATION-REPORT.md](VALIDATION-REPORT.md#evaluation-results).
 
 | Evidence type | Result |
 |---|---|
-| **Measured (deterministic)** | Instruction cost per path (table in the validation report). Workspace rubric on machine-checkable items: baseline fixture 4/17, examples 20–22/23. 279 tests. 19/19 pages clean with 0 axe violations. |
+| **Measured (deterministic)** | Instruction cost per path (table in the validation report). Workspace rubric on machine-checkable items: baseline fixture 4/17, examples 20–22/23. 282 tests. 19/19 pages clean with 0 axe violations. |
 | **Model-reviewed** | Five independent reviews (skills, security ×3 passes, three courses) with findings and re-checks. These are model judgments, not ground truth. |
 | **Human-reviewed** | None. No human has reviewed the courses or the instructions yet. |
 | **Not measured** | Learner outcomes; live generation quality, cost, latency or failure rate per profile. The harness and protocol exist (`evaluations/`); runs were not executed. No claim of improved learning is made. |
@@ -170,7 +170,7 @@ What changed:
 |---|---|---|
 | Sanitizer | 11 of 32 dangerous links got through | 0 of 68 |
 | Data-file loaders | 5 of 5 escapes reached Node's `process`; hangs | Run in a child process with an empty environment, a hard kill and bounded reads; escapes blocked |
-| Lint bypasses | 17 of 21 missed; later 13 parser-differential forms; then 5 ways to make the browser ignore the CSP (NEW-08) | Exact canonical CSP required (no wrapping, exact `http-equiv`). `check.mjs` proves the CSP is enforced with an inline-script and inline-handler probe, records every inserted element with a handler (so self-removing payloads are seen) and inspects the real DOM. All reviewer PoCs, including the full example-course PoC, now fail the check. |
+| Lint and check bypasses | 17 of 21 missed; later 13 parser-differential forms; then 5 ways to make the browser ignore the CSP (NEW-08); then a pre-CSP inline script that hid from the tokenizer and forged the check's page-global evidence (NEW-12) | Exact canonical CSP, and only the charset and viewport metas may precede it (raw-text check, independent of the tokenizer). `check.mjs` reads its evidence through the DevTools protocol, which the page cannot reach: any inline script or handler compiled in the page fails it, and an enforcement probe runs in an isolated world. Every reviewer PoC, including the full example-course PoCs (plain, tamper, navigate-away), fails the check. |
 | Store | Silently lost data on full storage; deleted unknown events | Failures surfaced, unknown events quarantined, newer documents never overwritten |
 
 **Accessibility:**
@@ -202,7 +202,7 @@ No claim of full WCAG or security compliance is made.
 
 | Item | Status |
 |---|---|
-| Tests passed | 279 / 279; validate strict; plugin validate strict; 19 / 19 example pages; 0 axe violations |
+| Tests passed | 282 / 282; validate strict; plugin validate strict; 19 / 19 example pages; 0 axe violations |
 | Tests failed | none |
 | Not executed | GitHub Actions, Node 20, Firefox/WebKit, Windows, `npx skills add` real install, live `/learn` runs, live comparative evaluation |
 | Breaking changes | course format v2; practice as data files; the Jev components moved to an example; progress storage v2 (v0 kept); strict CSP (no inline scripts). See [CHANGELOG.md](../../CHANGELOG.md). |
@@ -231,7 +231,7 @@ Scores out of 10. **Basis:** M = measured, R = model-reviewed judgment (this orc
 | Factual accuracy and grounding | 15% | 4 | 7 | R: three independent course reviews (P0s found and fixed, re-checked); citations corrected; statuses honest. Many sources unfetchable here, so unverified. |
 | Frontend and interaction | 10% | 5 | 8 | M + R: 19/19 pages clean, 390px layouts, before/after screenshots. Only Chromium. |
 | Software architecture | 10% | 4 | 8 | R: separated core/store/views, contracts, schemas, ADRs. |
-| Reliability and testing | 10% | 1 | 8 | M: 0 → 279 tests, mutation-checked security tests, validator. CI not yet run on GitHub. |
+| Reliability and testing | 10% | 1 | 8 | M: 0 → 282 tests, mutation-checked security tests, validator. CI not yet run on GitHub. |
 | Developer experience | 10% | 5 | 8 | M + R: validated manifest, dependency install, fixed paths, contributing guide, templates, changelog, upgrade guide. `npx skills` install not run. |
 | Security and accessibility | 5% | 2 | 7 | M: two review rounds, PoCs re-run, 0 axe violations. Residuals documented; other browsers unverified. |
 | Documentation | 5% | 5 | 8 | R: README, guide, compatibility, install and upgrade guides, audit trail. |
