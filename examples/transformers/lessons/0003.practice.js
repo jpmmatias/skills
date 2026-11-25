@@ -31,7 +31,7 @@ Learncraft.practice(3, [
   { id: 'l3-order-generate-v2', type: 'order', objective: 'l3.o2',
     prompt: 'Put one step of generation in order.',
     steps: ['Run the sequence through all the blocks', 'Turn the vectors into logits and keep the last position’s row', 'Divide those logits by the temperature and apply softmax', 'Draw one token from the probabilities', 'Append the token and start the next step'],
-    why: 'This is GPT-2\'s sampling loop: logits at the last position, ÷ temperature, softmax, sample, append, repeat. GPT-2\'s released sampler simply runs for a fixed number of tokens; the APIs you call also stop early when the model samples an end token.' },
+    why: 'This is GPT-2\'s sampling loop: logits at the last position, ÷ temperature, softmax, sample, append, repeat. GPT-2\'s released sampler simply runs for a fixed number of tokens; the APIs you call typically also stop early when the model samples an end token (general practice, not from the cited code).' },
   { id: 'l3-recall-last-position', type: 'recall', objective: 'l3.o2',
     prompt: 'The model has computed an output vector for every position of the prompt. Which position\'s vector is used to choose the next token?',
     accept: ['the last', 'last', 'the last one', 'the last position', 'last position', 'final', 'the final one', 'the final position', 'final position'],

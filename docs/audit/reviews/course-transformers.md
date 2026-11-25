@@ -211,3 +211,61 @@ L1's only explorable (lines 157-161) teaches sinusoidal encoding, which is neith
 **Answer keys:** all 19 marked answers are correct and all distractors are wrong, except the two order-item keys in CT-05 that reject equivalent orders. Choice options are within ±17% of each other's length (max/min ratio 0.83 or higher) and are shuffled by the runtime. Every objective has at least 3 items with at least one non-choice. L3 interleaves l2.o2.
 
 **Pedagogy that works:** the mission tie-ins (except CT-01); a worked example then a faded item in L1 and L2, placed side by side; honest "toy numbers" and "illustrative" labels; real tokenizer data; challenges on the learner's own prompts and API with observable criteria and written predictions; the misconceptions addressed in the option feedback (one-hot vs lookup, syllables, the softmax normalising anyway, keys vs values).
+
+---
+
+## Re-check (revision 1)
+
+Re-checked on 2026-11-25 against commit `2ed73d2` ("Revise the Transformers example after independent review"), using the current files in `examples/transformers/`.
+
+**What I ran:**
+- All 5 pages loaded in Chromium at 1000 px and 390 px: no console errors, no horizontal overflow, and every `data-practice-item` renders. All 19 ids exist and none appear twice.
+- The new and replaced items were answered in the browser:
+  - `l1-recall-pu-count` "17" ✓
+  - `l2-fade-was-v2` "it / 3 / 1.5 / 0.47" ✓
+  - `l3-fade-shapes` "768 / 50,257 / 8" ✓ and "768 / 50257 / the last" ✓
+  - `l3-fade-temp` "6 / 4.4 / 0.745" ✓, and "0.76" is correctly rejected
+- `attend(4, mask, τ = 0.5)` gives a weight of 0.862 on "cat".
+- The L1 token table is unchanged by the commit (no `class="tok"` lines in the diff). The `strawberry` and `␣strawberry` figures quoted in the new text match my earlier js-tiktoken 1.0.21 run (301/1831/8396 and 41236).
+- Recomputed the new numbers: `p u` before any merge = 5 + 12 = 17, and it is the runner-up behind `u g` = 20; logits ÷ 0.5 = 6, 4.4, 3.6, 3.0, 1.0 and p(mat) = 403.4/544.3 = 0.741; the 9-token shapes are 9 × 768, 9 × 50,257 and row 8.
+
+| ID | Status | Evidence (current text) |
+|---|---|---|
+| CT-01 | fixed | `0002-self-attention.html:27` "…its causal mask is what lets a model be trained to predict every next token using only the tokens before it, the same left-to-right setting it is in when it writes your reply one token at a time." |
+| CT-02 | fixed | `0003.practice.js:120` "GPT-2's released sampler simply runs for a fixed number of tokens; the APIs you call also stop early…". `scenes-0003.js:117` "GPT-2's released sampler just stops after the number of tokens you ask for. Serving systems and APIs also stop…"; the header (lines 4-6) says the stop rule is not in S5/S13. `cheat-sheet.html:27-28` "until the length limit (APIs also stop at an end-of-text token…)". Ledger L3-C8 (gap) added. See CT-25 for marking. |
+| CT-03 | fixed | `0001-tokens-to-vectors.html:75` "`␣strawberry` (one token) and `strawberry` (three: `st`, `raw`, `berry`) are tokenized differently". `cheat-sheet.html:62` "…different strings to the tokenizer and can split differently (lesson 1: `␣strawberry` is 1 token, `strawberry` is 3)". |
+| CT-04 | fixed | `0002-self-attention.html:105` "…concatenated and multiplied by one more learned matrix, W_O, which mixes the heads back into a single 512-wide (GPT-2: 768-wide) vector [S8][S5]". `cheat-sheet.html:43` adds W_O. Ledger L2-C7. |
+| CT-05 | fixed | `l2-order-head-v2` merges the steps ("Divide the scores by √d_k and set later positions' scores to −∞"); its `why` says either order works. `l3-order-generate-v2` "Turn the vectors into logits and keep the last position's row" matches the worked trace. Both items have 5 steps; the old ids are retired. |
+| CT-06 | fixed | `scenes-0003.js:48` "(toy: only 5 candidate tokens, illustrative)". Line 111: "Here we pretend only five tokens exist, so their probabilities add up to 1; in GPT-2 the other 50,252 would share a little of it." The narration matches. |
+| CT-07 | fixed | `cheat-sheet.html:64` "When generating, only the last position's logits are used… (every position predicts its own next token, which is how training works)". The vocabulary row at line 46 still says otherwise: see CT-24. |
+| CT-08 | fixed | `0002-self-attention.html:39` "Read it from the inside out… (Q·Kᵀ)… (· V)." |
+| CT-09 | fixed | `0002-self-attention.html:90` "Set it to 0.5 and you get exactly the unscaled scores (÷ 1 instead of ÷ 2): … from 0.58 to 0.86. At 0.25 the scores are twice that large…" (I reproduced 0.862). |
+| CT-10 | fixed | `0003-blocks-and-generation.html:86` "In nanoGPT, which follows GPT-2's code, this is two lines, `x = x + self.attn(self.ln_1(x))`… [S13]; GPT-2's own `block()` does the same in four [S5]". `l3-fade-preln` is retired; L3-C2 is updated. |
+| CT-11 | fixed | `0001-tokens-to-vectors.html:197` "…in the decoder-only model this course uses as its reference." |
+| CT-12 | fixed | The L3 task now asks for "its path through one block, and the step that chose it". Criterion 3 (line 156): "names, in order, the six stages… and the shape of the logits for your prompt". There are still 4 criteria and they cover both halves of the canDo. |
+| CT-13 | fixed | `0003-blocks-and-generation.html:99` "Why does the `x +` exist? …" is added. `l3-fade-shapes` (9-token shape trace, placed under "Your turn: a longer prompt") mirrors the worked example; no blank can be copied from the template. |
+| CT-14 | fixed | `l3-fade-temp` sits under "Your turn: T = 0.5", right after the T = 2 worked example and before the explorable. Its blanks are 6, 4.4 and 0.74 with tolerance 0.01, and the key is correct. |
+| CT-15 | fixed | `0003-blocks-and-generation.html:112` "To keep the arithmetic small, pretend these five are the only tokens in the vocabulary (a real model spreads a little probability over all 50,257)." `l3-fade-temp` repeats it. |
+| CT-16 | fixed | `l1-recall-pu-count` asks for the weighted count of `p u` before any merge (17); the key and `why` are correct. It needs computation; it cannot be answered from the prose. |
+| CT-17 | fixed | `0001-tokens-to-vectors.html:157-158` "Optional aside: how the 2017 model did it… Not assessed in this lesson". The caption adds the relative-position rationale [S8] (ledger L1-C10); I checked it against S8 § Positional Encoding. |
+| CT-18 | fixed | `0001.practice.js:41` "(In a decoder the causal mask leaks a little order information, but models still add or rotate positions explicitly.)" |
+| CT-19 | fixed | `0001-tokens-to-vectors.html:78` "brought to neural machine translation by Sennrich, Haddow and Birch in 2016" (still in the unverified span). |
+| CT-20 | fixed | `0002-self-attention.html:98` "replaces the blocked scores with −10¹⁰". |
+| CT-21 | fixed | L2:23 "(in a decoder, only earlier ones)"; L3:23 "Attention is one step. A block pairs it with an MLP…"; L3:32 "A two-layer network"; L3:170 "An analysis of why putting the norm first makes training easier."; "In plain decoding" in `scenes-0003.js:115-116` and `cheat-sheet.html:65`. |
+| CT-22 | fixed | L2:126 "(counting from 0, i.e. the third and fourth tokens: masked)"; L2:120 "Before the no-scaling run below, also write down what you expect its largest weight to become."; L3:154 lists "temperature 0 not being guaranteed deterministic on hosted APIs, or a model that ignores or rejects `temperature`". |
+| CT-23 | fixed | `l2-fade-was-v2` lists all six visible keys and has a `{{key}}` blank. L2:86 "Find the one visible key that gives a non-zero score (use the table)". |
+
+**Item balance after the revision.** 6 / 6 / 7 items. Every objective has at least 3 items, at least one of them non-choice; l3.o2 is now all non-choice (fade, order, recall). L3 still interleaves l2.o2. Remaining choice items keep option lengths within ±17% of each other.
+
+### New findings
+
+#### CT-24 · P3 · The cheat-sheet vocabulary row still says logits come only from the last position
+`reference/cheat-sheet.html:46`: "`logits` — One raw score per vocabulary token, from the last position's vector."
+**Why.** This contradicts the fixed rule at line 64 ("every position predicts its own next token") and the "5 × 50,257 logits" line at line 26 of the same page.
+**Corrected text:** "One raw score per vocabulary token at every position (5 × 50,257 for a 5-token prompt); generation uses the last position's row."
+
+#### CT-25 · P3 · The gap claim L3-C8 appears in learner-facing text without a mark
+`0003.practice.js:120` ("the APIs you call also stop early when the model samples an end token"), `scenes-0003.js:117` and `cheat-sheet.html:28` state end-token or stop-sequence stopping as fact. The ledger records it as `gap` (no source). The statement is true of common serving stacks, but the lesson contract requires an unsourced factual claim to carry the `unverified` span or read clearly as the author's reasoning.
+**Corrected text:** in the cheat sheet, wrap the parenthetical: `<span class="unverified" title="Not independently verified">(APIs also stop at an end-of-text token, 50256 in GPT-2)</span>`. In the scene caption and the `why`, write "…serving systems and APIs typically also stop…" and add "(general practice, not from the cited code)". Alternatively, once a provider's API docs can be opened, cite them and move L3-C8 to `supported`.
+
+**No new P0, P1 or P2 issues.** Every number added or changed by the revision was recomputed and matches, and every new or replaced answer key grades correctly in the runtime.

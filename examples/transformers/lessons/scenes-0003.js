@@ -114,7 +114,7 @@ Scene.register('one-token-at-a-time', {
       say: 'One token is drawn at random, in proportion to its probability. This time, mat is drawn. Another run could draw floor.' },
     { t: 11000, title: 'Append and repeat', caption: 'The new token is appended and the same step runs again on a sequence one token longer. In plain decoding, a 200-token reply is 200 of these steps, which is why an API can stream it token by token.',
       say: 'The new token is appended, and the same step runs again on a sequence one token longer. In plain decoding, a two hundred token reply is two hundred of these steps, which is why an API can stream it token by token.' },
-    { t: 15000, title: 'When it stops', caption: 'GPT-2\'s released sampler just stops after the number of tokens you ask for. Serving systems and APIs also stop as soon as the model samples its end-of-text token (id 50256 in GPT-2\'s vocabulary) or a stop sequence.',
-      say: 'GPT-2\'s released sampler just stops after the number of tokens you ask for. Serving systems and APIs also stop as soon as the model samples its end of text token, or a stop sequence.' },
+    { t: 15000, title: 'When it stops', caption: 'GPT-2\'s released sampler just stops after the number of tokens you ask for. Serving systems and APIs typically also stop as soon as the model samples its end-of-text token (id 50256 in GPT-2\'s vocabulary) or a stop sequence. That is general practice, not from the cited code.',
+      say: 'GPT-2\'s released sampler just stops after the number of tokens you ask for. Serving systems and APIs typically also stop as soon as the model samples its end of text token, or a stop sequence. That is general practice, not from the cited code.' },
   ],
 });

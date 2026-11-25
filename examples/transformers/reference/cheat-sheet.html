@@ -26,7 +26,7 @@ ids → wte rows + wpe rows               5 tokens → 5 × 768
 ln_f, then × wteᵀ                       5 × 50,257 logits
 last row ÷ T → softmax → sample         one new token
 append, repeat                          until the length limit
-                                        (APIs also stop at an end-of-text token, 50256 in GPT-2)</div>
+                                        <span class="unverified" title="Not independently verified">(APIs also stop at an end-of-text token, 50256 in GPT-2)</span></div>
 
   <h2>Vocabulary</h2>
   <div class="table-wrap">
@@ -43,7 +43,7 @@ append, repeat                          until the length limit
         <tr><td><code>head</code></td><td>One attention computation. A layer runs several (8 in the 2017 base model, 12 in GPT-2 small), concatenates them, then multiplies by a learned output matrix W<sub>O</sub>.</td><td><a href="../lessons/0002-self-attention.html">2</a></td></tr>
         <tr><td><code>residual stream</code></td><td>Each token's running vector; every sub-layer adds its output back onto it.</td><td><a href="../lessons/0003-blocks-and-generation.html">3</a></td></tr>
         <tr><td><code>pre-LN / post-LN</code></td><td>Norm before each sub-layer (GPT-2, Llama with RMSNorm) or after the residual add (2017 original).</td><td><a href="../lessons/0003-blocks-and-generation.html">3</a></td></tr>
-        <tr><td><code>logits</code></td><td>One raw score per vocabulary token, from the last position's vector.</td><td><a href="../lessons/0003-blocks-and-generation.html">3</a></td></tr>
+        <tr><td><code>logits</code></td><td>One raw score per vocabulary token, at every position; generation uses only the last position's.</td><td><a href="../lessons/0003-blocks-and-generation.html">3</a></td></tr>
         <tr><td><code>temperature</code></td><td>Divides the logits before the softmax. T &lt; 1 sharpens, T &gt; 1 flattens, T → 0 is greedy.</td><td><a href="../lessons/0003-blocks-and-generation.html">3</a></td></tr>
       </tbody>
     </table>
