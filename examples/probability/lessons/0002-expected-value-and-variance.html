@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'">
+<title>Lesson 2 · Expected value and variance</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+  .formula { font: 15px/1.6 var(--font-mono); background: var(--code-bg); padding: .6rem .8rem; border-radius: var(--radius-sm); overflow-x: auto; }
+  details.answer { margin: .5rem 0 1.25rem; font-size: .95rem; }
+  details.answer summary { cursor: pointer; color: var(--accent); font-family: var(--font-ui); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.blank { color: var(--signal); font-weight: 700; }
+</style>
+</head>
+<body data-lesson="2">
+<main>
+  <nav class="links" aria-label="Course"><a href="../index.html">← Course map</a> <a href="../review.html">Review</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+
+  <header>
+    <p class="kicker">Lesson 2 · Size the noise</p>
+    <h1>Expected value and variance</h1>
+    <p class="lede">A dashboard number wobbles from day to day. The expected value says where it is centred; the variance says how far it wobbles. Both can be worked out before a single user arrives.</p>
+    <div id="progress"></div>
+  </header>
+
+  <p><strong>Why this matters for your mission:</strong> a conversion rate is an average, and the standard error of an average tells you how big a day-to-day or arm-to-arm difference pure noise produces, which is exactly what you need before calling an A/B result.</p>
+
+  <p class="note">How this page is grounded: every formula is derived here from the PMF of lesson 1, every number was recomputed by a script while writing the page, and the simulation below checks the central result, σ/√n, in front of you. The books under <a href="#deeper">Go deeper</a> could not be opened while this example was written, so they are marked unverified.</p>
+
+  <h2>Five words first</h2>
+  <div class="terms">
+    <div class="term"><b>E[X], μ</b>Expected value: the PMF-weighted average of X, where long-run averages settle.</div>
+    <div class="term"><b>Var(X), σ²</b>Variance: the expected squared distance of X from μ.</div>
+    <div class="term"><b>σ</b>Standard deviation: √Var(X), in the same units as X.</div>
+    <div class="term"><b>independent</b>Knowing one variable’s value tells you nothing about the other’s.</div>
+    <div class="term"><b>SE</b>Standard error: the standard deviation of an estimate, such as a sample mean.</div>
+  </div>
+
+  <h2>Expected value: the centre of a PMF</h2>
+  <p>Weight every value by its probability and add:</p>
+  <p class="formula">E[X] = Σ<sub>x</sub> x · P(X = x)</p>
+  <p>It is the average you would see over very many draws: by lesson 1’s experiment, value x makes up a share P(X = x) of a long run, so the run’s average heads to Σ x · P(X = x). The variance measures spread around it, and has a shortcut that is easier to compute:</p>
+  <p class="formula">Var(X) = E[(X − μ)²] = E[X²] − μ² &nbsp;·&nbsp; σ = √Var(X)</p>
+
+  <h3>Worked example: one fair die</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">x</th><th scope="col" class="num">P(X = x)</th><th scope="col" class="num">x · P</th><th scope="col" class="num">x² · P</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="num">1/6</td><td class="num">1/6</td><td class="num">1/6</td></tr>
+        <tr><td>2</td><td class="num">1/6</td><td class="num">2/6</td><td class="num">4/6</td></tr>
+        <tr><td>3</td><td class="num">1/6</td><td class="num">3/6</td><td class="num">9/6</td></tr>
+        <tr><td>4</td><td class="num">1/6</td><td class="num">4/6</td><td class="num">16/6</td></tr>
+        <tr><td>5</td><td class="num">1/6</td><td class="num">5/6</td><td class="num">25/6</td></tr>
+        <tr><td>6</td><td class="num">1/6</td><td class="num">6/6</td><td class="num">36/6</td></tr>
+        <tr><th scope="row">sum</th><td class="num">1</td><td class="num">21/6 = 3.5</td><td class="num">91/6 ≈ 15.167</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ol class="anno-list">
+    <li>E[X] is the sum of the x · P column: 3.5. A die never shows 3.5; the expected value is a centre, not a likely outcome.</li>
+    <li>E[X²] is the sum of the x² · P column: 91/6.</li>
+    <li>Var(X) = 91/6 − 3.5² = 35/12 ≈ 2.917, so σ = √(35/12) ≈ 1.708.</li>
+  </ol>
+
+  <h3>Your turn: one visitor, converts or not</h3>
+  <p>Let X = 1 if a visitor converts and 0 if not, with P(X = 1) = p. This 0/1 variable is the building block of every conversion rate. Work out E[X], E[X²] and Var(X) in terms of p, then put in p = 0.1.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">x</th><th scope="col" class="num">P(X = x)</th><th scope="col" class="num">x · P</th><th scope="col" class="num">x² · P</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td class="num">1 − p</td><td class="num">0</td><td class="num">0</td></tr>
+        <tr><td>1</td><td class="num">p</td><td class="num blank">?</td><td class="num blank">?</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <details class="answer"><summary>Show the answer</summary>
+    <p>E[X] = p and E[X²] = p (because 1² = 1), so Var(X) = p − p² = p(1 − p). With p = 0.1: E[X] = 0.1, Var(X) = 0.09, σ = 0.3.</p>
+  </details>
+
+  <h2>Rules for sums</h2>
+  <p>Metrics are usually sums: revenue is the sum over orders, a conversion count is the sum of 0/1 outcomes. Two rules carry you through, and the difference between them matters.</p>
+  <p class="formula">E[X + Y] = E[X] + E[Y] &nbsp;&nbsp;always<br>E[aX + b] = a·E[X] + b &nbsp;·&nbsp; Var(aX + b) = a²·Var(X)<br>Var(X + Y) = Var(X) + Var(Y) &nbsp;&nbsp;only when X and Y are independent</p>
+  <p>Expectation is <strong>linear</strong> with no conditions, because E[X + Y] is a weighted sum over pairs of values and the sum splits into the X part and the Y part. Variance needs independence. Two dice show why:</p>
+  <div class="ba">
+    <div class="good"><span class="tag">Independent</span><p>Two separate dice, X and Y. The sum has E = 3.5 + 3.5 = 7 and Var = 35/12 + 35/12 = 35/6 ≈ 5.83 (σ ≈ 2.42). Listing all 36 equally likely pairs gives the same 35/6.</p></div>
+    <div class="bad"><span class="tag">Dependent</span><p>One die X and Y = 7 − X, its opposite face. E[X + Y] = 7 still holds. But X + Y is always exactly 7, so Var(X + Y) = 0, not 5.83: the rule for variances fails.</p></div>
+  </div>
+  <p><strong>Why does this line exist?</strong> Why does the variance rule carry the condition “only when independent” while the expectation rule does not?</p>
+  <details class="answer"><summary>Show the reason</summary>
+    <p>Expanding the square gives Var(X + Y) = Var(X) + Var(Y) + 2·Cov(X, Y), where the covariance Cov(X, Y) = E[(X − μ<sub>X</sub>)(Y − μ<sub>Y</sub>)] measures whether the two move together. Independence makes it 0. For Y = 7 − X it is −35/12, which exactly cancels the two variances. Expectation has no square, so no cross term ever appears.</p>
+  </details>
+
+  <h2>Why averages wobble less: σ/√n</h2>
+  <p>Take n independent draws X<sub>1</sub>, …, X<sub>n</sub>, each with mean μ and standard deviation σ, and average them: X̄ = (X<sub>1</sub> + … + X<sub>n</sub>) / n. Apply the rules:</p>
+  <ol>
+    <li>Linearity: E[X<sub>1</sub> + … + X<sub>n</sub>] = nμ, so E[X̄] = nμ / n = μ. The average is centred on the truth.</li>
+    <li>Independence: Var(X<sub>1</sub> + … + X<sub>n</sub>) = nσ².</li>
+    <li>Dividing by n divides the variance by n²: Var(X̄) = nσ² / n² = σ²/n.</li>
+  </ol>
+  <p class="formula">SE(X̄) = √(σ²/n) = σ / √n</p>
+  <p>The spread of an average shrinks with the <em>square root</em> of the sample size. Averaging 25 die rolls gives SE = 1.708 / 5 ≈ 0.342; averaging 100 gives 1.708 / 10 ≈ 0.171. Four times the data buys half the noise.</p>
+
+  <h3>Experiment: watch the means narrow</h3>
+  <p>Each of 1,000 simulated experiments rolls a fair die n times and records the mean. Bars show where the 1,000 means landed; the dashed line is the exact distribution of the mean of n dice (computed, not simulated); the bracket marks 3.5 ± σ/√n. This is a <strong>simulation</strong> with a seeded generator, so each seed is reproducible.</p>
+  <p><strong>Predict first:</strong> going from n = 4 to n = 16, does the bracket get half as wide, a quarter as wide, or stay the same? Then move the slider. Compare the readout’s “standard deviation” of the simulated means with the formula’s σ/√n at every n, and press <em>New seed</em> to see how much that agreement depends on luck.</p>
+  <div data-lc="mean-narrowing" id="narrowing" data-seed="7"></div>
+  <p>What you should see: the bracket halves from 0.85 to 0.43, the simulated standard deviation stays within a few percent of σ/√n at every n, and as n grows the histogram turns into a narrow bell (checked while writing: with seeds 7, 8 and 9, the simulated standard deviations were within 6% of σ/√n at every n). The bell shape is the central limit theorem, <span class="unverified" title="Not independently verified">which the textbooks below prove</span><sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>; this lesson needs only the σ/√n you derived. For a bell, about two-thirds of the means fall inside the bracket; the readout counts the actual share.</p>
+
+  <h3>Back to your dashboard: a conversion rate is a mean</h3>
+  <p>A conversion rate over n visitors is the mean of n 0/1 outcomes, so everything above applies with σ = √(p(1 − p)). Statistics texts call this the standard error of a sample proportion<sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>:</p>
+  <p class="formula">SE = √(p(1 − p) / n)</p>
+  <p>With an <strong>illustrative</strong> 10% conversion rate (σ = 0.3):</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col" class="num">visitors n</th><th scope="col" class="num">√n</th><th scope="col" class="num">SE = 0.3 / √n</th><th scope="col" class="num">in percentage points</th></tr></thead>
+      <tbody>
+        <tr><td class="num">100</td><td class="num">10</td><td class="num">0.03</td><td class="num">3</td></tr>
+        <tr><td class="num">400</td><td class="num">20</td><td class="num">0.015</td><td class="num">1.5</td></tr>
+        <tr><td class="num">2,500</td><td class="num">50</td><td class="num">0.006</td><td class="num">0.6</td></tr>
+        <tr><td class="num">10,000</td><td class="num">100</td><td class="num">0.003</td><td class="num">0.3</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>So a day with 2,500 visitors that reads 10.5% instead of 10% has moved by less than one standard error: that is ordinary noise. To halve the noise, from 0.6 to 0.3 points, you need 4 × 2,500 = 10,000 visitors.</p>
+
+  <section class="practice" aria-labelledby="practice-h">
+    <h2 id="practice-h">Check yourself</h2>
+    <div data-practice-set></div>
+  </section>
+
+  <section class="challenge" id="challenge" data-kind="milestone" data-milestone="m2" aria-labelledby="challenge-h">
+    <p class="kicker">Milestone challenge · Size the noise</p>
+    <h2 id="challenge-h">Predict the wobble of one of your metrics</h2>
+    <p>Pick a daily metric from your own dashboard that is an average or a rate (conversion rate, average order value, error rate). From one typical day of raw per-user data, compute σ (for a rate, √(p(1 − p))), n and the standard error σ/√n. Then take the metric’s daily values over at least 14 comparable days and compute their standard deviation. If you cannot share real data, simulate 14 days with your lesson 1 sampler and say so.</p>
+    <h3>What to send back</h3>
+    <p>The metric’s name and definition; n, σ and the SE for one day, with the arithmetic or the script; the list of daily values and their standard deviation; your answer on how many users halve the SE.</p>
+    <h3>Pass criteria</h3>
+    <ol class="criteria">
+      <li>n, σ (with how it was computed) and SE = σ/√n are reported for one day, and the arithmetic reproduces the SE to 2 significant figures.</li>
+      <li>The standard deviation of at least 14 daily values is reported next to the SE, with one sentence saying which is larger and by what factor.</li>
+      <li>The number of users needed to halve the SE is stated and equals 4 × the day’s n.</li>
+    </ol>
+    <p>When you are done, send your work to your teacher in the terminal.</p>
+  </section>
+
+  <h2>Primary source</h2>
+  <p><a href="https://www.routledge.com/Introduction-to-Probability-Second-Edition/Blitzstein-Hwang/p/book/9781138369917">Introduction to Probability</a> by Joseph K. Blitzstein and Jessica Hwang<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>: read its chapter on expectation (linearity, variance) and the later material on sums of independent variables. Unverified in this session.</p>
+
+  <h2 id="deeper">Go deeper</h2>
+  <ul class="deeper">
+    <li><a href="https://leanpub.com/os">OpenIntro Statistics, 4th edition</a> <span>Open textbook, one section (about 30 minutes): the standard error of a sample proportion in applied-statistics vocabulary, the bridge from this lesson to A/B test reports. Unverified in this session.</span></li>
+    <li><a href="https://seeing-theory.brown.edu/">Seeing Theory (Brown University)</a> <span>Interactive playground, 10–20 minutes: its visualisations of expectation, variance and the central limit theorem complement the experiment above. Unverified in this session.</span></li>
+    <li><a href="https://chance.dartmouth.edu/teaching_aids/books_articles/probability_book/book.html">Grinstead &amp; Snell, Introduction to Probability</a> <span>Open textbook, long read: expected value and variance with simulation exercises. Unverified in this session.</span></li>
+  </ul>
+
+  <nav class="links" aria-label="Lessons"><a href="0001-distributions-and-sampling.html">← Previous: Distributions and sampling</a> <a href="0003-conditional-probability.html">Next: Conditional probability and base rates →</a></nav>
+  <footer>Questions? Ask your teacher in the terminal, for example: “what if my users are not independent, say several sessions per user?”</footer>
+</main>
+<script src="../assets/core.js"></script>
+<script src="../assets/store.js"></script>
+<script src="../assets/course.js"></script>
+<script src="0002.practice.js"></script>
+<script src="../assets/progress.js"></script>
+<script src="../assets/practice.js"></script>
+<script src="../assets/viz.js"></script>
+<script src="0002.figures.js"></script>
+</body>
+</html>

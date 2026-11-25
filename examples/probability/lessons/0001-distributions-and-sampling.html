@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'">
+<title>Lesson 1 · Distributions and sampling</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+  .formula { font: 15px/1.6 var(--font-mono); background: var(--code-bg); padding: .6rem .8rem; border-radius: var(--radius-sm); overflow-x: auto; }
+  details.answer { margin: .5rem 0 1.25rem; font-size: .95rem; }
+  details.answer summary { cursor: pointer; color: var(--accent); font-family: var(--font-ui); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.blank { color: var(--signal); font-weight: 700; }
+</style>
+</head>
+<body data-lesson="1">
+<main>
+  <nav class="links" aria-label="Course"><a href="../index.html">← Course map</a> <a href="../review.html">Review</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+
+  <header>
+    <p class="kicker">Lesson 1 · Simulate a metric</p>
+    <h1>Distributions and sampling</h1>
+    <p class="lede">Before you can say whether a dashboard number is surprising, you need to say which numbers randomness alone would produce, and how often.</p>
+    <div id="progress"></div>
+  </header>
+
+  <p><strong>Why this matters for your mission:</strong> every A/B test readout is one draw from a distribution; writing that distribution down and sampling from it is how you find out what “just noise” looks like for your metric.</p>
+
+  <p class="note">How this page is grounded: the mathematics is standard and is derived here step by step. Every number on the page was recomputed by a script while writing it, and the simulation below checks the rest in front of you. The textbooks under <a href="#deeper">Go deeper</a> are where to read the full treatment; they could not be opened while this example was written, so they are marked unverified.</p>
+
+  <h2>Four words first</h2>
+  <div class="terms">
+    <div class="term"><b>random variable X</b>A number produced by a random process: items in a cart, sign-ups among 5 visitors.</div>
+    <div class="term"><b>PMF</b>Probability mass function: P(X = x) for every value x that X can take.</div>
+    <div class="term"><b>event</b>A set of values, such as “X ≤ 1”. Its probability is the sum of their PMF values.</div>
+    <div class="term"><b>sample</b>Values actually drawn from the distribution, by the world or by your simulation.</div>
+  </div>
+
+  <h2>A PMF is a table that adds up to 1</h2>
+  <p>A discrete random variable takes values you can list. Its PMF gives each value a probability, with two rules: every probability is between 0 and 1, and together they add up to exactly 1, because <em>some</em> value always happens. The probability of an event is the sum over the values in it.</p>
+  <p class="formula">P(X = x) ≥ 0 &nbsp;·&nbsp; Σ<sub>x</sub> P(X = x) = 1 &nbsp;·&nbsp; P(X in A) = Σ<sub>x in A</sub> P(X = x)</p>
+
+  <h3>Worked example: heads in 3 fair flips</h3>
+  <p>Let X be the number of heads in 3 flips of a fair coin. The 8 sequences HHH, HHT, …, TTT are equally likely, each 1/8, because the flips are independent and each side has probability 1/2. Count heads in each sequence and collect them:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">x (heads)</th><th scope="col">sequences</th><th scope="col" class="num">count</th><th scope="col" class="num">P(X = x)</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td><code>TTT</code></td><td class="num">1</td><td class="num">1/8 = 0.125</td></tr>
+        <tr><td>1</td><td><code>HTT THT TTH</code></td><td class="num">3</td><td class="num">3/8 = 0.375</td></tr>
+        <tr><td>2</td><td><code>HHT HTH THH</code></td><td class="num">3</td><td class="num">3/8 = 0.375</td></tr>
+        <tr><td>3</td><td><code>HHH</code></td><td class="num">1</td><td class="num">1/8 = 0.125</td></tr>
+        <tr><th scope="row">total</th><td></td><td class="num">8</td><td class="num">1</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ol class="anno-list">
+    <li>List every outcome and its probability (here all 1/8).</li>
+    <li>Group the outcomes by the value of X and add their probabilities.</li>
+    <li>Check the total is 1. If it is not, an outcome is missing or counted twice.</li>
+    <li>Answer events by adding: P(X ≥ 2) = 3/8 + 1/8 = 1/2.</li>
+  </ol>
+
+  <p>The same counting works when the trials are not 50/50. Say each of 5 visitors signs up independently with probability p (an <strong>illustrative</strong> model of a sign-up page). A particular sequence with k sign-ups has probability p<sup>k</sup>(1 − p)<sup>5 − k</sup>, and there are C(5, k) such sequences, the number of ways to choose which k visitors signed up:</p>
+  <p class="formula">P(X = k) = C(5, k) · p<sup>k</sup> · (1 − p)<sup>5 − k</sup> &nbsp;&nbsp;(the binomial PMF)</p>
+  <figure>
+    <div data-lc="bars" data-label="P(X = k) for 5 visitors with p = 0.2" data-format="fixed2"
+         data-bars='{"k = 0":0.32768,"k = 1":0.4096,"k = 2":0.2048,"k = 3":0.0512,"k = 4":0.0064,"k = 5":0.00032}'
+         data-alt='{"k = 0":0.03125,"k = 1":0.15625,"k = 2":0.3125,"k = 3":0.3125,"k = 4":0.15625,"k = 5":0.03125}' data-alt-label="Show p = 0.5"
+         data-summary="With p = 0.2, one sign-up is the most likely outcome (0.4096) and five is very rare (0.00032)."
+         data-alt-summary="With p = 0.5 the PMF is symmetric: 2 and 3 sign-ups are equally likely (0.3125 each)."></div>
+    <figcaption>The PMF of X for 5 visitors, rounded to two decimals. Exact values for p = 0.2: 0.32768, 0.4096, 0.2048, 0.0512, 0.0064, 0.00032, which add up to 1.</figcaption>
+  </figure>
+
+  <h3>Your turn: 3 visitors with p = 0.2</h3>
+  <p>Fill in the blanks on paper before you open the answer. Same rule: C(3, k) orders, each with probability 0.2<sup>k</sup> · 0.8<sup>3 − k</sup>.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">k</th><th scope="col">C(3, k)</th><th scope="col">one order</th><th scope="col" class="num">P(X = k)</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>1</td><td>0.8 × 0.8 × 0.8</td><td class="num">0.512</td></tr>
+        <tr><td>1</td><td>3</td><td>0.2 × 0.8 × 0.8</td><td class="num">0.384</td></tr>
+        <tr><td>2</td><td>?</td><td>?</td><td class="num blank">?</td></tr>
+        <tr><td>3</td><td>1</td><td>?</td><td class="num blank">?</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <details class="answer"><summary>Show the answer</summary>
+    <p>k = 2: C(3, 2) = 3 orders, each 0.2 × 0.2 × 0.8 = 0.032, so P(X = 2) = 0.096. k = 3: 0.2³ = 0.008. Check: 0.512 + 0.384 + 0.096 + 0.008 = 1.</p>
+  </details>
+
+  <h2>Sampling: one uniform number per draw</h2>
+  <p>A simulation needs to <em>draw</em> values with the PMF’s probabilities. Every language gives you a uniform random number u in [0, 1). Cut [0, 1) into consecutive slices, one per value, each as wide as that value’s probability. Then u lands in a value’s slice with exactly its probability, because for a uniform u the chance of landing in a stretch of [0, 1) equals the stretch’s length.</p>
+  <figure>
+    <div data-lc="numberline" data-min="0" data-max="1" data-digits="3" data-label="u, cut by the PMF of heads in 3 fair flips" data-marker="0.7"
+         data-zones='[{"from":0,"to":0.125,"label":"0","sub":"0.125","tone":"t0"},{"from":0.125,"to":0.5,"label":"X = 1","sub":"width 0.375","tone":"t1"},{"from":0.5,"to":0.875,"label":"X = 2","sub":"width 0.375","tone":"t2"},{"from":0.875,"to":1,"label":"3","sub":"0.125","tone":"t3"}]'
+         data-ticks="0,0.125,0.5,0.875,1"></div>
+    <figcaption>The slices end at the running totals 0.125, 0.5, 0.875 and 1. A draw of u = 0.7 lands in the slice from 0.5 to 0.875, so it returns X = 2.</figcaption>
+  </figure>
+  <pre tabindex="0" aria-label="JavaScript: sample one value from a PMF"><code>// pmf[x] = P(X = x) for x = 0, 1, 2, …; rng() returns a uniform number in [0, 1)
+function sample(pmf, rng) {
+  const u = rng();
+  let total = 0;
+  for (let x = 0; x &lt; pmf.length; x++) {
+    total += pmf[x];             // total = P(X ≤ x), the right edge of x's slice
+    if (u &lt; total) return x;     // u is inside x's slice
+  }
+  return pmf.length - 1;         // reached only if rounding left the total a hair below 1
+}</code></pre>
+  <p><strong>Why does this line exist?</strong> Look at <code>if (u &lt; total)</code>. Why strictly less than, and not <code>&lt;=</code>?</p>
+  <details class="answer"><summary>Show the reason</summary>
+    <p>Each slice is the half-open interval [left edge, right edge), matching u in [0, 1). With <code>&lt;</code>, a value whose probability is 0 has an empty slice and can never be returned. With <code>&lt;=</code>, a u exactly on an edge would go to the wrong value, and a zero-probability value right after it could be drawn.</p>
+  </details>
+  <p>Use a <strong>seeded</strong> generator in simulations (in these lessons, <code>Learncraft.rng(seed)</code>; in Python, <code>random.Random(seed)</code>). The same seed gives the same draws, so a surprising result can be rerun and checked.</p>
+
+  <h2>Experiment: frequencies settle on the PMF</h2>
+  <p>Below, a seeded generator draws X = successes in 5 trials again and again, using the sampler above. Bars show the share of draws at each value; the dashed line is the PMF. The lower chart follows the share of the most likely value draw by draw. This is a <strong>simulation</strong>: the numbers come from the seeded generator, and the same seed always gives the same draws.</p>
+  <p><strong>Predict first:</strong> at 30 draws, how far (in percentage points) will the worst bar be from the dashed line? Then try it. Next, step n up to 10,000, and press <em>New seed</em> a few times at 30 draws and again at 10,000.</p>
+  <div data-lc="pmf-sampler" id="sampler" data-seed="7"></div>
+  <p>What you should see: at 30 draws the worst bar typically misses the PMF by around 10 percentage points, and the picture jumps when you change the seed; at 10,000 draws every bar sits within about 1.5 points of its line, whatever the seed and p. (Checked while writing this page: over 200 seeds at p = 0.30, the worst gap had a median of 10.1 points at 30 draws and never exceeded 1.4 points at 10,000.) The share of each value converges to its probability as the number of independent draws grows. That is the <strong>law of large numbers</strong>, <span class="unverified" title="Not independently verified">stated and proved in both open textbooks below</span><sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup><sup class="cite"><a href="../RESOURCES.md#s3" data-src="S3">3</a></sup>.</p>
+  <p>Notice <em>how</em> it converges. An early streak is not cancelled by later draws pulling the other way: the generator has no memory. It is swamped. 3 surplus successes matter in 30 draws and are invisible in 10,000. The typical miss shrinks steadily but slowly as n grows; lesson 2 measures exactly how slowly.</p>
+
+  <section class="practice" aria-labelledby="practice-h">
+    <h2 id="practice-h">Check yourself</h2>
+    <div data-practice-set></div>
+  </section>
+
+  <section class="challenge" id="challenge" data-kind="milestone" data-milestone="m1" aria-labelledby="challenge-h">
+    <p class="kicker">Milestone challenge · Simulate a metric</p>
+    <h2 id="challenge-h">Simulate one of your own metrics</h2>
+    <p>Pick a small count from your own product: items per cart, failed logins per user per day, sign-ups per cohort of 5 visitors. Write its PMF from your own data (a week of logs is plenty), or as an honest guess if you have no data, labelled as a guess. Write a seeded sampler for it in your language, draw 100 values and then 10,000, and compare the observed shares with the PMF.</p>
+    <h3>What to send back</h3>
+    <p>The PMF table and where its numbers came from; the sampler code; a table of observed shares at n = 100 and n = 10,000 next to the PMF; the seed you used.</p>
+    <h3>Pass criteria</h3>
+    <ol class="criteria">
+      <li>The PMF lists every value with a probability between 0 and 1, the probabilities add up to 1 (within 0.001), and the source of each number is stated.</li>
+      <li>The sampler uses one uniform number per draw and a fixed seed; running it twice with the same seed prints identical samples.</li>
+      <li>The table shows the observed share of every value at n = 100 and at n = 10,000, and the largest gap from the PMF at 10,000 is smaller than at 100.</li>
+    </ol>
+    <p>When you are done, send your work to your teacher in the terminal.</p>
+  </section>
+
+  <h2>Primary source</h2>
+  <p><a href="https://www.routledge.com/Introduction-to-Probability-Second-Edition/Blitzstein-Hwang/p/book/9781138369917">Introduction to Probability</a> by Joseph K. Blitzstein and Jessica Hwang<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>, the textbook behind Harvard’s Stat 110. <span class="unverified" title="Not independently verified">According to the course page, a free online edition is at probabilitybook.net.</span> Read its chapter on random variables and their distributions.</p>
+
+  <h2 id="deeper">Go deeper</h2>
+  <ul class="deeper">
+    <li><a href="https://chance.dartmouth.edu/teaching_aids/books_articles/probability_book/book.html">Grinstead &amp; Snell, Introduction to Probability</a> <span>Open textbook (free, GNU FDL), long read: leans on computer simulation throughout, so it matches the “run it and see” habit of this lesson. Unverified in this session.</span></li>
+    <li><a href="https://seeing-theory.brown.edu/">Seeing Theory (Brown University)</a> <span>Interactive playground, 10–20 minutes: a second set of hands-on views of chance events and distributions. Unverified in this session.</span></li>
+    <li><a href="https://www.routledge.com/Introduction-to-Probability-Second-Edition/Blitzstein-Hwang/p/book/9781138369917">Blitzstein &amp; Hwang, Introduction to Probability</a> <span>Textbook, one chapter (about an hour): the rigorous version of PMFs and the binomial, with many worked problems. Unverified in this session.</span></li>
+  </ul>
+
+  <nav class="links" aria-label="Lessons"><a href="../index.html">← Course map</a> <a href="0002-expected-value-and-variance.html">Next: Expected value and variance →</a></nav>
+  <footer>Questions? Ask your teacher in the terminal, for example: “why is the binomial coefficient there?” or “how do I seed NumPy?”</footer>
+</main>
+<script src="../assets/core.js"></script>
+<script src="../assets/store.js"></script>
+<script src="../assets/course.js"></script>
+<script src="0001.practice.js"></script>
+<script src="../assets/progress.js"></script>
+<script src="../assets/practice.js"></script>
+<script src="../assets/viz.js"></script>
+<script src="../assets/diagram.js"></script>
+<script src="0001.figures.js"></script>
+</body>
+</html>

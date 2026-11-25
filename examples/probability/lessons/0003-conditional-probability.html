@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'">
+<title>Lesson 3 · Conditional probability and base rates</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+  .formula { font: 15px/1.6 var(--font-mono); background: var(--code-bg); padding: .6rem .8rem; border-radius: var(--radius-sm); overflow-x: auto; }
+  details.answer { margin: .5rem 0 1.25rem; font-size: .95rem; }
+  details.answer summary { cursor: pointer; color: var(--accent); font-family: var(--font-ui); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.blank { color: var(--signal); font-weight: 700; }
+  .bt-h { font: 600 .8rem/1.3 var(--font-ui); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin: 1rem 0 .4rem; }
+  .bt-answer { font: .95rem/1.45 var(--font-ui); margin: .5rem 0 1rem; }
+  .bt-legend { list-style: none; padding: 0; margin: .5rem 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); gap: .2rem 1rem; font: .9rem/1.4 var(--font-ui); }
+  .bt-legend li { margin: 0; }
+  .bt-k { display: inline-block; width: .8rem; height: .8rem; margin-right: .45rem; vertical-align: -1px; box-sizing: border-box; }
+  .bt-tp { background: var(--signal); border-radius: 50%; }
+  .bt-fp { border: 2px solid var(--signal); border-radius: 50%; }
+  .bt-fn { background: var(--fg); }
+  .bt-tn { background: var(--muted); border-radius: 50%; width: .45rem; height: .45rem; margin: 0 .62rem 0 .18rem; vertical-align: 1px; }
+</style>
+</head>
+<body data-lesson="3">
+<main>
+  <nav class="links" aria-label="Course"><a href="../index.html">← Course map</a> <a href="../review.html">Review</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+
+  <header>
+    <p class="kicker">Lesson 3 · Weigh a signal</p>
+    <h1>Conditional probability and base rates</h1>
+    <p class="lede">“The test catches 90% of cases” and “a positive result is 90% likely to be right” are different claims. This lesson shows how far apart they can be, and why.</p>
+    <div id="progress"></div>
+  </header>
+
+  <p><strong>Why this matters for your mission:</strong> a significant A/B result, a fraud flag and a monitoring alert are all positive tests; how much each is worth depends on how often the thing it detects is there in the first place.</p>
+
+  <p class="note">How this page is grounded: the rules are derived here, every number was recomputed by a script while writing the page, and the experiment computes them live. Inputs such as a 1% prevalence or a 10% share of experiments that truly help are <strong>illustrative</strong>, not measurements. The sources under <a href="#deeper">Go deeper</a> could not be opened while this example was written, so they are marked unverified.</p>
+
+  <h2>Six words first</h2>
+  <div class="terms">
+    <div class="term"><b>P(A | B)</b>The probability of A given that B happened: “of the B cases, the share that are also A”.</div>
+    <div class="term"><b>base rate</b>How common the condition is before any test (prevalence). Also called the prior.</div>
+    <div class="term"><b>sensitivity</b>P(+ | condition): the share of real cases the test flags. For an A/B test, its power.</div>
+    <div class="term"><b>specificity</b>P(− | no condition): the share of non-cases the test clears.</div>
+    <div class="term"><b>false-positive rate</b>P(+ | no condition) = 1 − specificity.</div>
+    <div class="term"><b>natural frequencies</b>The same facts as counts in one population: “90 of 10,000 people”.</div>
+  </div>
+
+  <h2>Conditioning means shrinking the world</h2>
+  <p>To condition on B, throw away every outcome where B did not happen and ask what share of what is left is A:</p>
+  <p class="formula">P(A | B) = P(A and B) / P(B) &nbsp;&nbsp;(when P(B) &gt; 0)</p>
+  <p>With lesson 1’s three fair flips: given at least two heads (probability 4/8), what is the chance of three heads? Three heads is inside that world, so P(X = 3 | X ≥ 2) = (1/8) / (4/8) = 1/4. Of the 4 sequences with two or more heads, 1 has three. Note that the order matters: P(X ≥ 2 | X = 3) = 1, not 1/4. Swapping the two sides of the bar is the mistake this lesson is about.</p>
+
+  <h2>Worked example: a screening test, with natural frequencies</h2>
+  <p>A condition affects 1% of people. A test flags 90% of people who have it (sensitivity) and clears 91% of people who do not (specificity), so it wrongly flags 9% of them. All three numbers are <strong>illustrative</strong>. You test positive. What is the chance you have the condition?</p>
+  <p><span class="unverified" title="Not independently verified">A common answer is “about 90%”</span><sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>, but 90% is the sensitivity, P(+ | condition), the reverse of what was asked. Translate the percentages into counts of one imagined population instead:</p>
+  <ol class="anno-list">
+    <li>Start from 10,000 people.</li>
+    <li>Base rate: 1% have the condition, 100 people; 9,900 do not.</li>
+    <li>Sensitivity: 90% of the 100 test positive, 90 people.</li>
+    <li>False-positive rate: 9% of the 9,900 test positive, 891 people.</li>
+    <li>Everyone who tests positive: 90 + 891 = 981. Of them, 90 have the condition: 90 / 981 ≈ 9.2%.</li>
+  </ol>
+  <p>A positive result raised the chance from 1% to about 9%, a big jump, and yet more than 9 out of 10 positives are false alarms, because the 9,900 healthy people produce ten times as many positives as the 100 sick ones. Ignoring the base rate this way is called <strong>base-rate neglect</strong>. <span class="unverified" title="Not independently verified">Gigerenzer and Hoffrage argued, with experiments, that people reach the correct answer far more often when the same information is given as natural frequencies like these than as probabilities</span><sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>.</p>
+
+  <h3>The same computation as Bayes’ rule</h3>
+  <p>Write the tree’s arithmetic with probabilities and you get Bayes’ rule. The numerator is the true-positive branch; the denominator, P(+), adds both positive branches (the law of total probability):</p>
+  <p class="formula">P(H | +) = P(+ | H) · P(H) / P(+)<br>P(+) = P(+ | H) · P(H) + P(+ | not H) · P(not H)<br><br>= 0.9 × 0.01 / (0.9 × 0.01 + 0.09 × 0.99)<br>= 0.009 / 0.0981 ≈ 0.092</p>
+  <p><strong>Why does this line exist?</strong> Why does the denominator add <code>P(+ | not H) · P(not H)</code> instead of just using the sensitivity?</p>
+  <details class="answer"><summary>Show the reason</summary>
+    <p>P(H | +) asks for a share <em>of all positives</em>. Positives come from two branches: people with the condition who test positive and people without it who test positive. Dropping the second branch leaves P(+) = 0.009, which would make the answer 1, as if false positives did not exist. In the tree it is the 891.</p>
+  </details>
+
+  <h3>Experiment: move the base rate</h3>
+  <p>Top: the exact natural-frequency tree for 10,000 people, with the two positive groups outlined. Bottom: one <strong>simulated</strong> population of 1,000 people from a seeded generator, grouped by outcome (filled dots have the condition and test positive, rings are false positives). The exact answer and the simulated one differ by sampling noise, as in lesson 1.</p>
+  <p><strong>Predict first:</strong> with sensitivity 90% and specificity 91%, at what base rate does P(condition | +) reach 50%? Then slide the base rate from 0.1% up to 50%. Afterwards, set the base rate back to 1% and raise the specificity to 99.9%.</p>
+  <div data-lc="bayes-tree" id="bayes" data-seed="7"></div>
+  <p>What you should see, with sensitivity 90% and specificity 91%: P(condition | +) is 0.99% at a base rate of 0.1%, 9.2% at 1%, 53% at 10% and 91% at 50%. It crosses 50% near a base rate of 9.1% (0.09 / 0.99), where true and false positives are equally many. At a 1% base rate, raising the specificity to 99.9% cuts the false positives from 891 to 9.9 per 10,000 and lifts P(condition | +) to 90%: when the condition is rare, specificity matters more than sensitivity.</p>
+
+  <h3>Your turn: how many A/B “wins” are real?</h3>
+  <p>The same tree answers your mission’s question. Suppose, as <strong>illustrative</strong> numbers, 10% of the changes your team tests truly help; your tests have 80% power (they detect a real improvement 80% of the time) and flag 5% of changes that do nothing as winners. Fill in the tree for 1,000 experiments before opening the answer.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">group</th><th scope="col" class="num">experiments</th><th scope="col" class="num">flagged as wins</th></tr></thead>
+      <tbody>
+        <tr><td>truly help (10%)</td><td class="num">100</td><td class="num blank">?</td></tr>
+        <tr><td>do nothing (90%)</td><td class="num blank">?</td><td class="num blank">?</td></tr>
+        <tr><th scope="row">P(real | win)</th><td></td><td class="num blank">?</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <details class="answer"><summary>Show the answer</summary>
+    <p>80 of the 100 helpful changes win (80% power). 900 changes do nothing and 45 of them win (5%). Wins: 80 + 45 = 125, so P(real | win) = 80 / 125 = 0.64. About a third of the “wins” are noise. With the same tests, a team whose ideas help 30% of the time would see 87% of its wins be real; a team at 5% would see 46%.</p>
+  </details>
+
+  <section class="practice" aria-labelledby="practice-h">
+    <h2 id="practice-h">Check yourself</h2>
+    <p>Two of these come back from lessons 1 and 2.</p>
+    <div data-practice-set></div>
+  </section>
+
+  <section class="challenge" id="challenge" data-kind="milestone" data-milestone="m3" aria-labelledby="challenge-h">
+    <p class="kicker">Milestone challenge · Weigh a signal</p>
+    <h2 id="challenge-h">How much is one of your own flags worth?</h2>
+    <p>Pick a detector you act on at work: A/B test wins, a monitoring alert, a fraud or spam rule. From your own records, estimate its base rate (how often the thing it detects is really there), its hit rate (sensitivity or power) and its false-alarm rate, and say where each number came from. Build the natural-frequency tree for 1,000 cases, compute P(real | flagged), check it with Bayes’ rule, and then check it again with a seeded simulation of at least 10,000 cases in your own language.</p>
+    <h3>What to send back</h3>
+    <p>The three inputs and their sources; the tree with its four leaf counts; the Bayes’ rule computation; the simulation script, its seed and its output; one sentence on what base rate would make half of the flags real.</p>
+    <h3>Pass criteria</h3>
+    <ol class="criteria">
+      <li>The four leaf counts of the tree add up to 1,000, and P(real | flagged) is shown as true flags / all flags, as a fraction and as a percentage.</li>
+      <li>Bayes’ rule with the same three inputs gives the same percentage as the tree, to within 0.1 percentage point.</li>
+      <li>The simulation prints its seed and the number of flagged cases m, and its P(real | flagged) lies within 3 standard errors of the exact value, using SE = √(q(1 − q)/m) from lesson 2 with q the exact value.</li>
+      <li>The base rate at which half of the flags would be real is stated, and the tree recomputed at that base rate shows equal numbers of true and false flags.</li>
+    </ol>
+    <p>When you are done, send your work to your teacher in the terminal.</p>
+  </section>
+
+  <h2>Primary source</h2>
+  <p>Gerd Gigerenzer and Ulrich Hoffrage, <a href="https://serval.unil.ch/notice/serval:BIB_285729DDD792">How to improve Bayesian reasoning without instruction: Frequency formats</a>, Psychological Review 102(4), 684–704 (1995)<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>: the study behind the natural-frequency method used on this page. Unverified in this session; see RESOURCES.md for an open copy.</p>
+
+  <h2 id="deeper">Go deeper</h2>
+  <ul class="deeper">
+    <li><a href="https://pages.ucsd.edu/~scoulson/203/GG_How_1995.pdf">Gigerenzer &amp; Hoffrage (1995), full text</a> <span>Paper, 21 pages: read the opening problem and the explanation of why frequency formats simplify the computation. Unverified in this session.</span></li>
+    <li><a href="https://www.routledge.com/Introduction-to-Probability-Second-Edition/Blitzstein-Hwang/p/book/9781138369917">Blitzstein &amp; Hwang, Introduction to Probability</a> <span>Textbook, one chapter (about an hour): the chapter on conditional probability, with Bayes’ rule, the law of total probability and many classic traps. Unverified in this session.</span></li>
+    <li><a href="https://seeing-theory.brown.edu/">Seeing Theory (Brown University)</a> <span>Interactive playground, 10–20 minutes: the search index lists a Compound Probability chapter; look there for a visual take on conditioning. Unverified in this session.</span></li>
+  </ul>
+
+  <nav class="links" aria-label="Lessons"><a href="0002-expected-value-and-variance.html">← Previous: Expected value and variance</a> <a href="../index.html">Course map →</a></nav>
+  <footer>Questions? Ask your teacher in the terminal, for example: “where does the 5% false-positive rate of an A/B test come from?”</footer>
+</main>
+<script src="../assets/core.js"></script>
+<script src="../assets/store.js"></script>
+<script src="../assets/course.js"></script>
+<script src="0003.practice.js"></script>
+<script src="../assets/progress.js"></script>
+<script src="../assets/practice.js"></script>
+<script src="../assets/viz.js"></script>
+<script src="0003.figures.js"></script>
+</body>
+</html>
