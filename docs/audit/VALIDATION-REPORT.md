@@ -85,4 +85,4 @@ The remaining non-passes are listed in `evaluations/results/after-*.md`:
 
 ## Known limitations
 
-See [FINAL-REPORT.md](FINAL-REPORT.md#known-limitations).
+See [FINAL-REPORT.md](FINAL-REPORT.md#11-known-limitations).
