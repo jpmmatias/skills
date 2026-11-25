@@ -16,8 +16,8 @@
 // separate, killable Node process with an empty environment and a vm context that reaches no host
 // object (security review SR-02). That reduces the risk of a hostile file; it does not remove it:
 // run this only on your own workspace or this repository, never on a workspace you do not trust.
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, relative, resolve, sep, posix } from 'node:path';
+import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { dirname, isAbsolute, join, relative, resolve, sep, posix } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { loadCourseJs, loadPracticeJs, loadDataFiles, readWorkspaceFile, checkWorkspaceFile } from './load-data.mjs';
 
@@ -403,6 +403,49 @@ export const domSecurityAudit = (rootUrl) => {
   return [...new Set(out)];
 };
 
+/**
+ * Collects every URL a page refers to, resolved by the browser itself (so encodings, absolute file: URLs and
+ * xlink:href are handled as the browser handles them). Runs IN THE PAGE. Returns [{ url, attr, tag }] for file: URLs.
+ */
+export const domFileLinks = () => {
+  const ATTRS = ['href', 'xlink:href', 'src', 'srcset', 'action', 'formaction', 'data', 'poster', 'background', 'ping', 'cite', 'longdesc', 'manifest'];
+  const out = [];
+  for (const el of document.querySelectorAll('*')) {
+    for (const a of ATTRS) {
+      const v = a === 'xlink:href' ? el.getAttributeNS('http://www.w3.org/1999/xlink', 'href') ?? el.getAttribute(a) : el.getAttribute(a);
+      if (!v) continue;
+      const parts = a === 'srcset' ? v.split(',').map((x) => x.trim().split(/\s+/)[0]).filter(Boolean) : [v.trim()];
+      for (const p of parts) {
+        let u; try { u = new URL(p, document.baseURI); } catch { continue; }
+        if (u.protocol === 'file:') out.push({ url: u.href, attr: a, tag: el.localName });
+      }
+    }
+  }
+  return out;
+};
+
+/** File types that can be linked or loaded without being a page that could run script. .svg is safe only because
+ *  lint rejects scripted SVG anywhere in the course (svg-script). */
+export const ASSET_EXT = /\.(js|css|png|jpe?g|gif|webp|avif|ico|svg|woff2?|ttf|otf|json|md|txt|csv|pdf|mp4|webm|mp3|wav|ogg)$/i;
+
+/**
+ * Classifies a file: URL a page refers to (NEW-15). pages: the workspace-relative pages the check covers.
+ * Returns null when fine, else a reason. Links must stay inside the course; may target only a checked page or a
+ * non-page asset; never a folder (a directory listing leads one click further to anything).
+ */
+export function classifyFileLink(ws, pages, url) {
+  let path;
+  try { const u = new URL(url); u.search = ''; u.hash = ''; path = fileURLToPath(u); } catch { return 'an unreadable file: URL'; }
+  const rel = toPosix(relative(ws, path));
+  if (rel.startsWith('..') || isAbsolute(rel)) return 'a file outside the course';
+  if (rel === '' || (existsSync(path) && statSync(path).isDirectory())) return 'a folder (the browser shows a directory listing)';
+  // Folders the check never visits: anything in them stays unchecked even once it exists.
+  if (/^labs(\/|$)/.test(rel) || rel.split('/').some((seg) => seg.startsWith('.') || seg === 'node_modules')) return /\.(md|txt)$/i.test(rel) ? null : 'a page the check does not cover';
+  // Any other .html/.htm in the course is checked once it exists; a missing one is only a broken link.
+  if (/\.html?$/i.test(rel)) return pages.includes(rel) || !existsSync(path) ? null : 'a page the check does not cover';
+  return ASSET_EXT.test(rel) ? null : 'a file type that may open as a page the check does not cover';
+}
+
 const listHtml = (ws, d) => (existsSync(join(ws, d)) ? readdirSync(join(ws, d)).filter((f) => f.endsWith('.html')).sort().map((f) => `${d}/${f}`) : []);
 
 /**
@@ -410,6 +453,20 @@ const listHtml = (ws, d) => (existsSync(join(ws, d)) ? readdirSync(join(ws, d)).
  * except labs/ (the learner's own runnable projects, usually served by their own tooling), node_modules and
  * dot-folders. Symbolic links are not followed. Paths are workspace-relative, POSIX style, sorted.
  */
+export function allCourseFiles(ws) {
+  const out = [];
+  const walk = (rel) => {
+    let entries; try { entries = readdirSync(join(ws, rel), { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      const r = rel ? `${rel}/${e.name}` : e.name;
+      if (e.isDirectory()) { if (!e.name.startsWith('.') && e.name !== 'node_modules') walk(r); }
+      else out.push(r);
+    }
+  };
+  walk('');
+  return out.sort();
+}
+
 export function findCoursePages(ws) {
   const out = [];
   const walk = (rel) => {
@@ -582,6 +639,17 @@ export async function inspectWorkspace(wsDir) {
   const resourceIds = new Set(resources?.entries.map((e) => e.id));
   const pages = [];
   const htmlFiles = findCoursePages(ws);
+  const pageSet = htmlFiles;
+  // Other documents a browser runs script in are not course pages (NEW-15): reject them anywhere, labs/ included;
+  // SVG is allowed only without script, since an .svg opened directly is a document.
+  for (const f of allCourseFiles(ws)) {
+    if (/\.(xhtml|xht|shtml|xml|xsl|xslt|mht|mhtml)$/i.test(f)) add('error', 'page-type', f, 'this file type opens as a scripted document in the browser and is not checked; use .html for pages');
+    else if (/\.svg$/i.test(f)) {
+      const r = readWorkspaceFile(join(ws, f), { root: ws });
+      if (r.error) add('error', 'unsafe-file', f, `the file ${r.error}`);
+      else if (/<script\b|\son[a-z]+\s*=|javascript:|<foreignObject\b|<(iframe|embed|object)\b/i.test(r.text)) add('error', 'svg-script', f, 'SVG with script, handlers, javascript: URLs or embedded documents runs code when opened; keep SVG files static');
+    }
+  }
   const listedFiles = new Set(lessonsByFile.keys());
   const legacyIds = new Map();
   for (const rel of htmlFiles) {
@@ -618,11 +686,20 @@ export async function inspectWorkspace(wsDir) {
       if (t.name === 'base') add('error', 'base-element', rel, '<base> redirects every relative link and citation on the page');
       // Pages in labs/ are the learner's own projects and are not checked; opened from a lesson over file:// they would
       // share the course's storage origin (NEW-14). Link to the lab folder or its README instead.
-      for (const a of ['href', 'src', 'action', 'formaction', 'data']) {
-        const v = t.attrs[a];
-        if (!v || /^[a-z][a-z0-9+.-]*:/i.test(v) || v.startsWith('//') || v.startsWith('#')) continue;
-        const target = toPosix(relative(ws, resolve(dirname(join(ws, rel)), percentDecodeAll(v.split(/[?#]/)[0]))));
-        if (/^labs\/.+\.html?$/i.test(target)) add('error', 'link-unchecked-page', rel, `${a}="${v}" opens a page in labs/, which the check does not cover; link to the lab's README.md or folder instead`);
+      // Every link must stay inside the course and lead to a checked page or a non-page asset (NEW-15); the browser
+      // check repeats this on URLs the browser itself resolved.
+      for (const a of ['href', 'xlink:href', 'src', 'srcset', 'action', 'formaction', 'data', 'poster', 'background', 'cite', 'longdesc']) {
+        const raw0 = t.attrs[a];
+        if (!raw0) continue;
+        for (const v of (a === 'srcset' ? raw0.split(',').map((x) => x.trim().split(/\s+/)[0]) : [raw0.trim()])) {
+          if (!v || v.startsWith('#')) continue;
+          let url;
+          if (/^file:/i.test(v)) url = v;
+          else if (/^[a-z][a-z0-9+.-]*:/i.test(v) || v.startsWith('//')) continue; // remote and data: URLs have their own rules
+          else { try { url = new URL(v, pathToFileURL(join(ws, rel)).href).href; } catch { continue; } }
+          const why = classifyFileLink(ws, pageSet, url);
+          if (why) add('error', 'link-unchecked-page', rel, `${a}="${v}" leads to ${why}; link only to course pages and assets (for a lab, its README.md)`);
+        }
       }
       if (/^(animate|set|animatetransform|animatemotion)$/.test(t.name) && /^(xlink:)?href$/i.test((t.attrs.attributename || '').trim())) add('error', 'svg-animate-href', rel, `<${t.name} attributeName="${t.attrs.attributename}"> rewrites a link target at run time (it can become javascript:)`);
       if (t.name === 'meta' && /^refresh$/i.test(t.attrs['http-equiv'] || '')) add('error', 'meta-refresh', rel, '<meta http-equiv="refresh"> navigates the learner away without a click');
@@ -647,6 +724,7 @@ export async function inspectWorkspace(wsDir) {
       if (target.startsWith('..')) add('error', 'script-path', rel, `<script src="${src}"> points outside the workspace`);
       else if (!ok) add('error', 'script-path', rel, `<script src="${src}">: scripts load only from assets/ or the page's own folder`);
       else if (!existsSync(join(ws, target))) add('error', 'script-missing', rel, `<script src="${src}"> does not exist`);
+      else if (lstatSync(join(ws, target)).isSymbolicLink()) add('error', 'script-path', rel, `<script src="${src}"> is a symbolic link; script files must be real files (a link can point at a page)`);
     }
 
     // citations ------------------------------------------------------------------------------

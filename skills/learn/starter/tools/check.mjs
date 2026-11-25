@@ -37,12 +37,12 @@
 //
 // Browser: Playwright's bundled Chromium; if its version does not match what is installed, any
 // chrome-headless-shell / chromium under the Playwright browser cache, or CHROMIUM_PATH.
-import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { loadPlaywright, resolveTool, workspacePlaywright } from './resolve.mjs';
-import { inspectWorkspace, formatFindings, checkWorkspaceFile, findCoursePages, domSecurityAudit as securityAudit } from './lint-workspace.mjs';
+import { inspectWorkspace, formatFindings, checkWorkspaceFile, findCoursePages, classifyFileLink, domFileLinks, domSecurityAudit as securityAudit } from './lint-workspace.mjs';
 
 const args = process.argv.slice(2);
 const ws = resolve(args.find((a) => !a.startsWith('--')) ?? '.');
@@ -76,7 +76,8 @@ const out = join(ws, '.check');
 mkdirSync(out, { recursive: true });
 // Only regular files inside the workspace are opened (the lint already reported anything else: NEW-02).
 // Every page the learner can open (NEW-14), not only index/review/lessons/reference.
-const pages = findCoursePages(ws).filter((p) => (!only || p.includes(only)) && checkWorkspaceFile(join(ws, p), { root: ws }).ok);
+const allPages = findCoursePages(ws); // the set links may lead to (NEW-15), even when --only narrows what is opened
+const pages = allPages.filter((p) => (!only || p.includes(only)) && checkWorkspaceFile(join(ws, p), { root: ws }).ok);
 const practiceCount = new Map([...lint.practice].map(([n, items]) => [n, items.length]));
 
 async function launch() {
@@ -144,6 +145,7 @@ const PASSES = [
 
 const browser = await launch();
 const wsUrl = pathToFileURL(ws).href;
+const wsPrefixOf = (u) => (u.endsWith('/') ? u : u + '/');
 let failed = lintErrors ? 1 : 0, pagesFailed = 0;
 for (const rel of pages) {
   const problems = [], warnings = [], notes = [];
@@ -237,8 +239,20 @@ for (const rel of pages) {
     for (const c of compiled) {
       if (!c.url || c.url === pageUrl) continue;
       let u; try { u = new URL(c.url); } catch { u = null; }
-      const fine = u && u.protocol === 'file:' && c.url.startsWith(wsPrefix) && !u.search && !u.hash && /\.js$/i.test(u.pathname);
-      if (!fine) problems.push(`${tag} security: script compiled from ${c.url.replace(wsPrefix, '')}; only .js files in the course folder may run`);
+      let fine = u && u.protocol === 'file:' && c.url.startsWith(wsPrefix) && !u.search && !u.hash && /\.js$/i.test(u.pathname);
+      // A .js name that is a link to another file (say, a lesson page) is refused too (NEW-16).
+      if (fine) { try { fine = !lstatSync(fileURLToPath(u)).isSymbolicLink(); } catch { fine = false; } }
+      if (!fine) problems.push(`${tag} security: script compiled from ${c.url.replace(wsPrefix, '')}; only .js files in the course folder (not links) may run`);
+    }
+    // Every file: URL on the page, as the browser resolved it, must lead to a checked page or a non-page asset
+    // inside the course; never to a folder or an unchecked document (NEW-15).
+    if (pass.key === 'light-900') {
+      const seen = new Set();
+      for (const l of await page.evaluate(domFileLinks).catch(() => [])) {
+        const why = classifyFileLink(ws, allPages, l.url);
+        const key = `${l.url}|${why}`;
+        if (why && !seen.has(key)) { seen.add(key); problems.push(`security: <${l.tag} ${l.attr}> leads to ${why}: ${l.url.replace(wsPrefixOf(wsUrl), '')}`); }
+      }
     }
     if (pass.key === 'light-900') for (const f of await page.evaluate(securityAudit, wsUrl + '/').catch((e) => [`security audit failed: ${e.message.split('\n')[0]}`])) problems.push(`security: ${f}`);
     if (info.scrollWidth > pass.width + 1) problems.push(`${tag} horizontal scroll: page is ${info.scrollWidth}px wide`);

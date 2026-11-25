@@ -20,6 +20,14 @@
 
 We do not claim the generated courses or the skills are secure against every attack. The tests in `tests/security.test.mjs`, `tests/hardening.test.mjs` and `tests/csp-enforcement.test.mjs` cover specific regressions in Chromium only: XSS through course data, captions, practice items and stored progress; lint and CSP bypasses; the rendered-DOM audit; loader isolation; special files; tool lookup. The findings are in `docs/audit/reviews/security-reliability.md`.
 
+Accepted residual risks (reviewed in five rounds of independent verification, `docs/audit/reviews/security-reliability.md`):
+
+- Script files in the course (`assets/*.js`, `lessons/*.js`) run with page privileges by design; the agent writes some of them (scenes, figures). Review generated code like any other code.
+- `course.js` and practice files execute in a hardened Node child process (empty environment, no string code generation, a hard kill, bounded reads), which reduces but does not remove risk; the network is not covered by Node's permission model.
+- Every local HTML page shares one storage origin in Chromium on `file://`, and `'self'` matches any local file. The check confines what a course page can load and link to, but cannot protect a course from other local pages the learner opens.
+- Verification is in Chromium only; Firefox, Safari and Windows (UNC paths) are untested.
+- Navigation started by a script file is out of scope for the static checks.
+
 Known open item:
 
 - **Open (P3, NEW-11):** removing the loader's `import()` hook would not make any test fail, although the hook itself is in place and blocks host error objects today.

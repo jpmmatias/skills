@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, mkdirSync, symlinkSync, rmSync, mkdtempSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { buildWorkspace, missingStarter, browserOrSkip, ROOT } from './lib/workspace.mjs';
@@ -161,5 +162,67 @@ test('lint covers pages in subfolders and .htm files, and rejects links into lab
     for (const f of ['lessons/extra/notes.html', 'lessons/0002-bonus.htm']) assert.ok(errs.some((e) => e.file === f && /^csp-/.test(e.rule)), `expected ${f} to be linted`);
     assert.ok(errs.some((e) => e.rule === 'link-unchecked-page'), 'expected the link into labs/ to be rejected');
     assert.ok(!errs.some((e) => e.file.startsWith('labs/')), 'labs/ pages themselves are not linted');
+  } finally { w.cleanup(); }
+});
+
+// NEW-15: pages the check does not open must not be reachable by any link, however it is written; other document
+// types a browser runs script in are not allowed; SVG must be static. NEW-16: script files must not be links.
+test('links into unchecked pages, folders or other document types are rejected, however written (NEW-15)', { skip: missingStarter() || false }, async () => {
+  const cases = {
+    'svg xlink:href into labs/': '<svg><a xlink:href="../labs/01-demo/index.html"><text>lab</text></a></svg>',
+    'absolute file: URL': (ws) => `<a href="${pathToFileURL(join(ws, 'labs', '01-demo', 'index.html')).href}">lab</a>`,
+    'folder link': '<a href="../labs/01-demo/">lab</a>',
+    'encoded path into labs/': '<a href="..%2Flabs%2F01-demo%2Findex.html">lab</a>',
+    '.xhtml page': '<a href="extra.xhtml">x</a>',
+  };
+  for (const [name, link] of Object.entries(cases)) {
+    const w = buildWorkspace();
+    try {
+      mkdirSync(join(w.ws, 'labs', '01-demo'), { recursive: true });
+      writeFileSync(join(w.ws, 'labs', '01-demo', 'index.html'), '<!doctype html><title>x</title><script>void 0</script>');
+      writeFileSync(join(w.ws, 'lessons', 'extra.xhtml'), '<html xmlns="http://www.w3.org/1999/xhtml"><body><script>void 0</script></body></html>');
+      const p = join(w.ws, LESSON);
+      writeFileSync(p, readFileSync(p, 'utf8').replace('</main>', `${typeof link === 'function' ? link(w.ws) : link}</main>`));
+      const errs = (await lintWorkspace(w.ws)).filter((f) => f.level === 'error');
+      assert.ok(errs.some((e) => e.rule === 'link-unchecked-page' && e.file === 'lessons/0001-first.html'), `${name}: expected link-unchecked-page, got ${JSON.stringify(errs.map((e) => e.rule))}`);
+    } finally { w.cleanup(); }
+  }
+});
+
+test('scripted SVG and other scripted document types are rejected anywhere in the course (NEW-15)', { skip: missingStarter() || false }, async () => {
+  const w = buildWorkspace();
+  try {
+    mkdirSync(join(w.ws, 'labs', '01-demo'), { recursive: true });
+    writeFileSync(join(w.ws, 'lessons', 'figure.svg'), '<svg xmlns="http://www.w3.org/2000/svg"><script>void 0</script></svg>');
+    writeFileSync(join(w.ws, 'labs', '01-demo', 'run.xhtml'), '<html xmlns="http://www.w3.org/1999/xhtml"/>');
+    writeFileSync(join(w.ws, 'lessons', 'static.svg'), '<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>');
+    const errs = (await lintWorkspace(w.ws)).filter((f) => f.level === 'error');
+    assert.ok(errs.some((e) => e.rule === 'svg-script' && e.file === 'lessons/figure.svg'));
+    assert.ok(errs.some((e) => e.rule === 'page-type' && e.file === 'labs/01-demo/run.xhtml'));
+    assert.ok(!errs.some((e) => e.file === 'lessons/static.svg'), 'a static SVG is fine');
+  } finally { w.cleanup(); }
+});
+
+test('check.mjs fails a link to an unchecked page, as the browser resolves it (NEW-15)', { skip: missingStarter() || noBrowser }, () => {
+  const w = buildWorkspace();
+  try {
+    mkdirSync(join(w.ws, 'labs', '01-demo'), { recursive: true });
+    writeFileSync(join(w.ws, 'labs', '01-demo', 'index.html'), '<!doctype html><title>x</title>');
+    const p = join(w.ws, LESSON);
+    writeFileSync(p, readFileSync(p, 'utf8').replace('</main>', '<svg><a xlink:href="../labs/01-demo/index.html"><text>lab</text></a></svg></main>'));
+    const { code, out } = runCheck(w.ws);
+    assert.equal(code, 1, out);
+    assert.match(out, /security: <a xlink:href> leads to a page the check does not cover/);
+  } finally { w.cleanup(); }
+});
+
+test('a script file that is a symbolic link is rejected (NEW-16)', { skip: missingStarter() || false }, async () => {
+  const w = buildWorkspace();
+  try {
+    symlinkSync('0001-first.html', join(w.ws, 'lessons', 'evil.js'));
+    const p = join(w.ws, LESSON);
+    writeFileSync(p, readFileSync(p, 'utf8').replace('</body>', '<script src="evil.js"></script>\n</body>'));
+    const errs = (await lintWorkspace(w.ws)).filter((f) => f.level === 'error' && f.rule === 'script-path');
+    assert.ok(errs.some((e) => /symbolic link/.test(e.message)), JSON.stringify(errs));
   } finally { w.cleanup(); }
 });

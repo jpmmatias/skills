@@ -8,7 +8,7 @@ All results below were measured in this environment on 2026-11-25 against the wo
 
 | Check | Command | Result |
 |---|---|---|
-| Unit, integration, browser and security tests | `node --test tests/*.test.mjs` | **284 / 284 pass**, 0 skipped (≈ 60 s). 183 before the security fixes. |
+| Unit, integration, browser and security tests | `node --test tests/*.test.mjs` | **288 / 288 pass**, 0 skipped (≈ 60 s). 183 before the security fixes. |
 | Repository validation: skill metadata, marketplace, links, JSON, schemas, subagent ↔ role sync, example courses | `node scripts/validate.mjs --strict` | 0 errors, 0 warnings |
 | Plugin marketplace manifest | `claude plugin validate . --strict` | Validation passed |
 | Plugin install with dependency resolution | throwaway HOME, `claude plugin install curriculum-planner@…` | `learn` installed as a dependency; a `claude -p` session listed 5 skills and 4 subagents (workstream A, 2026-11-25) |
