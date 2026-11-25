@@ -226,7 +226,10 @@ export const scorers = {
     if (!fades.length) return NA('no faded examples');
     const ev = [];
     for (const f of fades) {
-      const worked = f.l.page.tags.filter((t) => hasClass(t, 'worked') && (!t.attrs['data-objective'] || t.attrs['data-objective'] === f.objective));
+      // A worked example is marked with class="worked" (lesson contract), or introduced by a heading
+      // that starts "Worked example" (how lessons written before the class was specified mark it).
+      const isWorkedHeading = (t) => /^h[2-4]$/.test(t.name) && /^\s*worked example/i.test(textOf(innerOf(f.l.page.html, t)));
+      const worked = f.l.page.tags.filter((t) => (hasClass(t, 'worked') || isWorkedHeading(t)) && (!t.attrs['data-objective'] || t.attrs['data-objective'] === f.objective));
       const place = f.source === 'legacy' ? f.pos : (f.l.page.tags.find((t) => t.attrs['data-practice-item'] === f.id || 'data-practice-set' in t.attrs)?.start ?? Infinity);
       if (!worked.some((t) => t.start < place)) ev.push(`L${f.l.n} ${f.id ?? 'fade'}: no .worked example before it`);
     }

@@ -1,0 +1,477 @@
+{
+  "workspace": "react-rendering",
+  "scoredAt": "2026-11-25T01:19:58.189Z",
+  "course": {
+    "id": "react-rendering-example",
+    "schemaVersion": 2,
+    "milestones": 2,
+    "lessons": 3,
+    "written": 3
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 0,
+    "findings": []
+  },
+  "summary": {
+    "pass": 20,
+    "warn": 2,
+    "fail": 1,
+    "na": 1,
+    "notScored": 11,
+    "machineCheckable": 24,
+    "machinePassRate": "20/23"
+  },
+  "results": [
+    {
+      "id": "CR1",
+      "rubric": "curriculum",
+      "kind": "M",
+      "title": "Milestones match MISSION success criteria; every milestone has a lesson",
+      "status": "pass",
+      "evidence": [
+        "MISSION.md \"Success looks like\": 2 bullet(s); course.js: 2 milestone(s)"
+      ]
+    },
+    {
+      "id": "CR2",
+      "rubric": "curriculum",
+      "kind": "M",
+      "title": "Lesson milestone refs exist; numbering 1..N; file pattern",
+      "status": "pass",
+      "evidence": [
+        "3 lessons numbered 1..N, files match lessons/NNNN-slug.html, milestone refs resolve"
+      ]
+    },
+    {
+      "id": "CR3",
+      "rubric": "curriculum",
+      "kind": "M",
+      "title": "1–3 objectives per lesson; observable canDo (verb denylist)",
+      "status": "pass",
+      "evidence": [
+        "1–3 objectives per lesson; no non-observable verbs"
+      ]
+    },
+    {
+      "id": "CR4",
+      "rubric": "curriculum",
+      "kind": "M",
+      "title": "requires only points to earlier lessons; acyclic",
+      "status": "n/a",
+      "evidence": [
+        "no lesson declares requires"
+      ]
+    },
+    {
+      "id": "CR5",
+      "rubric": "curriculum",
+      "kind": "M",
+      "title": "One milestone challenge per milestone, on its last lesson",
+      "status": "pass",
+      "evidence": [
+        "one milestone challenge per milestone, on its last written lesson"
+      ]
+    },
+    {
+      "id": "CR6",
+      "rubric": "curriculum",
+      "kind": "M",
+      "title": "Title contains \"and\" at most once",
+      "status": "pass",
+      "evidence": [
+        "no lesson title joins more than two ideas with \"and\""
+      ]
+    },
+    {
+      "id": "CR7",
+      "rubric": "curriculum",
+      "kind": "R",
+      "title": "Sequence starts at the diagnostic floor, not claims",
+      "status": "not-scored",
+      "evidence": [
+        "needs a human or model reviewer (see evaluations/README.md)"
+      ]
+    },
+    {
+      "id": "CR8",
+      "rubric": "curriculum",
+      "kind": "M",
+      "title": "From lesson 3, ≥1 interleaved item from an earlier objective",
+      "status": "pass",
+      "evidence": [
+        "every lesson from 3 on interleaves an earlier objective"
+      ]
+    },
+    {
+      "id": "CR9",
+      "rubric": "curriculum",
+      "kind": "M",
+      "title": "Motion/lab decision line per lesson in NOTES.md",
+      "status": "pass",
+      "evidence": [
+        "NOTES.md has a decision line per lesson"
+      ]
+    },
+    {
+      "id": "CR10",
+      "rubric": "curriculum",
+      "kind": "R",
+      "title": "Out-of-scope respected; each lesson traces to the mission",
+      "status": "not-scored",
+      "evidence": [
+        "needs a human or model reviewer (see evaluations/README.md)"
+      ]
+    },
+    {
+      "id": "CR11",
+      "rubric": "curriculum",
+      "kind": "R",
+      "title": "One idea per lesson; fits one sitting",
+      "status": "not-scored",
+      "evidence": [
+        "needs a human or model reviewer (see evaluations/README.md)"
+      ]
+    },
+    {
+      "id": "AS1",
+      "rubric": "lesson-assessment",
+      "kind": "M",
+      "title": "Practice items have unique ids and known objectives",
+      "status": "pass",
+      "evidence": [
+        "19 items, unique ids, known objectives"
+      ]
+    },
+    {
+      "id": "AS2",
+      "rubric": "lesson-assessment",
+      "kind": "M",
+      "title": "≥3 items per objective, ≥1 non-MCQ",
+      "status": "pass",
+      "evidence": [
+        "6 objective(s), each with ≥3 items and ≥1 non-MCQ"
+      ]
+    },
+    {
+      "id": "AS3",
+      "rubric": "lesson-assessment",
+      "kind": "M",
+      "title": "MCQ: 3–5 options, exactly one correct, no all/none of the above",
+      "status": "pass",
+      "evidence": [
+        "9 MCQ(s): 3–5 options, one correct"
+      ]
+    },
+    {
+      "id": "AS4",
+      "rubric": "lesson-assessment",
+      "kind": "M",
+      "title": "MCQ option lengths within ±25% of their mean",
+      "status": "fail",
+      "evidence": [
+        "L2 l2-children-default: lengths 46/29/31/38 chars, mean 36.0; 1 outside ±25%"
+      ]
+    },
+    {
+      "id": "AS5",
+      "rubric": "lesson-assessment",
+      "kind": "M",
+      "title": "MCQ explains the answer; ≥50% of distractors explained",
+      "status": "pass",
+      "evidence": [
+        "every MCQ explains the answer and ≥50% of distractors"
+      ]
+    },
+    {
+      "id": "AS6",
+      "rubric": "lesson-assessment",
+      "kind": "M",
+      "title": "Recall/fade answers normalisable, alternatives given",
+      "status": "pass",
+      "evidence": [
+        "recall/fade answers are non-empty strings (the runtime normalises case and spacing)"
+      ]
+    },
+    {
+      "id": "AS7",
+      "rubric": "lesson-assessment",
+      "kind": "M",
+      "title": "A worked example precedes each faded example",
+      "status": "pass",
+      "evidence": [
+        "every faded example follows a worked example"
+      ]
+    },
+    {
+      "id": "AS8",
+      "rubric": "lesson-assessment",
+      "kind": "M",
+      "title": "Item stems not copied from the prose (heuristic flag)",
+      "status": "pass",
+      "evidence": [
+        "19 stem(s) checked; none mostly copied from the prose"
+      ]
+    },
+    {
+      "id": "AS9",
+      "rubric": "lesson-assessment",
+      "kind": "R",
+      "title": "Distractors encode real misconceptions; items test the objective",
+      "status": "not-scored",
+      "evidence": [
+        "needs a human or model reviewer (see evaluations/README.md)"
+      ]
+    },
+    {
+      "id": "AS10",
+      "rubric": "lesson-assessment",
+      "kind": "R",
+      "title": "A novice cannot answer from wording or length cues",
+      "status": "not-scored",
+      "evidence": [
+        "needs a human or model reviewer (see evaluations/README.md)"
+      ]
+    },
+    {
+      "id": "AS11",
+      "rubric": "lesson-assessment",
+      "kind": "M",
+      "title": "Challenge has task, send-back, 2–4 criteria in .criteria",
+      "status": "pass",
+      "evidence": [
+        "every challenge has a task, a send-back and 2–4 criteria"
+      ]
+    },
+    {
+      "id": "AS12",
+      "rubric": "lesson-assessment",
+      "kind": "M",
+      "title": "No vague or evaluative-only criteria",
+      "status": "pass",
+      "evidence": [
+        "11 criteria, none vague"
+      ]
+    },
+    {
+      "id": "AS13",
+      "rubric": "lesson-assessment",
+      "kind": "R",
+      "title": "Criteria name observable artifacts and cover the canDo",
+      "status": "not-scored",
+      "evidence": [
+        "needs a human or model reviewer (see evaluations/README.md)"
+      ]
+    },
+    {
+      "id": "AS14",
+      "rubric": "lesson-assessment",
+      "kind": "R",
+      "title": "Challenge is transfer, on the learner's material",
+      "status": "not-scored",
+      "evidence": [
+        "needs a human or model reviewer (see evaluations/README.md)"
+      ]
+    },
+    {
+      "id": "AS15",
+      "rubric": "lesson-assessment",
+      "kind": "M",
+      "title": "Load budget: ≤5 <dfn>, ≤1 scene, ≤~1,500 words",
+      "status": "warn",
+      "evidence": [
+        "L3: 0 <dfn>, 0 scene(s), ~1727 words (≤5, ≤1, ≤~1,500)"
+      ]
+    },
+    {
+      "id": "AS16",
+      "rubric": "lesson-assessment",
+      "kind": "R",
+      "title": "Each worked example has a self-explanation prompt",
+      "status": "not-scored",
+      "evidence": [
+        "needs a human or model reviewer (see evaluations/README.md)"
+      ]
+    },
+    {
+      "id": "G1",
+      "rubric": "grounding",
+      "kind": "M",
+      "title": "Coverage: numeric/factual paragraphs cited or marked (partial M)",
+      "status": "warn",
+      "evidence": [
+        "L1: 1/2 — 23 citation(s); 6 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 1 · Predict a render\", \"Render: Clock returns an <h1> whose text differs from last t\"",
+        "L2: 1/2 — 18 citation(s); 14 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 2 · Predict a render\", \"“replace with 5”\"",
+        "L3: 1/2 — 27 citation(s); 8 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 3 · Diagnose with evidence\", \"Version note: React 18 → 19\""
+      ],
+      "perLesson": [
+        {
+          "n": 1,
+          "score": 1,
+          "evidence": "23 citation(s); 6 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 1 · Predict a render\", \"Render: Clock returns an <h1> whose text differs from last t\""
+        },
+        {
+          "n": 2,
+          "score": 1,
+          "evidence": "18 citation(s); 14 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 2 · Predict a render\", \"“replace with 5”\""
+        },
+        {
+          "n": 3,
+          "score": 1,
+          "evidence": "27 citation(s); 8 numeric paragraph(s) with no data-src or data-grounding: \"Lesson 3 · Diagnose with evidence\", \"Version note: React 18 → 19\""
+        }
+      ],
+      "score": 1
+    },
+    {
+      "id": "G2",
+      "rubric": "grounding",
+      "kind": "R",
+      "title": "Fidelity: claim matches the quote and locator",
+      "status": "not-scored",
+      "evidence": [
+        "needs a human or model reviewer (see evaluations/README.md)"
+      ]
+    },
+    {
+      "id": "G3",
+      "rubric": "grounding",
+      "kind": "M",
+      "title": "Tier: T1/T2 behind numbers and core claims",
+      "status": "pass",
+      "evidence": [
+        "L1: 2/2 — cited tiers: T1, T1, T1, T1, T1, T1",
+        "L2: 2/2 — cited tiers: T1, T1, T1, T1, T1, T1, T1, T1, T1, T1, T1",
+        "L3: 2/2 — cited tiers: T1, T1, T1, T1, T1, T1, T1, T1, T1, T1, T1, T1, T1"
+      ],
+      "perLesson": [
+        {
+          "n": 1,
+          "score": 2,
+          "evidence": "cited tiers: T1, T1, T1, T1, T1, T1"
+        },
+        {
+          "n": 2,
+          "score": 2,
+          "evidence": "cited tiers: T1, T1, T1, T1, T1, T1, T1, T1, T1, T1, T1"
+        },
+        {
+          "n": 3,
+          "score": 2,
+          "evidence": "cited tiers: T1, T1, T1, T1, T1, T1, T1, T1, T1, T1, T1, T1, T1"
+        }
+      ],
+      "score": 2
+    },
+    {
+      "id": "G4",
+      "rubric": "grounding",
+      "kind": "M",
+      "title": "Verification status shown honestly",
+      "status": "pass",
+      "evidence": [
+        "L1: 2/2 — 6/6 cited sources verified; 0 .unverified marker(s)",
+        "L2: 2/2 — 11/11 cited sources verified; 0 .unverified marker(s)",
+        "L3: 2/2 — 13/13 cited sources verified; 1 .unverified marker(s)"
+      ],
+      "perLesson": [
+        {
+          "n": 1,
+          "score": 2,
+          "evidence": "6/6 cited sources verified; 0 .unverified marker(s)"
+        },
+        {
+          "n": 2,
+          "score": 2,
+          "evidence": "11/11 cited sources verified; 0 .unverified marker(s)"
+        },
+        {
+          "n": 3,
+          "score": 2,
+          "evidence": "13/13 cited sources verified; 1 .unverified marker(s)"
+        }
+      ],
+      "score": 2
+    },
+    {
+      "id": "G5",
+      "rubric": "grounding",
+      "kind": "M",
+      "title": "Link integrity (syntax only; resolution needs a fetch: R)",
+      "status": "pass",
+      "evidence": [
+        "L1: 2/2 — URL syntax only (no fetch): 0 missing/placeholder, 0 non-canonical",
+        "L2: 2/2 — URL syntax only (no fetch): 0 missing/placeholder, 0 non-canonical",
+        "L3: 2/2 — URL syntax only (no fetch): 0 missing/placeholder, 0 non-canonical"
+      ],
+      "perLesson": [
+        {
+          "n": 1,
+          "score": 2,
+          "evidence": "URL syntax only (no fetch): 0 missing/placeholder, 0 non-canonical"
+        },
+        {
+          "n": 2,
+          "score": 2,
+          "evidence": "URL syntax only (no fetch): 0 missing/placeholder, 0 non-canonical"
+        },
+        {
+          "n": 3,
+          "score": 2,
+          "evidence": "URL syntax only (no fetch): 0 missing/placeholder, 0 non-canonical"
+        }
+      ],
+      "score": 2
+    },
+    {
+      "id": "G6",
+      "rubric": "grounding",
+      "kind": "M",
+      "title": "Currency: version scope and freshness",
+      "status": "pass",
+      "evidence": [
+        "L1: 2/2 — 0 version-sensitive source(s) without a version; 0 stale",
+        "L2: 2/2 — 0 version-sensitive source(s) without a version; 0 stale",
+        "L3: 2/2 — 0 version-sensitive source(s) without a version; 0 stale"
+      ],
+      "perLesson": [
+        {
+          "n": 1,
+          "score": 2,
+          "evidence": "0 version-sensitive source(s) without a version; 0 stale"
+        },
+        {
+          "n": 2,
+          "score": 2,
+          "evidence": "0 version-sensitive source(s) without a version; 0 stale"
+        },
+        {
+          "n": 3,
+          "score": 2,
+          "evidence": "0 version-sensitive source(s) without a version; 0 stale"
+        }
+      ],
+      "score": 2
+    },
+    {
+      "id": "G7",
+      "rubric": "grounding",
+      "kind": "R",
+      "title": "Epistemic status: disputed findings flagged with a counter-source",
+      "status": "not-scored",
+      "evidence": [
+        "needs a human or model reviewer (see evaluations/README.md)"
+      ]
+    },
+    {
+      "id": "G8",
+      "rubric": "grounding",
+      "kind": "R",
+      "title": "Injection hygiene: annotations in own words, commands reviewed",
+      "status": "not-scored",
+      "evidence": [
+        "needs a human or model reviewer (see evaluations/README.md)"
+      ]
+    }
+  ]
+}

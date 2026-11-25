@@ -152,7 +152,7 @@ Run it on every lesson in every profile. In Fast it is the whole review.
 1. File names, `lang`, CSP (the template's `<meta>`, in `<head>`: a missing or weakened CSP fails the check), `data-lesson`, `#progress` and the script order match this contract; no inline scripts or handlers.
 2. One idea; every objective in `course.js` is taught and practised; nothing is taught that belongs to a later lesson.
 3. Every term is defined before use, or is in `GLOSSARY.md`; its aliases-to-avoid are absent.
-4. Worked example, then a faded one; one "why does this line exist?" prompt.
+4. Worked example, then a faded one; one "why does this line exist?" prompt. Mark the worked example with `class="worked"` on its container (or start its heading with "Worked example") so the rubric can find it before the faded item.
 5. Practice: ids unique and valid, ≥ 3 items per objective, ≥ 1 non-choice, every choice option has a `why`, no cue gives the answer away, interleaving from lesson 3.
 6. Challenge: right `data-kind`, task, what to send back, 2–4 observable criteria, transfer to the learner's material.
 7. Every factual or numeric claim has a `data-src`, the `unverified` span, an **illustrative** label, or is clearly your own reasoning.
