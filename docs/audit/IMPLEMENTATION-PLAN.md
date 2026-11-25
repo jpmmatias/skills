@@ -225,4 +225,6 @@ The skill says `${CLAUDE_SKILL_DIR}` (substituted by Claude Code), with a fallba
   - `viz.js` explorable: no API to reseed after mount; each figure adds its own button.
   - `viz.js` explorable: a graded check falls back to the legacy `Progress.record` because `ctxFor()` has no `record`.
   - `practice.js` recall: one `tolerance` for all accepted answers (cannot accept 0.16 and 16 %).
+- Reported by F2: an overflowing `<pre>` fails axe unless it has `tabindex="0"` (the runtime should add it, or the contract and template should say so); the UI font draws `=>` as a ligature outside `<code>`; `.cols` cards clip code blocks on desktop; `explorable` only takes sliders; `check.mjs` takes per-figure screenshots only at 900px.
+- Source verification via the official repository at a pinned commit (React course) is accepted as "verified" when the entry names the open copy. To be documented in references/grounding.md.
 - After the runtime fixes, re-sync `examples/*/assets/` (they are exact copies of the starter, except `course.js`).
