@@ -1,7 +1,9 @@
 // Finds optional tooling packages (playwright, axe-core) without a bare ESM import, which ignores
 // NODE_PATH and global installs (FE-12). Search order, first hit wins:
 //   (a) the stable tools folder: $LEARNCRAFT_TOOLS_DIR, else ${XDG_CACHE_HOME:-~/.cache}/learncraft/tools
-//   (b) this script's own folder (a node_modules next to check.mjs or above it, e.g. a repository checkout)
+//   (b) this script's own folder, walking up only as far as the skill root (the folder with SKILL.md), plus the
+//       Learncraft repository's node_modules when this is a checkout of it. Never above that: with a per-project
+//       install (<repo>/.claude/skills/learn/…) the studied repository's node_modules must not be used (NEW-07).
 //   (c) the global npm root (`npm root -g`), then any NODE_PATH entries
 //   (d) ONLY with { allowWorkspace: true } (check.mjs --allow-workspace-playwright): the workspace's
 //       node_modules and its parents. Off by default: a course can live inside a repository
@@ -33,10 +35,39 @@ function npmRootGlobal() {
 }
 
 /** Where to look, in order: [label, dir, kind]. kind 'base' = Node lookup from dir; 'modules' = dir is a node_modules folder. */
+/** The skill root above `from` (the folder holding SKILL.md), or null within 4 levels. */
+function skillRoot(from = HERE) {
+  let d = from;
+  for (let i = 0; i < 4; i++) { if (existsSync(join(d, 'SKILL.md'))) return d; const up = dirname(d); if (up === d) break; d = up; }
+  return null;
+}
+/** node_modules folders next to this script, up to the skill root, then the Learncraft repository root if this is one. */
+function scriptModuleDirs() {
+  const stop = skillRoot(), dirs = [];
+  for (let d = HERE; ; d = dirname(d)) {
+    dirs.push(join(d, 'node_modules'));
+    if (!stop || d === stop || dirname(d) === d) break;
+  }
+  const repo = stop && dirname(dirname(stop)); // <repo>/skills/learn → <repo>
+  try {
+    if (repo && existsSync(join(repo, '.claude-plugin', 'marketplace.json')) && JSON.parse(readFileSync(join(repo, 'package.json'), 'utf8')).name === 'learncraft') dirs.push(join(repo, 'node_modules'));
+  } catch { /* not the repository */ }
+  return dirs;
+}
+/** A playwright install in the workspace or one of its parents (reported, never loaded without the flag). */
+export function workspacePlaywright(workspace) {
+  if (!workspace) return null;
+  for (let d = workspace; ; d = dirname(d)) {
+    const p = join(d, 'node_modules', 'playwright', 'package.json');
+    if (existsSync(p)) return dirname(p);
+    if (dirname(d) === d) return null;
+  }
+}
+
 export function searchBases(workspace, { allowWorkspace = false } = {}) {
   const bases = [];
   bases.push(['tools folder', toolsDir(), 'base']);
-  bases.push(['check.mjs folder', HERE, 'base']);
+  for (const d of scriptModuleDirs()) bases.push(['check.mjs folder', d, 'modules']);
   const g = npmRootGlobal();
   if (g) bases.push(['global npm root', g, 'modules']);
   for (const p of (process.env.NODE_PATH || '').split(delimiter).filter(Boolean)) bases.push(['NODE_PATH', p, 'modules']);

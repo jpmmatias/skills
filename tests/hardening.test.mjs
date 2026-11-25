@@ -3,7 +3,7 @@
 // Every test here failed against the code the review was written on; see docs/audit/handoffs/security-fixes.md.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -101,7 +101,7 @@ describe('SR-03: lint catches script-bearing markup the browser would run, and a
     try {
       const p = join(w.ws, 'lessons/0001-first.html');
       writeFileSync(p, (await import('node:fs')).readFileSync(p, 'utf8').replace("script-src 'self'", "script-src 'self' 'unsafe-inline'"));
-      assert.ok((await lintWorkspace(w.ws)).some((x) => x.rule === 'csp-weak' && x.level === 'error'));
+      assert.ok((await lintWorkspace(w.ws)).some((x) => x.rule === 'csp-not-canonical' && x.level === 'error'));
     } finally { w.cleanup(); }
   });
 });
@@ -229,4 +229,166 @@ test('SR-11: a playwright package planted in the workspace (or its parents) is n
     const opted = searchBases(join(repo, '.learncraft'), { allowWorkspace: true });
     assert.match(opted[opted.length - 1][0], /workspace/, 'with the flag the workspace is searched, last');
   } finally { rmSync(repo, { recursive: true, force: true }); delete globalThis.__lcPlanted; }
+});
+
+// ======================= round 2 (re-verification findings NEW-01 … NEW-07) =======================
+import * as LD from '../skills/learn/starter/tools/load-data.mjs'; // namespace import: a missing export fails one test, not the file
+import { symlinkSync, linkSync, unlinkSync, readFileSync as readFile } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+
+describe('NEW-05 / SR-07: the loader isolation is visible to the tests', () => {
+  test('the loader child gets no environment, cannot compile strings and (with the permission model) cannot read files', () => {
+    process.env.LC_SECRET_PROBE = 'leak-me';
+    try {
+      assert.equal(typeof LD.loaderSelfTest, 'function', 'no loader self-test');
+      const r = LD.loaderSelfTest();
+      assert.deepEqual(r.env, [], `inherited: ${r.env}`);
+      assert.equal(r.codegen, 'blocked');
+      const hasPermission = process.allowedNodeEnvironmentFlags.has('--permission') || process.allowedNodeEnvironmentFlags.has('--experimental-permission');
+      if (hasPermission) { assert.equal(r.permission, true); assert.equal(r.fsRead, 'blocked'); }
+    } finally { delete process.env.LC_SECRET_PROBE; }
+  });
+  test('every route to process / host code is blocked INSIDE the context (reported back as data, not swallowed)', () => {
+    const dir = tmp();
+    try {
+      const f = join(dir, 'probe.js');
+      writeFileSync(f, `var r = {}, self = this;
+        function t(k, fn) { try { r[k] = String(fn()); } catch (e) { r[k] = 'blocked'; } }
+        t('globalThis.process', function () { return typeof globalThis.process; });
+        t('require', function () { return typeof require; });
+        t('this.constructor', function () { return typeof self.constructor.constructor('return process')(); });
+        t('console.log', function () { return typeof console.log.constructor('return process')(); });
+        t('document', function () { return typeof document.querySelector.constructor('return process')(); });
+        t('Learncraft.practice', function () { return typeof Learncraft.practice.constructor('return process')(); });
+        t('Learncraft proxy miss', function () { return typeof Learncraft.nothing.constructor('return process')(); });
+        t('error constructor', function () { try { null.x; } catch (e) { return typeof e.constructor.constructor('return process')(); } });
+        t('Uint8Array', function () { return typeof Uint8Array; });
+        t('ArrayBuffer', function () { return typeof ArrayBuffer; });
+        t('WebAssembly', function () { return typeof WebAssembly; });
+        window.COURSE = r;`);
+      const r = LD.loadCourseJs(f);
+      for (const [k, v] of Object.entries(r)) assert.ok(v === 'blocked' || v === 'undefined', `${k} → ${v}`);
+      assert.equal(Object.keys(r).length, 11);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+  test('error messages never quote the file (only the error name and line)', () => {
+    const dir = tmp();
+    try {
+      mkdirSync(join(dir, 'assets'));
+      writeFileSync(join(dir, 'assets', 'course.js'), '\nwindow.COURSE = { id: AKIASECRETIDENT };');
+      assert.throws(() => LD.loadCourseJs(join(dir, 'assets', 'course.js')), (e) => /ReferenceError at line 2/.test(e.message) && !/AKIA/.test(e.message));
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+});
+
+describe('NEW-02: special files and links are refused before they are opened', () => {
+  const lintIn = (prep) => {
+    const w = buildWorkspace();
+    try {
+      prep(w.ws);
+      const r = spawnSync(process.execPath, [join(ROOT, 'skills/learn/starter/tools/lint-workspace.mjs'), w.ws, '--json'], { encoding: 'utf8', timeout: 15000 });
+      assert.ok(!r.error, `lint hung or crashed: ${r.error && r.error.code}`);
+      assert.ok(r.status === 0 || r.status === 1, `lint crashed (exit ${r.status}, ${r.signal})`);
+      return { findings: JSON.parse(r.stdout), out: r.stdout };
+    } finally { w.cleanup(); }
+  };
+  const P = (ws) => join(ws, 'lessons', '0001.practice.js');
+  test('a FIFO practice file', (ctx) => {
+    if (process.platform === 'win32') return ctx.skip('no mkfifo on Windows');
+    const { findings } = lintIn((ws) => { unlinkSync(P(ws)); execFileSync('mkfifo', [P(ws)]); });
+    assert.ok(findings.some((x) => x.level === 'error' && /FIFO/.test(x.message)));
+  });
+  test('a FIFO lesson page', (ctx) => {
+    if (process.platform === 'win32') return ctx.skip('no mkfifo on Windows');
+    const { findings } = lintIn((ws) => execFileSync('mkfifo', [join(ws, 'lessons', '0009-x.html')]));
+    assert.ok(findings.some((x) => x.rule === 'unsafe-file' && /FIFO/.test(x.message)));
+  });
+  test('a symbolic link to /dev/zero', (ctx) => {
+    if (!existsSync('/dev/zero')) return ctx.skip('no /dev/zero');
+    const { findings } = lintIn((ws) => { unlinkSync(P(ws)); symlinkSync('/dev/zero', P(ws)); });
+    assert.ok(findings.some((x) => x.level === 'error' && /symbolic link/.test(x.message)));
+  });
+  test('a symbolic link or a hard link to a file outside the workspace: refused, contents never echoed', () => {
+    for (const make of [symlinkSync, linkSync]) {
+      const { findings, out } = lintIn((ws) => {
+        const secret = join(ws, '..', `outside-${make.name}-${process.pid}.txt`);
+        writeFileSync(secret, 'AKIAFAKESECRET = token\n');
+        unlinkSync(join(ws, 'assets', 'course.js')); make(secret, join(ws, 'assets', 'course.js'));
+      });
+      assert.ok(findings.some((x) => x.rule === 'course-load' && /refused/.test(x.message)), make.name);
+      assert.doesNotMatch(out, /AKIA|token/, `${make.name}: file text reached the output`);
+    }
+  });
+});
+
+describe('NEW-01: lint first pass (comments, foreign content, SVG animation, canonical CSP)', () => {
+  const X = 'window.__x=1';
+  const BYPASS = {
+    '<!-->': `<!--><svg onload="${X}">-->`, '<!--->': `<!---><svg onload="${X}">-->`, '--!>': `<!-- a --!><svg onload="${X}"> -->`,
+    'comment in script': `<script src="../assets/viz.js"><!-- </script><svg onload="${X}"> --></script>`,
+    'svg style': `<svg><style><img src=x onerror="${X}"></style></svg>`, 'svg script': `<svg><script><img src=x onerror="${X}"></script></svg>`,
+    'svg animate href': `<svg><a><animate attributeName="href" values="javascript:void(0)"/><text>x</text></a></svg>`,
+    'svg set href': `<svg><a><set attributeName="href" to="javascript:void(0)"/><text>x</text></a></svg>`,
+    'noscript attribute': `<noscript><p title="</noscript><img src=x onerror='${X}'>"></noscript>`,
+  };
+  for (const [name, snippet] of Object.entries(BYPASS)) {
+    test(`flags ${name}`, async () => {
+      const w = buildWorkspace({ lessonExtra: snippet });
+      try { assert.ok((await lintWorkspace(w.ws)).some((x) => x.file.startsWith('lessons/') && x.level === 'error' && !/^csp/.test(x.rule)), snippet); } finally { w.cleanup(); }
+    });
+  }
+  const setCsp = (w, fn) => { const p = join(w.ws, 'lessons/0001-first.html'); writeFileSync(p, fn(readFile(p, 'utf8'))); };
+  for (const [name, edit, rule] of [
+    ['script-src-attr unsafe-inline', (h) => h.replace("script-src 'self';", "script-src 'self'; script-src-attr 'unsafe-inline';"), 'csp-not-canonical'],
+    ['script-src-elem unsafe-inline', (h) => h.replace("script-src 'self';", "script-src 'self'; script-src-elem 'self' 'unsafe-inline';"), 'csp-not-canonical'],
+    ['a nonce', (h) => h.replace("script-src 'self';", "script-src 'self' 'nonce-abc';"), 'csp-not-canonical'],
+    ['strict-dynamic', (h) => h.replace("script-src 'self';", "script-src 'self' 'strict-dynamic';"), 'csp-not-canonical'],
+    ['base-uri dropped', (h) => h.replace("; base-uri 'none'", ''), 'csp-not-canonical'],
+    ['a second CSP meta', (h) => h.replace(/(<meta http-equiv="Content-Security-Policy"[^>]*>)/, `$1<meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-inline'">`), 'csp-duplicate'],
+    ['the CSP after a stylesheet', (h) => { const m = /<meta http-equiv="Content-Security-Policy"[^>]*>/.exec(h)[0]; return h.replace(m, '').replace('</head>', m + '</head>'); }, 'csp-late'],
+  ]) {
+    test(`CSP: ${name} is an error`, async () => {
+      const w = buildWorkspace(); setCsp(w, edit);
+      try { assert.ok((await lintWorkspace(w.ws)).some((x) => x.rule === rule && x.level === 'error' && x.file === 'lessons/0001-first.html'), name); } finally { w.cleanup(); }
+    });
+  }
+});
+
+test('NEW-04: a percent-encoded ".." in lessons[].file is a lint error', async () => {
+  const c = { schemaVersion: 2, id: 'smoke-course', topic: 'T', lang: 'en', mission: 'M', milestones: [{ id: 'm1', label: 'L', canDo: 'C', status: 'in-progress', evidence: null }],
+    lessons: [{ n: 1, file: 'lessons/%2e%2e/%2e%2e/x.html', title: 'T', milestones: ['m1'], canDo: 'c', objectives: [{ id: 'l1.o1', text: 'x' }] }] };
+  const w = buildWorkspace();
+  try {
+    writeFileSync(join(w.ws, 'assets', 'course.js'), `window.COURSE = ${JSON.stringify(c)};`);
+    assert.ok((await lintWorkspace(w.ws)).some((x) => x.rule === 'lesson-file-path'));
+  } finally { w.cleanup(); }
+});
+
+test('NEW-06: events kept unread survive export → import into a fresh browser', () => {
+  const st = mem(); st.setItem(KEY, doc([ev(1), ev(2, { kind: 'hint' })]));
+  const a = mk(st); a.load();
+  const st2 = mem(); const b = mk(st2); b.load();
+  const r = b.importJSON(a.exportJSON());
+  assert.equal(r.added, 1); assert.equal(r.quarantined, 1);
+  assert.equal(b.quarantined(), 1);
+  assert.ok(JSON.parse(st2.getItem(KEY)).events.some((e) => e.id === 'e_2'), 'the unread event was dropped');
+  assert.equal(b.importJSON(a.exportJSON()).quarantined, 0, 're-import does not duplicate it');
+});
+
+test('NEW-07: a per-project skill install never loads the studied repository\'s playwright', async () => {
+  const repo = tmp();
+  try {
+    const skill = join(repo, '.claude', 'skills', 'learn');
+    cpSync(join(ROOT, 'skills/learn/starter/tools'), join(skill, 'starter', 'tools'), { recursive: true });
+    writeFileSync(join(skill, 'SKILL.md'), '# learn\n');
+    const pk = join(repo, 'node_modules', 'playwright'); mkdirSync(pk, { recursive: true });
+    writeFileSync(join(pk, 'package.json'), '{"name":"playwright","main":"index.js"}');
+    writeFileSync(join(pk, 'index.js'), 'console.log("PLANTED"); module.exports = {};');
+    mkdirSync(join(repo, '.learncraft'));
+    const code = `const m = await import(${JSON.stringify(pathToFileURL(join(skill, 'starter', 'tools', 'resolve.mjs')).href)}); const r = m.loadPlaywright(${JSON.stringify(join(repo, '.learncraft'))}); console.log('from=' + r.from + ' path=' + r.path); console.log('reported=' + m.workspacePlaywright(${JSON.stringify(join(repo, '.learncraft'))}));`;
+    const r = spawnSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8', env: { ...process.env, LEARNCRAFT_TOOLS_DIR: join(repo, 'no-cache') } });
+    assert.doesNotMatch(r.stdout, /PLANTED/);
+    assert.ok(!r.stdout.includes('path=' + pk), r.stdout);
+    assert.match(r.stdout, /reported=.*node_modules[\\/]playwright/, 'the planted install is not reported');
+  } finally { rmSync(repo, { recursive: true, force: true }); }
 });

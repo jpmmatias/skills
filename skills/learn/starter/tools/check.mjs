@@ -41,8 +41,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { loadPlaywright, resolveTool } from './resolve.mjs';
-import { inspectWorkspace, formatFindings } from './lint-workspace.mjs';
+import { loadPlaywright, resolveTool, workspacePlaywright } from './resolve.mjs';
+import { inspectWorkspace, formatFindings, checkWorkspaceFile, domSecurityAudit as securityAudit } from './lint-workspace.mjs';
 
 const args = process.argv.slice(2);
 const ws = resolve(args.find((a) => !a.startsWith('--')) ?? '.');
@@ -59,6 +59,8 @@ console.log(formatFindings(lint.findings));
 console.log('');
 
 // 2. Browser ------------------------------------------------------------------------------------
+const planted = !allowWorkspace && workspacePlaywright(ws);
+if (planted) console.log(`! the workspace (or a folder above it) has its own playwright at ${planted}: NOT used (pass --allow-workspace-playwright to trust it)`);
 const { playwright, reason, from } = loadPlaywright(ws, { allowWorkspace, onResolve: (p, where) => console.log(`(loading playwright from ${where}: ${p})`) });
 if (!playwright) {
   console.log(reason);
@@ -73,7 +75,8 @@ console.log(`(playwright from ${from}; axe-core ${axeSource ? 'from ' + axePath 
 const out = join(ws, '.check');
 mkdirSync(out, { recursive: true });
 const list = (dir) => (existsSync(join(ws, dir)) ? readdirSync(join(ws, dir)).filter((f) => f.endsWith('.html')).sort().map((f) => `${dir}/${f}`) : []);
-const pages = ['index.html', 'review.html', ...list('lessons'), ...list('reference')].filter((p) => existsSync(join(ws, p)) && (!only || p.includes(only)));
+// Only regular files inside the workspace are opened (the lint already reported anything else: NEW-02).
+const pages = ['index.html', 'review.html', ...list('lessons'), ...list('reference')].filter((p) => existsSync(join(ws, p)) && (!only || p.includes(only)) && checkWorkspaceFile(join(ws, p), { root: ws }).ok);
 const practiceCount = new Map([...lint.practice].map(([n, items]) => [n, items.length]));
 
 async function launch() {
@@ -151,6 +154,8 @@ for (const rel of pages) {
     const page = await ctx.newPage();
     let quiet = false; // axe's own requests are not the page's problems
     page.on('pageerror', (e) => problems.push(`${tag} JS error: ${e.message}`));
+    // Every CSP violation is an error: under the template policy a clean page has none (NEW-01).
+    await page.addInitScript(() => { window.__lcCsp = []; document.addEventListener('securitypolicyviolation', (e) => window.__lcCsp.push(`${e.effectiveDirective} blocked ${e.blockedURI || 'inline'}${e.sample ? ' (' + e.sample.slice(0, 40) + ')' : ''}`)); });
     page.on('console', (m) => !quiet && m.type() === 'error' && problems.push(`${tag} console: ${m.text()}`));
     page.on('requestfailed', (r) => {
       const u = r.url();
@@ -167,6 +172,8 @@ for (const rel of pages) {
     const settled = await settle(page, pass.reducedMotion ? 1500 : 3000);
     if (!settled) warnings.push(`${tag} animations still running after the settle timeout; screenshots may show mid-tween frames`);
     const info = await page.evaluate(domAudit);
+    for (const v of await page.evaluate(() => window.__lcCsp || []).catch(() => [])) problems.push(`${tag} CSP violation: ${v}`);
+    if (pass.key === 'light-900') for (const f of await page.evaluate(securityAudit, wsUrl + '/').catch((e) => [`security audit failed: ${e.message.split('\n')[0]}`])) problems.push(`security: ${f}`);
     if (info.scrollWidth > pass.width + 1) problems.push(`${tag} horizontal scroll: page is ${info.scrollWidth}px wide`);
     for (const e of info.errors) problems.push(`${tag} component failed to mount: ${e}`);
     if (pass.key === 'light-900') {

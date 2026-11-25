@@ -6,6 +6,8 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import { browserOrSkip, buildWorkspace, open, BASE_COURSE, BASE_ITEMS, TEMPLATES } from './lib/workspace.mjs';
 
 let browser, skip;
@@ -291,6 +293,71 @@ t('SR-13: a dashboard open in another tab updates when the lesson tab records an
     const lesson = await ctx.newPage(); await lesson.goto(w.url('lessons/0001-first.html')); await lesson.waitForTimeout(300);
     await lesson.getByRole('button', { name: 'Option one' }).click(); await lesson.waitForTimeout(500);
     assert.doesNotMatch(await dash.locator('.lc-lessons').innerText(), /not started/, 'the other tab still shows stale progress');
+    await ctx.close();
+  } finally { w.cleanup(); }
+});
+
+// ---------- round 2: the rendered-DOM audit behind check.mjs (NEW-01) and percent-encoded paths (NEW-04) ----------
+const X2 = 'window.__xss=1';
+const DOM_BYPASS = {
+  '<!-->': `<!--><svg onload="${X2}">-->`, '<!--->': `<!---><svg onload="${X2}">-->`, '--!>': `<!-- a --!><svg onload="${X2}"> -->`,
+  'comment in script': `<script src="../assets/viz.js"><!-- </script><svg onload="${X2}"> --></script>`,
+  'svg style': `<svg><style><img src=x onerror="${X2}"></style></svg>`, 'svg script': `<svg><script><img src=x onerror="${X2}"></script></svg>`,
+  'svg animate href': `<svg><a id="t"><animate attributeName="href" values="javascript:${X2}"/><text y="20">x</text></a></svg>`,
+  'svg set href': `<svg><a id="t"><set attributeName="href" to="javascript:${X2}"/><text y="20">x</text></a></svg>`,
+  'noscript attribute': `<noscript><p title="</noscript><img src=x onerror='${X2}'>"></noscript>`,
+};
+t('NEW-01: the DOM audit reports every bypass form, and none runs under the template CSP', async () => {
+  const { domSecurityAudit } = await import('../skills/learn/starter/tools/lint-workspace.mjs');
+  for (const [name, snippet] of Object.entries(DOM_BYPASS)) {
+    const w = buildWorkspace({ lessonExtra: snippet });
+    try {
+      const { page, ctx } = await open(browser, w.url('lessons/0001-first.html'));
+      const found = await page.evaluate(domSecurityAudit, pathToFileURL(w.ws).href + '/');
+      assert.ok(found.length > 0, `${name}: the DOM audit saw nothing`);
+      if (await page.locator('#t').count()) await page.locator('#t').first().click({ force: true, timeout: 1000 }).catch(() => {});
+      await page.waitForTimeout(150);
+      assert.equal(await page.evaluate(() => window.__xss).catch(() => undefined), undefined, `${name} ran under the template CSP`);
+      await ctx.close();
+    } finally { w.cleanup(); }
+  }
+});
+
+t('NEW-01: the DOM audit finds nothing on the clean template pages', async () => {
+  const { domSecurityAudit } = await import('../skills/learn/starter/tools/lint-workspace.mjs');
+  const w = buildWorkspace();
+  try {
+    for (const rel of ['index.html', 'review.html', 'lessons/0001-first.html', 'reference/cheat-sheet.html']) {
+      const { page, ctx } = await open(browser, w.url(rel));
+      assert.deepEqual(await page.evaluate(domSecurityAudit, pathToFileURL(w.ws).href + '/'), [], rel);
+      await ctx.close();
+    }
+  } finally { w.cleanup(); }
+});
+
+t('NEW-01: check.mjs reports the DOM audit and CSP violations for a page', async () => {
+  const w = buildWorkspace({ lessonExtra: DOM_BYPASS['<!-->'] });
+  try {
+    const r = spawnSync(process.execPath, [join(TEMPLATES, '..', 'tools', 'check.mjs'), w.ws, '--only=0001', '--no-axe'], { encoding: 'utf8', timeout: 120000 });
+    assert.equal(r.status, 1);
+    assert.match(r.stdout, /security: inline handler onload on <svg>/);
+    assert.match(r.stdout, /CSP violation: script-src-attr/);
+  } finally { w.cleanup(); }
+});
+
+t('NEW-04: percent-encoded ".." never leaves the workspace (workspaceHref, sanitize)', async () => {
+  const w = buildWorkspace();
+  try {
+    const { page, ctx } = await open(browser, w.url('lessons/0001-first.html'));
+    const r = await page.evaluate(() => {
+      const hrefs = ['%2e%2e/%2e%2e/outside.html', 'x/%2e%2e/%2e%2e/%2e%2e/etc/passwd', '%252e%252e/%252e%252e/x', '.%2e/.%2e/x'].map((p) => Learncraft.workspaceHref(p));
+      const san = ['%2e%2e/%2e%2e/%2e%2e/etc/passwd', '%252e%252e/%252e%252e/%252e%252e/x', '../reference/cheat-sheet.html'].map((p) => {
+        const d = document.createElement('div'); d.innerHTML = Learncraft.sanitize(`<a href="${p}">x</a>`); return d.querySelector('a').getAttribute('href');
+      });
+      return { hrefs, san };
+    });
+    assert.deepEqual(r.hrefs, ['#', '#', '#', '#']);
+    assert.deepEqual(r.san, [null, null, '../reference/cheat-sheet.html']);
     await ctx.close();
   } finally { w.cleanup(); }
 });

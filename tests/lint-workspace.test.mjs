@@ -23,7 +23,7 @@ const ITEMS = [
   { id: 'l1-recall', type: 'recall', objective: 'l1.o1', prompt: 'Name it.', accept: ['alpha'], why: 'It is alpha.' },
 ];
 const LESSON = (extra = '') => `<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>One</title></head><body data-lesson="1"><main>
 <p>Alpha beats bravo in 3 of 4 cases.<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup></p>
 <div data-practice-set></div>

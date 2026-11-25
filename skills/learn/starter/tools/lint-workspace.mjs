@@ -19,9 +19,9 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep, posix } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { loadCourseJs, loadPracticeJs, loadDataFiles } from './load-data.mjs';
+import { loadCourseJs, loadPracticeJs, loadDataFiles, readWorkspaceFile, checkWorkspaceFile } from './load-data.mjs';
 
-export { loadCourseJs, loadPracticeJs, loadDataFiles };
+export { loadCourseJs, loadPracticeJs, loadDataFiles, readWorkspaceFile, checkWorkspaceFile };
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -79,11 +79,46 @@ export function fallbackLoadPracticeJs(path) {
 // ---------------------------------------------------------------------------------------------
 const VOID = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
 
-/** Removes comments and the bodies of <script>/<style>, keeping their start tags. */
+/**
+ * Removes comments and the bodies of HTML <script>/<style>/raw-text elements, keeping their start tags. Comments end
+ * as the HTML tokenizer ends them (`<!-->`, `<!--->`, `-->` and `--!>`), and <script>/<style> inside <svg> or <math>
+ * are NOT blanked (there they are ordinary elements whose children are parsed as markup). This is only the fast first
+ * pass: check.mjs audits the DOM Chromium actually built (NEW-01).
+ */
 export function stripHtml(html) {
-  return html
-    .replace(/<!--[\s\S]*?-->/g, (m) => ' '.repeat(m.length))
-    .replace(/(<(script|style)\b[^>]*>)([\s\S]*?)(<\/\2\s*>)/gi, (m, open, _t, body, close) => open + ' '.repeat(body.length) + close);
+  let out = '', i = 0, foreign = 0;
+  const n = html.length;
+  while (i < n) {
+    const lt = html.indexOf('<', i);
+    if (lt < 0) { out += html.slice(i); break; }
+    out += html.slice(i, lt);
+    if (html.startsWith('<!--', lt)) {
+      let end;
+      if (html.startsWith('>', lt + 4)) end = lt + 5;
+      else if (html.startsWith('->', lt + 4)) end = lt + 6;
+      else {
+        const a = html.indexOf('-->', lt + 4), b = html.indexOf('--!>', lt + 4);
+        end = a < 0 && b < 0 ? n : b >= 0 && (a < 0 || b < a) ? b + 4 : a + 3;
+      }
+      out += ' '.repeat(end - lt); i = end; continue;
+    }
+    const m = /^<(\/?)([a-zA-Z][^\s/>]*)/.exec(html.slice(lt, lt + 64));
+    const name = m ? m[2].toLowerCase() : '';
+    if (m && (name === 'svg' || name === 'math')) foreign = Math.max(0, foreign + (m[1] ? -1 : 1));
+    if (m && !m[1] && !foreign && /^(script|style|xmp|noembed|noframes|iframe|textarea|title|noscript)$/.test(name)) {
+      const gt = html.indexOf('>', lt);
+      const close = gt < 0 ? -1 : html.slice(gt + 1).search(new RegExp(`</${name}[\\s/>]`, 'i'));
+      if (gt >= 0 && close >= 0) {
+        const bodyStart = gt + 1, bodyEnd = gt + 1 + close;
+        const body = html.slice(bodyStart, bodyEnd);
+        // textarea/title/noscript bodies stay visible as text to the later checks (only markup-free text is blanked)
+        out += html.slice(lt, bodyStart) + (/^(textarea|title)$/.test(name) ? body.replace(/</g, ' ') : name === 'noscript' ? body : ' '.repeat(body.length));
+        i = bodyEnd; continue;
+      }
+    }
+    out += '<'; i = lt + 1;
+  }
+  return out;
 }
 
 // Start-tag tokenizer following the HTML spec's attribute rules closely enough for security checks
@@ -224,7 +259,14 @@ export function parseResources(text) {
 // ---------------------------------------------------------------------------------------------
 const ITEM_ID = /^[a-z0-9][a-z0-9-]*$/;
 export const PRACTICE_FILE = /^lessons\/\d{4}\.practice\.js$/;
-const SAFE_REL = /^(?!\/)(?![a-z][a-z0-9+.-]*:)(?!.*(?:^|\/)\.\.(?:\/|$))[^\\\u0000-\u001f]+$/i;
+const SAFE_REL_RAW = /^(?!\/)(?![a-z][a-z0-9+.-]*:)(?!.*(?:^|\/)\.\.(?:\/|$))[^\\\u0000-\u001f]+$/i;
+/** Percent-decodes until stable (so %2e%2e and %252e%252e are seen as ..), at most 5 rounds. */
+export function percentDecodeAll(s) {
+  let cur = String(s);
+  for (let i = 0; i < 5; i++) { let next; try { next = decodeURIComponent(cur); } catch { next = cur.replace(/%2e/gi, '.').replace(/%2f/gi, '/').replace(/%5c/gi, '\\'); } if (next === cur) break; cur = next; }
+  return cur;
+}
+const SAFE_REL = { test: (p) => SAFE_REL_RAW.test(p) && SAFE_REL_RAW.test(percentDecodeAll(p)) };
 const ITEM_TYPES = new Set(['choice', 'recall', 'order', 'fade']);
 export const OPTION_RATIO_MAX = 1.6;
 
@@ -255,33 +297,86 @@ const URL_ATTRS = new Set(['href', 'src', 'xlink:href', 'action', 'formaction', 
 const NAV_ATTRS = new Set(['href', 'xlink:href', 'action', 'formaction']);
 const EMBEDS = new Set(['object', 'embed', 'applet', 'frame', 'frameset']);
 
+/** The template policy, exactly (NEW-01). Every v2 page must carry this and nothing else. */
+export const CANONICAL_CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'";
+export function parseCsp(text) {
+  const dir = new Map(), dup = [];
+  for (const part of String(text || '').split(';')) {
+    const [k, ...v] = part.trim().split(/\s+/).filter(Boolean);
+    if (!k) continue;
+    const name = k.toLowerCase();
+    if (dir.has(name)) { dup.push(name); continue; } // the browser ignores a repeated directive
+    dir.set(name, v.map((x) => (/^'/.test(x) ? x.toLowerCase() : x)));
+  }
+  return { dir, dup };
+}
+const CANON = parseCsp(CANONICAL_CSP).dir;
+const SCRIPTISH = /^(script-src|script-src-attr|script-src-elem|default-src|worker-src|child-src|frame-src|object-src|base-uri|form-action|navigate-to|trusted-types|require-trusted-types-for)$/;
+
 /**
- * The CSP <meta> every page must carry (the templates have it): present, in <head> before any script, and with a
- * script policy that only allows files ('self'). A missing CSP is an error (SR-03): it is the layer that stops a
- * sanitiser or lint bypass from running.
+ * The CSP <meta> every page must carry (the templates have it): exactly one, in <head>, before any script or
+ * stylesheet, and exactly the template policy (CANONICAL_CSP). Even markup the regex lint misses cannot run under it.
  */
 export function cspProblems(all) {
-  const metas = all.filter((t) => t.name === 'meta' && /^content-security-policy$/i.test(t.attrs['http-equiv'] || ''));
+  const metas = all.filter((t) => t.name === 'meta' && /^content-security-policy$/i.test((t.attrs['http-equiv'] || '').trim()));
   if (!metas.length) return [{ rule: 'csp-missing', message: 'no Content-Security-Policy <meta>: copy the one from the page template (templates/*.html) into <head>' }];
   const out = [];
+  if (metas.length > 1) out.push({ rule: 'csp-duplicate', message: `${metas.length} Content-Security-Policy <meta> tags: keep exactly one, the template's` });
   const meta = metas[0];
-  const firstScript = all.find((t) => t.name === 'script');
-  const body = all.find((t) => t.name === 'body');
-  if ((firstScript && firstScript.start < meta.start) || (body && body.start < meta.start)) out.push({ rule: 'csp-late', message: 'the Content-Security-Policy <meta> must be in <head>, before any <script> (later, it does not protect what came first)' });
-  const dir = {};
-  for (const part of String(meta.attrs.content || '').split(';')) {
-    const [k, ...v] = part.trim().split(/\s+/);
-    if (k && !(k.toLowerCase() in dir)) dir[k.toLowerCase()] = v.map((x) => x.toLowerCase());
+  const early = all.find((t) => t.start < meta.start && (t.name === 'script' || t.name === 'body' || (t.name === 'link' && /stylesheet/i.test(t.attrs.rel || '')) || t.name === 'style'));
+  const head = all.find((t) => t.name === 'head');
+  if (early || (head && meta.start < head.start)) out.push({ rule: 'csp-late', message: `the Content-Security-Policy <meta> must be in <head>, before any script or stylesheet${early ? ` (found after <${early.name}>)` : ''}` });
+  const { dir, dup } = parseCsp(meta.attrs.content);
+  const diffs = [];
+  for (const [k, v] of CANON) {
+    const got = dir.get(k);
+    if (!got) diffs.push(`missing ${k}`);
+    else if (got.slice().sort().join(' ') !== v.slice().sort().join(' ')) diffs.push(`${k} is "${got.join(' ')}" (must be "${v.join(' ')}")`);
   }
-  const script = dir['script-src'] || dir['default-src'];
-  if (!script) out.push({ rule: 'csp-weak', message: "the CSP has neither script-src nor default-src: scripts are unrestricted (the template uses script-src 'self')" });
-  else {
-    const bad = script.filter((x) => !["'self'", "'none'"].includes(x));
-    if (bad.length) out.push({ rule: 'csp-weak', message: `the CSP script policy allows ${bad.join(' ')}: courses load scripts only from their own files (script-src 'self')` });
-  }
-  if (!dir['connect-src'] || dir['connect-src'].join(' ') !== "'none'") out.push({ rule: 'csp-weak', message: "the CSP must say connect-src 'none' (courses make no network requests)" });
+  for (const k of dir.keys()) if (!CANON.has(k)) diffs.push(`extra directive ${k}${SCRIPTISH.test(k) ? ' (relaxes or changes script rules)' : ''}`);
+  for (const k of dup) diffs.push(`repeated directive ${k}`);
+  if (diffs.length) out.push({ rule: 'csp-not-canonical', message: `the CSP must be exactly the template policy: ${diffs.join('; ')}. Expected: ${CANONICAL_CSP}` });
   return out;
 }
+
+/**
+ * Security audit of the DOM Chromium actually built (NEW-01): the authority behind the regex lint. Runs IN THE PAGE (page.evaluate(domSecurityAudit, workspaceUrl + '/')): keep it self-contained.
+ * Reports inline handlers anywhere (SVG and MathML included), scripts that are inline or not from the workspace's
+ * assets/, the page's own folder or lessons/NNNN.practice.js, SVG animation of link targets, dangerous resolved URLs,
+ * nested documents and navigation elements.
+ */
+export const domSecurityAudit = (rootUrl) => {
+  const out = [];
+  const short = (el) => el.outerHTML.slice(0, 100).replace(/\s+/g, ' ');
+  const pageDir = new URL('.', location.href).href;
+  const URLA = ['href', 'src', 'action', 'formaction', 'xlink:href', 'data', 'poster', 'background', 'ping', 'cite'];
+  for (const el of document.querySelectorAll('*')) {
+    const tag = el.localName.toLowerCase();
+    for (const a of el.attributes) {
+      const name = a.name.toLowerCase();
+      if (/^on/.test(name)) out.push(`inline handler ${name} on <${tag}>: ${short(el)}`);
+      if (name === 'srcdoc') out.push(`srcdoc on <${tag}>`);
+      if (URLA.includes(name)) {
+        let u; try { u = new URL(a.value, document.baseURI); } catch { continue; }
+        const html = /^data:(text\/html|application\/xhtml)/i.test(u.href) || (/^data:image\/svg/i.test(u.href) && tag !== 'img');
+        if (/^(javascript|vbscript):$/.test(u.protocol) || (u.protocol === 'data:' && (html || ['href', 'xlink:href', 'action', 'formaction'].includes(name) || /^(iframe|object|embed|frame)$/.test(tag))))
+          out.push(`${u.protocol} URL in ${name} on <${tag}>: ${short(el)}`);
+        if (u.protocol === 'file:' && u.host) out.push(`network path file://${u.host} in ${name} on <${tag}>`);
+      }
+    }
+    if (/^(iframe|object|embed|frame|frameset|applet|base)$/.test(tag)) out.push(`<${tag}> element: ${short(el)}`);
+    if (tag === 'meta' && /refresh/i.test(el.getAttribute('http-equiv') || '')) out.push(`<meta http-equiv="refresh">`);
+    if (/^(animate|set|animatetransform|animatemotion)$/.test(tag) && /^(xlink:)?href$/i.test((el.getAttribute('attributeName') || '').trim())) out.push(`SVG <${tag}> animates ${el.getAttribute('attributeName')}`);
+    if (tag === 'script') {
+      const src = el.getAttribute('src');
+      if (src == null) { if (el.textContent.trim()) out.push(`inline <script>${el.namespaceURI !== 'http://www.w3.org/1999/xhtml' ? ' (in ' + el.namespaceURI.split('/').pop() + ')' : ''}: ${short(el)}`); continue; }
+      let u; try { u = new URL(src, document.baseURI).href.split(/[?#]/)[0]; } catch { out.push(`script with a bad src: ${src}`); continue; }
+      const ok = u.startsWith(rootUrl + 'assets/') || (u.startsWith(pageDir) && !u.slice(pageDir.length).includes('/')) || /^lessons\/\d{4}\.practice\.js$/.test(u.slice(rootUrl.length));
+      if (!u.startsWith(rootUrl) || !ok) out.push(`script from outside assets/, the page's folder or lessons/NNNN.practice.js: ${src}`);
+    }
+  }
+  return [...new Set(out)];
+};
 
 const listHtml = (ws, d) => (existsSync(join(ws, d)) ? readdirSync(join(ws, d)).filter((f) => f.endsWith('.html')).sort().map((f) => `${d}/${f}`) : []);
 const toPosix = (p) => p.split(sep).join('/');
@@ -304,7 +399,7 @@ export async function inspectWorkspace(wsDir) {
   const practiceFiles = existsSync(lessonsDir) ? readdirSync(lessonsDir).filter((f) => /\.practice\.js$/.test(f)).sort() : [];
   // One loader process for course.js and every practice file (load-data.mjs).
   const hasCourse = existsSync(coursePath);
-  const loaded = loadDataFiles([...(hasCourse ? [{ kind: 'course', path: coursePath }] : []), ...practiceFiles.map((f) => ({ kind: 'practice', path: join(lessonsDir, f) }))]);
+  const loaded = loadDataFiles([...(hasCourse ? [{ kind: 'course', path: coursePath, root: ws }] : []), ...practiceFiles.map((f) => ({ kind: 'practice', path: join(lessonsDir, f), root: ws }))]);
   const courseResult = hasCourse ? loaded.shift() : null;
   let course = null;
   if (!hasCourse) add('error', 'course-missing', 'assets/course.js', 'No assets/course.js: this is not a course workspace, or the manifest was deleted');
@@ -383,7 +478,9 @@ export async function inspectWorkspace(wsDir) {
   let resources = null;
   const resPath = join(ws, 'RESOURCES.md');
   if (existsSync(resPath)) {
-    resources = parseResources(readFileSync(resPath, 'utf8'));
+    const rr = readWorkspaceFile(resPath, { root: ws });
+    if (rr.error) add('error', 'unsafe-file', 'RESOURCES.md', `RESOURCES.md ${rr.error}`);
+    resources = parseResources(rr.text ?? '');
     const ids = new Map();
     for (const e of resources.entries) {
       if (ids.has(e.id)) add('error', 'resource-id-dup', 'RESOURCES.md', `${e.id} is defined twice (lines ${ids.get(e.id)} and ${e.line})`);
@@ -441,7 +538,9 @@ export async function inspectWorkspace(wsDir) {
   const listedFiles = new Set(lessonsByFile.keys());
   const legacyIds = new Map();
   for (const rel of htmlFiles) {
-    const raw = readFileSync(join(ws, rel), 'utf8');
+    const rd = readWorkspaceFile(join(ws, rel), { root: ws });
+    if (rd.error) { add('error', 'unsafe-file', rel, `${rel} ${rd.error}`); continue; }
+    const raw = rd.text;
     const html = stripHtml(raw);
     const all = tags(html);
     const isLesson = rel.startsWith('lessons/');
@@ -460,6 +559,7 @@ export async function inspectWorkspace(wsDir) {
       for (const [a, v] of t.all) {
         if (/^on/.test(a)) add('error', 'inline-handler', rel, `<${t.name} ${a}=…> inline event handler: use a component in assets/ (inline handlers run with page privileges and break the CSP)`);
         else if (a === 'srcdoc') add('error', 'srcdoc', rel, `<${t.name} srcdoc=…> embeds a whole document (its markup can run script): link to a file instead`);
+        else if (/<\/?(noscript|script|style|title|textarea|xmp|iframe|noembed|noframes|template|svg|math)[\s/>]/i.test(v)) add('error', 'markup-in-attribute', rel, `<${t.name} ${a}="…"> holds tag markup (${JSON.stringify(v.slice(0, 40))}): inside a raw-text element it becomes live markup`);
         else if (URL_ATTRS.has(a)) {
           const { scheme, value } = urlScheme(v);
           if (scheme === 'javascript' || scheme === 'vbscript') add('error', 'javascript-url', rel, `<${t.name} ${a}="${scheme}:…"> (after the browser's normalisation: ${JSON.stringify(value.slice(0, 40))})`);
@@ -469,6 +569,7 @@ export async function inspectWorkspace(wsDir) {
       }
       if (EMBEDS.has(t.name)) add('error', 'embed-element', rel, `<${t.name}> is not allowed in a course page (plugins and nested documents); use <img>, <video> or a link`);
       if (t.name === 'base') add('error', 'base-element', rel, '<base> redirects every relative link and citation on the page');
+      if (/^(animate|set|animatetransform|animatemotion)$/.test(t.name) && /^(xlink:)?href$/i.test((t.attrs.attributename || '').trim())) add('error', 'svg-animate-href', rel, `<${t.name} attributeName="${t.attrs.attributename}"> rewrites a link target at run time (it can become javascript:)`);
       if (t.name === 'meta' && /^refresh$/i.test(t.attrs['http-equiv'] || '')) add('error', 'meta-refresh', rel, '<meta http-equiv="refresh"> navigates the learner away without a click');
       if (t.name !== 'script') continue;
       const src = t.attrs.src;
@@ -481,7 +582,7 @@ export async function inspectWorkspace(wsDir) {
         add('error', 'script-external', rel, `<script src="${src}">: courses load no remote scripts (they must work offline and must not run third-party code)`);
         continue;
       }
-      const target = toPosix(relative(ws, resolve(dirname(join(ws, rel)), src.split(/[?#]/)[0])));
+      const target = toPosix(relative(ws, resolve(dirname(join(ws, rel)), percentDecodeAll(src.split(/[?#]/)[0]))));
       const pageDir = toPosix(dirname(rel));
       const ok = target.startsWith('assets/') || posix.dirname(target) === pageDir;
       if (target.startsWith('..')) add('error', 'script-path', rel, `<script src="${src}"> points outside the workspace`);

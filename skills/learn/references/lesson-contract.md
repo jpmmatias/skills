@@ -149,7 +149,7 @@ Lessons written before practice data (`.quiz-q` buttons, `.fade` inputs) keep wo
 
 Run it on every lesson in every profile. In Fast it is the whole review.
 
-1. File names, `lang`, CSP (the template's `<meta>`, in `<head>`: a missing or weakened CSP fails the check), `data-lesson`, `#progress` and the script order match this contract; no inline scripts or handlers.
+1. File names, `lang`, CSP (the template's `<meta>`, copied exactly, once, in `<head>` before any script or stylesheet: any other policy fails the check), `data-lesson`, `#progress` and the script order match this contract; no inline scripts or handlers.
 2. One idea; every objective in `course.js` is taught and practised; nothing is taught that belongs to a later lesson.
 3. Every term is defined before use, or is in `GLOSSARY.md`; its aliases-to-avoid are absent.
 4. Worked example, then a faded one; one "why does this line exist?" prompt. Mark the worked example with `class="worked"` on its container (or start its heading with "Worked example") so the rubric can find it before the faded item.
