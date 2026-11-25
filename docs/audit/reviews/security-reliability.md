@@ -401,3 +401,59 @@ The mutation that drops `importModuleDynamically` from `vm.runInContext(file.cod
 ### Examples as targets
 
 All three lint clean under the round-2 rules, and every page carries the exact canonical CSP. The bespoke figure scripts are unchanged and still build markup only from constants and escaped labels. NEW-08 was demonstrated on scratch copies of `examples/transformers`. NEW-10 affects all three.
+
+## Re-verification 3 (2026-11-25)
+
+This pass checks HEAD `4c04e3e`, which includes the round-3 commit `d6d7968`: lint matches `http-equiv` exactly and rejects wrapped metas; `check.mjs` adds an enforcement probe and a MutationObserver; the loader compares real paths; the example assets are re-synced; and `tests/csp-enforcement.test.mjs` is new. I reproduced everything in Chromium on `file://`, using scratchpad `rev-sec/re/r3-*.{mjs,sh}` and `mutate3.mjs`. No repository file was changed except this section.
+
+### Status
+
+| ID | Status | Evidence on HEAD |
+|---|---|---|
+| NEW-08 | **Not fixed: still P1** (see NEW-12) | **The round-2 neutralizers are now rejected by lint:** a leading space in `http-equiv` (`csp-missing`), and wrappers `<noscript>`, `<template>` and `<svg>` (`csp-late`). The `check.mjs` probe works against an *honestly* unenforced CSP. With a zero-width space in `<head>` (which pushes the meta into `<body>`, where the browser ignores it) and PoC 2's self-removing payload, lint said 0 errors, but `check.mjs` reported "CSP is NOT enforced", `<img onerror> inserted`, and Chromium's own console warning ("delivered via a <meta> element outside the document's <head>… ignored"). **Still missed by lint:** 8 head-escape forms put before the meta: `x`, `&#8203;`, `&nbsp;`, `<span hidden>`, `<x-a>`, `<img>`, `<br>`, `<input type=hidden>`. In each case the browser runs the payload and lint reports no `csp-*` finding (`re/r3-neutral.mjs`). The comment inside attribute values (`<p title="<!--">…<p title="-->">`) still hides markup from lint. **The probe and the observer can be defeated:** see NEW-12 |
+| NEW-09 | **Fixed** | `re/dirlink.mjs` (`lessons → ../outside-dir`): 0 findings quote the outside file, and 1 `unsafe-file` finding. Removing the real-path check is caught by a test |
+| NEW-10 | **Fixed** | Every starter asset (other than `course.js`) is byte-identical in the 3 examples. On each example `index.html`: `workspaceHref('%2e%2e/%2e%2e/outside.html')` gives `#`, and `sanitize` drops `%2e%2e/%2e%2e/%2e%2e/etc/passwd` |
+| Tests | **5 of 6 reverts caught** | Caught: trimming `http-equiv` again (2 failures), removing the wrapper check (3), removing the probe (1), removing the observer (2), removing the real-path check (1). **Not caught:** a probe that ignores its inline-handler arm and checks only the inline script (0 failures). A policy that blocks inline scripts but allows inline handlers would get through: the policy check itself would have to regress first, but the probe's second arm is untested |
+
+### New finding
+
+#### NEW-12 (P1) An inline script placed before the CSP meta and hidden from lint runs, disarms the observer, and `check.mjs` reports every page clean
+
+**Where:**
+- `lint-workspace.mjs` `stripHtml`: the comment tokenizer still runs inside attribute values, so text between `<!--` in one attribute and `-->` in a later one is blanked.
+- `cspProblems` `early` / `inline-script` only see the tokens that are left after that blanking.
+- `check.mjs:161-173, 190, 196-206`: the observer's findings live in the page-writable global `window.__lcMut` (the same goes for `__lcCsp`, `__lcProbeInline` and `__lcProbeAttr`). `check.mjs` reads them back through `page.evaluate` in the page's main world.
+
+**PoC** (`re/r3-prescript.sh`, run on a scratch copy of `examples/transformers`): one edit to lesson 1, directly before its canonical, correctly placed CSP meta:
+
+```html
+<meta name="a" content="<!--"><script>(function(){var D=Object.defineProperty,w=window,z=function(){return []},n=function(){};
+D(w,'__lcMut',{get:z,set:n});document.currentScript.remove();
+setTimeout(function(){document.title='PWNED '+localStorage.length;localStorage.setItem('learn:transformers-pwned','1')},0);})();</script><meta name="b" content="-->">
+```
+
+Result: `node check.mjs <copy> --no-axe` gives `Lint: 0 error(s), 0 warning(s)`, then ✓ on all 6 pages, `All pages clean.`, **exit 0**. Opening the page sets its title to `PWNED 0` with an empty console, and no inline script is left in the DOM.
+
+Why each layer misses it:
+- **Lint:** the script is inside the blanked "comment".
+- **CSP:** the script runs *before* the meta is parsed, so no policy is active yet and no violation fires. Its `setTimeout` callback is an already-compiled function, so it still runs after the CSP takes effect.
+- **Enforcement probe:** it passes honestly, because the CSP really is enforced by the time the probe runs.
+- **MutationObserver:** the script redefines `window.__lcMut` before the record of its own insertion is delivered (records are delivered in the microtask after the script runs).
+- **DOM audit:** the script removed itself.
+
+**A second bypass, of the probe itself:** in the `tamper` variant (`re/r3-chain.sh tamper`), the payload redefines `__lcProbeInline`, `__lcProbeAttr`, `__lcMut` and `__lcCsp` as inert accessors. The probe then reported the CSP as enforced and the observer reported nothing. That page was still flagged, but only by Chromium's console warning about the misplaced meta, which a page cannot suppress. A neutralizer that produces no console warning would pass.
+
+**Impact:** the same end state as NEW-01 and NEW-08. Agent-written lesson HTML passes the documented gate with exit 0, and script runs in the shared `file://` origin with full access to every course's progress.
+
+**Fix:**
+1. **Lint:** tokenize tags first and only then look for comments. A `<!--` inside a quoted attribute value is data. Add `<!--`/`-->` to `markup-in-attribute`. Require the CSP meta to be the first element in `<head>` after `<meta charset>` (no `<script>`, text or other element before it), and reject any non-whitespace text in `<head>`.
+2. **check.mjs:** collect evidence where the page cannot reach it.
+   - Open a CDP session (`context.newCDPSession(page)`), enable `Debugger`, and fail on any `Debugger.scriptParsed` whose URL is the page itself or empty, outside the probe's own script. Every inline script and handler body is compiled and reported there, whatever the page does to its globals.
+   - Also subscribe to `Audits.issueAdded` / `Log.entryAdded` for CSP issues.
+   - Use `context.exposeBinding` captured in the init script's closure, not `window.__lc*` globals, for the observer.
+   - Run the probe in an isolated world (`page.mainFrame()` utility context, or CDP `Page.createIsolatedWorld`), and judge its result by CDP violation events, not by a page global.
+3. **Tests:** add this PoC, the zero-width-space and `<span>` head escapes, and a probe that checks only one arm, to `csp-enforcement.test.mjs`.
+
+### Examples as targets
+
+All three examples lint clean and their assets match the starter. NEW-12 was demonstrated on a scratch copy of `examples/transformers`. Its six pages, including `reference/cheat-sheet.html`, which round 2 reported for horizontal scroll, all pass `check.mjs` unmodified.
