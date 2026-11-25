@@ -211,9 +211,11 @@ The skill says `${CLAUDE_SKILL_DIR}` (substituted by Claude Code), with a fallba
 | Orchestrator | done | 7089b03, a3057d6, 41ae088 | Integration: claim-strength enum aligned with grounding.md; `practice: null` accepted and documented; band tokens removed from style.css (the example defines its own); scene `poster`/`phone` documented. |
 | C1 | done | 4e3ab9b | core/practice/progress/review; 58 browser checks pass; axe 0 violations in 32 runs (Chromium). CSP `'self'` matches `file:` in Chromium; inline scripts are blocked, so lessons have none. |
 | C2 | done | 04df3c3 | viz.js timeline/slider/explorable/histogram; scene and diagram rebuilt; Jev code moved to an example; axe 0 in 12 runs; text at 390px ≥ 11px (was 5.2–7.3px). |
-| E | running | – | |
-| F1–F3 | running | – | Three example courses |
-| F4 | running | – | README, guide, brand, compatibility, gallery |
+| E | done | 40cf6ce | validator, linter, check.mjs hardening, tests, evaluations, CI |
+| F1–F3 | done | 8c95fc6, 032f5c1, 67d117e (+ revisions 2ed73d2, 52aa391, 5699dcb and re-check fixes) | Three example courses, each independently reviewed, revised and re-checked |
+| F4 | done | f5acd13 | README, guide, brand, compatibility, gallery |
+| Phase 4 | done | 6ba5e99, e09235d, bd460bc | Security review → fixes → re-verification ×2; skills review → fixes; course reviews → revisions → re-checks |
+| Phase 5–6 | done | this commit | VALIDATION-REPORT.md, FINAL-REPORT.md, CHANGELOG.md |
 
 ### Open integration items
 
