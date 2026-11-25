@@ -189,8 +189,11 @@
           }
         },
         "practice": {
-          "type": "string",
-          "pattern": "^lessons/\\d{4}\\.practice\\.js$"
+          "description": "Path of the lesson's practice-items file, or null for a lesson that has none (e.g. a legacy lesson using inline quiz markup), so the review page does not request a missing file.",
+          "anyOf": [
+            { "type": "string", "pattern": "^lessons/\\d{4}\\.practice\\.js$" },
+            { "type": "null" }
+          ]
         },
         "requires": {
           "type": "array",

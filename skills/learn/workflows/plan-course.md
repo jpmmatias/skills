@@ -14,7 +14,7 @@ The single procedure for the curriculum. It writes the plan into `assets/course.
 1. **State the mission and the floor**, one line each. The floor comes from the diagnostic; claims only break ties.
 2. **Milestones.** One per **Success looks like** line, in the order the learner must earn them: `id` (`m1`, `m2`…), a short `label`, a `canDo` a challenge could demonstrate, `status` (`in-progress` for the first, `locked` for the rest) and `evidence: null`. Leave **Out of scope** out.
 3. **Lessons.** Order them so each assumes only what earlier lessons taught. For each lesson write:
-   - `n`, `file: 'lessons/NNNN-<slug>.html'`, `title`, `milestones`, `canDo`, `practice: 'lessons/NNNN.practice.js'`;
+   - `n`, `file: 'lessons/NNNN-<slug>.html'`, `title`, `milestones`, `canDo`, `practice: 'lessons/NNNN.practice.js'` (or `practice: null` for a lesson with no practice file, such as an older lesson that keeps inline quiz markup);
    - `objectives`: 1–3 items `{ id: 'l<n>.o<k>', text }`. Each `text` starts with an observable verb (explain, compute, choose, write, predict, debug, compare) and never with understand, know, learn, appreciate, or be aware of / familiar with.
 4. **Prerequisites and decisions.** Under `## Per-lesson decisions` in `NOTES.md`, write one line per lesson:
    `L3: scene — <why> | lab: labs/03-<name>/ | requires: l1.o1, l2.o2`
