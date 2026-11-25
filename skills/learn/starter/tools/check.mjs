@@ -42,7 +42,7 @@ import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { loadPlaywright, resolveTool, workspacePlaywright } from './resolve.mjs';
-import { inspectWorkspace, formatFindings, checkWorkspaceFile, findCoursePages, classifyFileLink, domFileLinks, domSecurityAudit as securityAudit } from './lint-workspace.mjs';
+import { inspectWorkspace, formatFindings, checkWorkspaceFile, findCoursePages, classifyFileLink, walkProtocolDom, domSecurityAudit as securityAudit } from './lint-workspace.mjs';
 
 const args = process.argv.slice(2);
 const ws = resolve(args.find((a) => !a.startsWith('--')) ?? '.');
@@ -248,8 +248,12 @@ for (const rel of pages) {
     // inside the course; never to a folder or an unchecked document (NEW-15).
     if (pass.key === 'light-900') {
       const seen = new Set();
-      for (const l of await page.evaluate(domFileLinks).catch(() => [])) {
-        const why = classifyFileLink(ws, allPages, l.url);
+      // Read through the protocol, piercing shadow roots (even closed ones) and template contents (NEW-18).
+      const dom = await cdp.send('DOM.getDocument', { depth: -1, pierce: true }).then((r) => walkProtocolDom(r.root, pageUrl)).catch((e) => ({ error: e.message.split('\n')[0] }));
+      if (dom.error) problems.push(`security: could not read the page's DOM through the protocol (${dom.error})`);
+      else if (dom.shadowRoots) problems.push(`security: ${dom.shadowRoots} shadow root(s) in the page; course pages do not use shadow DOM, which hides markup from the checks`);
+      for (const l of dom.links || []) {
+        const why = classifyFileLink(ws, allPages, l.url, { tag: l.tag, attr: l.attr });
         const key = `${l.url}|${why}`;
         if (why && !seen.has(key)) { seen.add(key); problems.push(`security: <${l.tag} ${l.attr}> leads to ${why}: ${l.url.replace(wsPrefixOf(wsUrl), '')}`); }
       }

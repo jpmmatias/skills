@@ -116,6 +116,12 @@ export function stripHtml(html) {
         i = bodyEnd; continue;
       }
     }
+    // A start or end tag is copied whole, attributes included, so markup inside a quoted attribute value (such as
+    // "<!--") is never mistaken for a comment that would hide what follows the tag (NEW-18).
+    if (m) {
+      const end = Math.min(n, scanAttrs(html, lt + 1 + m[1].length + m[2].length, {}, []) + 1);
+      out += html.slice(lt, end); i = end; continue;
+    }
     out += '<'; i = lt + 1;
   }
   return out;
@@ -424,6 +430,34 @@ export const domFileLinks = () => {
   return out;
 };
 
+/**
+ * Walks a DevTools-protocol DOM tree (DOM.getDocument with depth -1 and pierce: true), which includes closed shadow
+ * roots, template contents and frames that page scripts cannot see (NEW-18). Returns the file: URLs of every
+ * URL-bearing attribute, resolved against the page URL, and how many shadow roots exist.
+ */
+export function walkProtocolDom(root, pageUrl) {
+  const ATTRS = new Set(['href', 'xlink:href', 'src', 'srcset', 'action', 'formaction', 'data', 'poster', 'background', 'ping', 'cite', 'longdesc', 'manifest']);
+  const links = []; let shadowRoots = 0;
+  const visit = (node) => {
+    if (!node) return;
+    if (node.nodeType === 1 && node.attributes) {
+      const tag = String(node.localName || node.nodeName || '').toLowerCase();
+      for (let i = 0; i < node.attributes.length; i += 2) {
+        const attr = node.attributes[i].toLowerCase(); const v = node.attributes[i + 1];
+        if (!ATTRS.has(attr) || !v) continue;
+        const parts = attr === 'srcset' ? v.split(',').map((x) => x.trim().split(/\s+/)[0]).filter(Boolean) : [v.trim()];
+        for (const p of parts) { let u; try { u = new URL(p, pageUrl); } catch { continue; } if (u.protocol === 'file:') links.push({ url: u.href, attr, tag }); }
+      }
+    }
+    for (const c of node.children || []) visit(c);
+    // The browser's own widgets (sliders, <details>, file inputs) have user-agent shadow roots: only author roots count.
+    for (const s of node.shadowRoots || []) { if (s.shadowRootType !== 'user-agent') shadowRoots++; visit(s); }
+    visit(node.templateContent); visit(node.contentDocument);
+  };
+  visit(root);
+  return { links, shadowRoots };
+}
+
 /** File types that can be linked or loaded without being a page that could run script. .svg is safe only because
  *  lint rejects scripted SVG anywhere in the course (svg-script). */
 export const ASSET_EXT = /\.(js|css|png|jpe?g|gif|webp|avif|ico|svg|woff2?|ttf|otf|json|md|txt|csv|pdf|mp4|webm|mp3|wav|ogg)$/i;
@@ -433,7 +467,7 @@ export const ASSET_EXT = /\.(js|css|png|jpe?g|gif|webp|avif|ico|svg|woff2?|ttf|o
  * Returns null when fine, else a reason. Links must stay inside the course; may target only a checked page or a
  * non-page asset; never a folder (a directory listing leads one click further to anything).
  */
-export function classifyFileLink(ws, pages, url) {
+export function classifyFileLink(ws, pages, url, { tag = '', attr = '' } = {}) {
   let path;
   try { const u = new URL(url); u.search = ''; u.hash = ''; path = fileURLToPath(u); } catch { return 'an unreadable file: URL'; }
   const rel = toPosix(relative(ws, path));
@@ -443,6 +477,8 @@ export function classifyFileLink(ws, pages, url) {
   if (/^labs(\/|$)/.test(rel) || rel.split('/').some((seg) => seg.startsWith('.') || seg === 'node_modules')) return /\.(md|txt)$/i.test(rel) ? null : 'a page the check does not cover';
   // Any other .html/.htm in the course is checked once it exists; a missing one is only a broken link.
   if (/\.html?$/i.test(rel)) return pages.includes(rel) || !existsSync(path) ? null : 'a page the check does not cover';
+  // An .svg opened as a document runs its script: SVG is allowed only as an image source, never as a link (NEW-17).
+  if (/\.svgz?$/i.test(rel)) return /^(img|source|image|use|feimage)$/i.test(tag) && /^(src|srcset|href|xlink:href)$/i.test(attr) ? null : 'an SVG opened as a document (use SVG only in <img> or <image>)';
   return ASSET_EXT.test(rel) ? null : 'a file type that may open as a page the check does not cover';
 }
 
@@ -647,7 +683,7 @@ export async function inspectWorkspace(wsDir) {
     else if (/\.svg$/i.test(f)) {
       const r = readWorkspaceFile(join(ws, f), { root: ws });
       if (r.error) add('error', 'unsafe-file', f, `the file ${r.error}`);
-      else if (/<script\b|\son[a-z]+\s*=|javascript:|<foreignObject\b|<(iframe|embed|object)\b/i.test(r.text)) add('error', 'svg-script', f, 'SVG with script, handlers, javascript: URLs or embedded documents runs code when opened; keep SVG files static');
+      else if (/<([\w.-]+:)?script\b|\son[a-z]+\s*=|javascript:|<([\w.-]+:)?foreignObject\b|<([\w.-]+:)?(iframe|embed|object)\b|<!ENTITY/i.test(r.text)) add('error', 'svg-script', f, 'SVG with script, handlers, javascript: URLs or embedded documents runs code when opened; keep SVG files static');
     }
   }
   const listedFiles = new Set(lessonsByFile.keys());
@@ -684,6 +720,7 @@ export async function inspectWorkspace(wsDir) {
       }
       if (EMBEDS.has(t.name)) add('error', 'embed-element', rel, `<${t.name}> is not allowed in a course page (plugins and nested documents); use <img>, <video> or a link`);
       if (t.name === 'base') add('error', 'base-element', rel, '<base> redirects every relative link and citation on the page');
+      if (t.name === 'template' && Object.keys(t.attrs).some((k) => /^shadowroot/.test(k))) add('error', 'shadow-dom', rel, 'declarative shadow DOM hides markup from the checks; course pages do not use shadow DOM');
       // Pages in labs/ are the learner's own projects and are not checked; opened from a lesson over file:// they would
       // share the course's storage origin (NEW-14). Link to the lab folder or its README instead.
       // Every link must stay inside the course and lead to a checked page or a non-page asset (NEW-15); the browser
@@ -697,7 +734,7 @@ export async function inspectWorkspace(wsDir) {
           if (/^file:/i.test(v)) url = v;
           else if (/^[a-z][a-z0-9+.-]*:/i.test(v) || v.startsWith('//')) continue; // remote and data: URLs have their own rules
           else { try { url = new URL(v, pathToFileURL(join(ws, rel)).href).href; } catch { continue; } }
-          const why = classifyFileLink(ws, pageSet, url);
+          const why = classifyFileLink(ws, pageSet, url, { tag: t.name, attr: a });
           if (why) add('error', 'link-unchecked-page', rel, `${a}="${v}" leads to ${why}; link only to course pages and assets (for a lab, its README.md)`);
         }
       }

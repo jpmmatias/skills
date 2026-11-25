@@ -226,3 +226,45 @@ test('a script file that is a symbolic link is rejected (NEW-16)', { skip: missi
     assert.ok(errs.some((e) => /symbolic link/.test(e.message)), JSON.stringify(errs));
   } finally { w.cleanup(); }
 });
+
+// NEW-17: namespace-prefixed SVG script; SVG must never be a link target (it runs as a document), only an image.
+test('SVG is accepted only as an image, and prefixed SVG script is rejected (NEW-17)', { skip: missingStarter() || false }, async () => {
+  const w = buildWorkspace();
+  try {
+    writeFileSync(join(w.ws, 'lessons', 'fig.svg'), '<svg xmlns="http://www.w3.org/2000/svg" xmlns:x="http://www.w3.org/2000/svg"><x:script>void 0</x:script></svg>');
+    writeFileSync(join(w.ws, 'lessons', 'ok.svg'), '<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>');
+    const p = join(w.ws, LESSON);
+    writeFileSync(p, readFileSync(p, 'utf8').replace('</main>', '<img src="ok.svg" alt=""><a href="ok.svg">open</a></main>'));
+    const errs = (await lintWorkspace(w.ws)).filter((f) => f.level === 'error');
+    assert.ok(errs.some((e) => e.rule === 'svg-script' && e.file === 'lessons/fig.svg'), 'prefixed <x:script> must be caught');
+    const links = errs.filter((e) => e.rule === 'link-unchecked-page');
+    assert.equal(links.length, 1, JSON.stringify(links));
+    assert.match(links[0].message, /href="ok\.svg".*SVG opened as a document/);
+  } finally { w.cleanup(); }
+});
+
+// NEW-18: a comment opened inside an attribute value must not hide later markup from lint; shadow DOM is refused.
+test('markup after an attribute containing "<!--" is still linted, and declarative shadow DOM is rejected (NEW-18)', { skip: missingStarter() || false }, async () => {
+  const w = buildWorkspace();
+  try {
+    const p = join(w.ws, LESSON);
+    writeFileSync(p, readFileSync(p, 'utf8').replace('</main>', '<p title="<!--"></p><img src="data:," onerror="void 0"><p title="-->"></p><div><template shadowrootmode="open"><a href="../index.html">x</a></template></div></main>'));
+    const errs = (await lintWorkspace(w.ws)).filter((f) => f.level === 'error').map((e) => e.rule);
+    assert.ok(errs.includes('inline-handler'), `the handler hidden by "<!--" in an attribute must be found: ${errs}`);
+    assert.ok(errs.includes('shadow-dom'), `declarative shadow DOM must be rejected: ${errs}`);
+  } finally { w.cleanup(); }
+});
+
+test('check.mjs reads links inside shadow roots and refuses author shadow DOM (NEW-18)', { skip: missingStarter() || noBrowser }, () => {
+  const w = buildWorkspace();
+  try {
+    mkdirSync(join(w.ws, 'labs', '01-demo'), { recursive: true });
+    writeFileSync(join(w.ws, 'labs', '01-demo', 'index.html'), '<!doctype html><title>x</title>');
+    const p = join(w.ws, LESSON);
+    writeFileSync(p, readFileSync(p, 'utf8').replace('</main>', '<div><template shadowrootmode="closed"><a href="../labs/01-demo/index.html">lab</a></template></div></main>'));
+    const { code, out } = runCheck(w.ws);
+    assert.equal(code, 1, out);
+    assert.match(out, /shadow root\(s\) in the page/);
+    assert.match(out, /leads to a page the check does not cover/);
+  } finally { w.cleanup(); }
+});
