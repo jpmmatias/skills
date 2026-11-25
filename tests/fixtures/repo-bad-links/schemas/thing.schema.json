@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Thing",
+  "type": "object",
+  "required": ["id"],
+  "properties": { "id": { "type": "string", "pattern": "^[a-z]+$" }, "n": { "$ref": "#/$defs/count" } },
+  "additionalProperties": false,
+  "$defs": { "count": { "type": "integer", "minimum": 0 } },
+  "examples": [{ "id": "abc", "n": 2 }]
+}

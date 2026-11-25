@@ -1,0 +1,22 @@
+name: Feature request
+description: Suggest a new mode, component, theme, agent compatibility or tooling improvement.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to learn or do, and what gets in the way?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would help?
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints this would keep
+      options:
+        - label: Courses still open from disk with no install, server or network
+        - label: No new runtime dependency in generated courses
+        - label: Learner data stays local (files and browser storage, export on request)

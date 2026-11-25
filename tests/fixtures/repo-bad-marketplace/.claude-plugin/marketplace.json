@@ -1,0 +1,9 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "fixture",
+  "owner": { "name": "Fixture Owner" },
+  "plugins": [
+    { "name": "alpha", "source": ".", "skills": ["./skills/alpha"] },
+    { "name": "alpha", "source": ".", "skills": ["./skills/missing"], "dependencies": ["nope"], "agents": ["./agents/ghost.md"] }
+  ]
+}

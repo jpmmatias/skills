@@ -1,0 +1,42 @@
+name: Course quality
+description: A generated lesson or course taught something wrong, cited badly, assessed poorly or was hard to use.
+labels: [course-quality]
+body:
+  - type: markdown
+    attributes:
+      value: "The rubrics in evaluations/rubrics/ name the criteria we judge courses by. Pointing at one helps (for example AS-10: the answer is guessable from option length)."
+  - type: input
+    id: topic
+    attributes:
+      label: Topic and learner level
+      placeholder: "Database transactions, intermediate"
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of problem
+      multiple: true
+      options: [factual error, source missing / wrong / unverified but shown as verified, practice item guessable or wrong, challenge not a transfer task or vague criteria, too much at once (load), wrong lesson order or skipped prerequisite, mastery shown without evidence, accessibility, layout or figure unreadable, language / translation]
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: The lesson text, item or source involved
+      description: Quote the sentence or item, and the RESOURCES.md entry if a source is involved. Remove anything private.
+    validations:
+      required: true
+  - type: textarea
+    id: better
+    attributes:
+      label: What would have been right?
+  - type: input
+    id: profile
+    attributes:
+      label: Profile and agent
+      placeholder: "Balanced, Claude Code 2.x.y"
+  - type: input
+    id: score
+    attributes:
+      label: Output of evaluations/runners/score-workspace.mjs on the course (optional)

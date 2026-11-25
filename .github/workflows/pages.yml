@@ -1,0 +1,58 @@
+# Publishes the example courses (examples/) as a static site on GitHub Pages.
+# Enable Pages with "Source: GitHub Actions" in the repository settings first.
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Lint the example courses before publishing
+        run: |
+          set -e
+          for d in examples/*/; do
+            [ -f "$d/assets/course.js" ] || continue
+            node skills/learn/starter/tools/lint-workspace.mjs "$d"
+          done
+      - name: Assemble the site
+        run: |
+          set -e
+          test -d examples || { echo "::error::examples/ does not exist"; exit 1; }
+          mkdir -p _site
+          cp -R examples/. _site/
+          find _site -name '.check' -type d -prune -exec rm -rf {} +
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

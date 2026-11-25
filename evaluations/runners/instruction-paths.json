@@ -1,0 +1,426 @@
+{
+  "$comment": "Which skill files each invocation path loads, per profile and per agent context. Read by instruction-cost.mjs. Paths are repository-relative; '*' matches within one path segment. 'follow' adds every Markdown link found on '**Load:**' / '**Read:**' lines of the listed workflow and role files (one level), which is how the v2 router names what to load. Files that do not exist at the measured ref count 0 bytes and are listed as missing. 'kind' is 'instructions' (Markdown the agent reads as guidance) or 'code' (runtime files the skill tells the agent to read before authoring). Workspace files (NOTES.md, lessons, fetched pages) are excluded: they depend on the course, not on the skill. An entry that is itself an array means 'the first of these that exists' (a native subagent file, else the role prompt it is built from).",
+  "tokensPerByte": 0.25,
+  "listing": "skills/*/SKILL.md",
+  "layouts": [
+    {
+      "id": "v2-router",
+      "description": "learn/SKILL.md is a router; workflows/ and references/ load on demand (ADR-007). Drafted from the files on 2026-11-25 while workstream A was still writing them; re-check after A lands.",
+      "detect": "skills/learn/workflows/explain.md",
+      "paths": {
+        "explain": {
+          "all": {
+            "main": {
+              "files": [
+                "skills/learn/SKILL.md",
+                "skills/learn/workflows/explain.md"
+              ],
+              "follow": true
+            }
+          }
+        },
+        "new-course": {
+          "fast": {
+            "main": {
+              "files": [
+                "skills/learn/SKILL.md",
+                "skills/learn/workflows/new-course.md",
+                "skills/learn/MISSION-FORMAT.md",
+                "skills/learn/LEARNING-RECORD-FORMAT.md",
+                "skills/learn/workflows/plan-course.md",
+                "skills/learn/workflows/continue-course.md",
+                "skills/learn/workflows/research-sources.md",
+                "skills/learn/RESOURCES-FORMAT.md",
+                "skills/learn/workflows/write-lesson.md",
+                "skills/learn/references/profiles.md"
+              ],
+              "follow": true
+            }
+          },
+          "balanced": {
+            "main": {
+              "files": [
+                "skills/learn/SKILL.md",
+                "skills/learn/workflows/new-course.md",
+                "skills/learn/MISSION-FORMAT.md",
+                "skills/learn/LEARNING-RECORD-FORMAT.md",
+                "skills/learn/workflows/plan-course.md",
+                "skills/learn/workflows/continue-course.md",
+                "skills/learn/workflows/review-panel.md",
+                "skills/learn/workflows/write-lesson.md",
+                "skills/learn/references/profiles.md",
+                "skills/learn/references/handoff-contracts.md",
+                "skills/learn/references/failure-handling.md"
+              ],
+              "follow": true
+            },
+            "researcher": {
+              "files": [
+                "skills/learn/workflows/research-sources.md",
+                "skills/learn/RESOURCES-FORMAT.md"
+              ],
+              "follow": true
+            },
+            "expert": {
+              "files": [
+                [
+                  "subagents/lesson-expert.md",
+                  "skills/lesson-panel/agents/expert.md"
+                ]
+              ],
+              "follow": true
+            },
+            "novice": {
+              "files": [
+                [
+                  "subagents/lesson-novice.md",
+                  "skills/lesson-panel/agents/novice.md"
+                ]
+              ],
+              "follow": true
+            }
+          },
+          "deep": {
+            "main": {
+              "files": [
+                "skills/learn/SKILL.md",
+                "skills/learn/workflows/new-course.md",
+                "skills/learn/MISSION-FORMAT.md",
+                "skills/learn/LEARNING-RECORD-FORMAT.md",
+                "skills/learn/workflows/plan-course.md",
+                "skills/learn/workflows/continue-course.md",
+                "skills/learn/workflows/review-panel.md",
+                "skills/learn/references/profiles.md",
+                "skills/learn/references/handoff-contracts.md",
+                "skills/learn/references/failure-handling.md"
+              ],
+              "follow": true
+            },
+            "researcher": {
+              "files": [
+                "skills/learn/workflows/research-sources.md",
+                "skills/learn/RESOURCES-FORMAT.md"
+              ],
+              "follow": true
+            },
+            "author": {
+              "files": [
+                [
+                  "subagents/lesson-author.md",
+                  "skills/lesson-panel/agents/author.md"
+                ],
+                "skills/learn/workflows/write-lesson.md"
+              ],
+              "follow": true
+            },
+            "expert": {
+              "files": [
+                [
+                  "subagents/lesson-expert.md",
+                  "skills/lesson-panel/agents/expert.md"
+                ]
+              ],
+              "follow": true
+            },
+            "novice": {
+              "files": [
+                [
+                  "subagents/lesson-novice.md",
+                  "skills/lesson-panel/agents/novice.md"
+                ]
+              ],
+              "follow": true
+            },
+            "flow": {
+              "files": [
+                [
+                  "subagents/lesson-flow.md",
+                  "skills/lesson-panel/agents/flow.md"
+                ]
+              ],
+              "follow": true
+            }
+          }
+        },
+        "continue": {
+          "fast": {
+            "main": {
+              "files": [
+                "skills/learn/SKILL.md",
+                "skills/learn/workflows/continue-course.md",
+                "skills/learn/references/profiles.md",
+                "skills/learn/workflows/research-sources.md",
+                "skills/learn/workflows/write-lesson.md"
+              ],
+              "follow": true
+            }
+          },
+          "balanced": {
+            "main": {
+              "files": [
+                "skills/learn/SKILL.md",
+                "skills/learn/workflows/continue-course.md",
+                "skills/learn/references/profiles.md",
+                "skills/learn/workflows/review-panel.md",
+                "skills/learn/workflows/write-lesson.md",
+                "skills/learn/references/handoff-contracts.md",
+                "skills/learn/references/failure-handling.md"
+              ],
+              "follow": true
+            },
+            "researcher": {
+              "files": [
+                "skills/learn/workflows/research-sources.md"
+              ],
+              "follow": true
+            },
+            "expert": {
+              "files": [
+                [
+                  "subagents/lesson-expert.md",
+                  "skills/lesson-panel/agents/expert.md"
+                ]
+              ],
+              "follow": true
+            },
+            "novice": {
+              "files": [
+                [
+                  "subagents/lesson-novice.md",
+                  "skills/lesson-panel/agents/novice.md"
+                ]
+              ],
+              "follow": true
+            }
+          },
+          "deep": {
+            "main": {
+              "files": [
+                "skills/learn/SKILL.md",
+                "skills/learn/workflows/continue-course.md",
+                "skills/learn/references/profiles.md",
+                "skills/learn/workflows/review-panel.md",
+                "skills/learn/references/handoff-contracts.md",
+                "skills/learn/references/failure-handling.md"
+              ],
+              "follow": true
+            },
+            "researcher": {
+              "files": [
+                "skills/learn/workflows/research-sources.md"
+              ],
+              "follow": true
+            },
+            "author": {
+              "files": [
+                [
+                  "subagents/lesson-author.md",
+                  "skills/lesson-panel/agents/author.md"
+                ],
+                "skills/learn/workflows/write-lesson.md"
+              ],
+              "follow": true
+            },
+            "expert": {
+              "files": [
+                [
+                  "subagents/lesson-expert.md",
+                  "skills/lesson-panel/agents/expert.md"
+                ]
+              ],
+              "follow": true
+            },
+            "novice": {
+              "files": [
+                [
+                  "subagents/lesson-novice.md",
+                  "skills/lesson-panel/agents/novice.md"
+                ]
+              ],
+              "follow": true
+            },
+            "flow": {
+              "files": [
+                [
+                  "subagents/lesson-flow.md",
+                  "skills/lesson-panel/agents/flow.md"
+                ]
+              ],
+              "follow": true
+            }
+          }
+        },
+        "panel": {
+          "balanced": {
+            "main": {
+              "files": [
+                "skills/lesson-panel/SKILL.md",
+                "skills/learn/SKILL.md",
+                "skills/learn/workflows/review-panel.md",
+                "skills/learn/workflows/write-lesson.md",
+                "skills/learn/references/handoff-contracts.md",
+                "skills/learn/references/failure-handling.md",
+                "skills/learn/references/profiles.md"
+              ],
+              "follow": true
+            },
+            "expert": {
+              "files": [
+                [
+                  "subagents/lesson-expert.md",
+                  "skills/lesson-panel/agents/expert.md"
+                ]
+              ],
+              "follow": true
+            },
+            "novice": {
+              "files": [
+                [
+                  "subagents/lesson-novice.md",
+                  "skills/lesson-panel/agents/novice.md"
+                ]
+              ],
+              "follow": true
+            }
+          },
+          "deep": {
+            "main": {
+              "files": [
+                "skills/lesson-panel/SKILL.md",
+                "skills/learn/SKILL.md",
+                "skills/learn/workflows/review-panel.md",
+                "skills/learn/references/handoff-contracts.md",
+                "skills/learn/references/failure-handling.md",
+                "skills/learn/references/profiles.md"
+              ],
+              "follow": true
+            },
+            "author": {
+              "files": [
+                [
+                  "subagents/lesson-author.md",
+                  "skills/lesson-panel/agents/author.md"
+                ],
+                "skills/learn/workflows/write-lesson.md"
+              ],
+              "follow": true
+            },
+            "expert": {
+              "files": [
+                [
+                  "subagents/lesson-expert.md",
+                  "skills/lesson-panel/agents/expert.md"
+                ]
+              ],
+              "follow": true
+            },
+            "novice": {
+              "files": [
+                [
+                  "subagents/lesson-novice.md",
+                  "skills/lesson-panel/agents/novice.md"
+                ]
+              ],
+              "follow": true
+            },
+            "flow": {
+              "files": [
+                [
+                  "subagents/lesson-flow.md",
+                  "skills/lesson-panel/agents/flow.md"
+                ]
+              ],
+              "follow": true
+            }
+          }
+        },
+        "challenge": {
+          "all": {
+            "main": {
+              "files": [
+                "skills/challenge-reviewer/SKILL.md",
+                "skills/learn/workflows/review-challenge.md",
+                "skills/learn/LEARNING-RECORD-FORMAT.md"
+              ],
+              "follow": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "v1-monolith",
+      "description": "Baseline f8aaf973: learn/SKILL.md (369 lines) is loaded whole on every path; format files on demand; 'read ./assets/ before authoring' (SKILL.md:247); the scene example when a scene is built (SKILL.md:181); the panel runs every role in one context (AI-01). Line references are to f8aaf973.",
+      "detect": "skills/learn/SKILL.md",
+      "paths": {
+        "explain": {
+          "all": {
+            "main": {
+              "files": [
+                "skills/learn/SKILL.md"
+              ]
+            }
+          }
+        },
+        "new-course": {
+          "all": {
+            "main": {
+              "files": [
+                "skills/learn/SKILL.md",
+                "skills/learn/MISSION-FORMAT.md",
+                "skills/learn/RESOURCES-FORMAT.md",
+                "skills/learn/LEARNING-RECORD-FORMAT.md"
+              ],
+              "code": [
+                "skills/learn/starter/assets/*",
+                "skills/learn/starter/examples/scenes-0001-sampling.js"
+              ]
+            }
+          }
+        },
+        "continue": {
+          "all": {
+            "main": {
+              "files": [
+                "skills/learn/SKILL.md",
+                "skills/learn/RESOURCES-FORMAT.md",
+                "skills/learn/LEARNING-RECORD-FORMAT.md"
+              ],
+              "code": [
+                "skills/learn/starter/assets/*"
+              ]
+            }
+          }
+        },
+        "panel": {
+          "all": {
+            "main": {
+              "files": [
+                "skills/lesson-panel/SKILL.md",
+                "skills/learn/SKILL.md",
+                "skills/lesson-panel/agents/author.md",
+                "skills/lesson-panel/agents/expert.md",
+                "skills/lesson-panel/agents/novice.md",
+                "skills/lesson-panel/agents/flow.md",
+                "skills/learn/RESOURCES-FORMAT.md"
+              ],
+              "code": [
+                "skills/learn/starter/assets/*"
+              ]
+            }
+          }
+        },
+        "challenge": {
+          "all": {
+            "main": {
+              "files": [
+                "skills/challenge-reviewer/SKILL.md",
+                "skills/learn/LEARNING-RECORD-FORMAT.md"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

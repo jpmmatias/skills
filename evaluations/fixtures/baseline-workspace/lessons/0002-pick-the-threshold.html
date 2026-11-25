@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2 · Pick the threshold</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body data-lesson="2">
+<main>
+  <div id="progress"></div>
+  <nav class="links"><a href="../index.html">← Course</a> <a href="0001-one-prompt-many-answers.html">Lesson 1</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+  <div class="kicker">Lesson 2 · Milestone: Threshold</div>
+  <h1>Pick the threshold</h1>
+  <p class="lede">Every line you draw trades coverage for accuracy.</p>
+
+  <h2>Place the marker</h2>
+  <div class="band-quiz" data-act="0.8" data-confirm="0.5"></div>
+
+  <h2>Finish the worked example</h2>
+  <div class="fade">
+    <pre><code>if (confidence &gt;= <input data-answer="0.8"> ) act();
+else if (confidence &gt;= <input data-answer="0.5"> ) confirm();
+else <input data-answer="triage">();</code></pre>
+    <button class="fade-check">Check</button>
+  </div>
+
+  <h2>Find the lowest safe line</h2>
+  <div class="threshold-explorer" data-seed="7" data-n="80" data-target="0.95" data-start="0.5"></div>
+
+  <div class="quiz-q" data-answer="Lower" data-why="A lower line automates more traffic, as long as accuracy stays above target.">
+    <p>Two lines both meet the 95% target. Which do you ship?</p>
+    <div class="quiz-opts"><button>Lower</button><button>Higher</button></div>
+  </div>
+
+  <div class="box challenge" id="challenge">
+    <h3>🏆 Milestone challenge: Threshold</h3>
+    <p>Label 50 real outputs, plot them, and send back the act line you would ship with its coverage and accuracy.</p>
+  </div>
+</main>
+<script src="../assets/course.js"></script>
+<script src="../assets/progress.js"></script>
+<script src="../assets/quiz.js"></script>
+<script src="../assets/diagram.js"></script>
+</body>
+</html>
