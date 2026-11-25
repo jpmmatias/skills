@@ -569,3 +569,72 @@ I reproduced everything in Chromium on `file://`, on scratch copies of `examples
 6. **NEW-11:** a test gap only; the behaviour is fixed.
 7. **Navigation started by script files**, and a `newer-format` document planted by another page, which stops saving (with a notice).
 8. **UNC paths on Windows** (theoretical, untested).
+
+## Re-verification 6 and verdict (2026-11-25)
+
+This pass checks HEAD `91734d5`. Its changes:
+- `check.mjs` collects every URL-bearing attribute (`domFileLinks`) and classifies each target (`classifyFileLink`);
+- lint applies the same classifier, rejects the `.xhtml`/`.xml`/`.mht`… page types, and rejects scripted SVG (`svg-script`) and symlinked script files.
+
+I reproduced everything in Chromium on `file://`, on scratch copies of `examples/transformers` (`rev-sec/re/r6-bypass.sh`, `rev-sec/sniff/`). Nothing else in the repository was changed.
+
+### Status
+
+| ID | Status | Evidence on HEAD |
+|---|---|---|
+| NEW-15 | **Fixed for the reported forms; bypassed by NEW-17 and NEW-18** | The coordinator reports all seven `r5-bypass.sh` variants exit 1. I did not re-run them here; I tried the new design directly. **Held:** no content sniffing on `file://`: `.txt`, `.json`, `.md`, `.css`, `.png`, `.js`, `.svgz` and `.ico` files containing HTML with a `<script>` render as text or images and run nothing, and `.csv`, `.pdf` and `.woff` download. Also held: an SVG whose `<script>` comes from an internal XML entity (no script ran); an XSLT stylesheet saved as `.txt` and applied to an SVG through `<?xml-stylesheet?>` (nothing ran); a declarative-shadow-DOM link into `labs/` on its own (lint `link-unchecked-page`, exit 1). An SVG `<a href="javascript&#58;…">` link was not reproduced: my click inside the SVG document did not register, so this one is untested, not cleared |
+| NEW-16 | **Fixed** (by design; not re-run) | Lint now rejects symlinked script files, and `check.mjs` refuses compiled scripts whose file is a symlink |
+| Links created by script files | **Out of scope, confirmed** | They are code in workspace script files: the known residual |
+| A missing `.html` link that becomes a page later | **Residual** | The check is a snapshot; a page created after the check is not covered. Accept, and re-run the check after any change |
+
+### New findings
+
+#### NEW-17 (P2) An SVG with a namespace-prefixed `<script>` passes `svg-script` and runs when opened from a lesson link
+
+**Where:** `lint-workspace.mjs:650`. The regex `/<script\b|\son[a-z]+\s*=|javascript:|<foreignObject\b|<(iframe|embed|object)\b/i` misses prefixed element names. `.svg` is in `ASSET_EXT`, so links to it are allowed, and an SVG document opened directly has no CSP.
+
+**PoC** (`re/r6-bypass.sh svg_prefixed_script`, `svg_xhtml_script`): `lessons/fig.svg` contains `<svg xmlns="http://www.w3.org/2000/svg" xmlns:x="http://www.w3.org/2000/svg">…<x:script>PAYLOAD</x:script></svg>`, or `xmlns:h="http://www.w3.org/1999/xhtml"` with `<h:script>`. Lesson 1 links to it with `<a href="fig.svg">`.
+
+Result: lint 0 errors, `check.mjs` **All pages clean, exit 0**. After the click, the title became `PWNED 1` and `learn:transformers-pwned` was written: same origin as every course.
+
+**Fix:** do not judge SVG with a regex. Either open every linked or present `.svg` in `check.mjs` and apply the same `Debugger.scriptParsed` rule as for pages (no compiled script at all), or parse it as XML and reject any element whose local name is `script`, `foreignObject`, `iframe`, `embed` or `object` in any namespace, any `on*` attribute, any `<!DOCTYPE`/`<!ENTITY`, and any `<?xml-stylesheet`. Simplest: allow `.svg` only through `<img src>`, never as a navigation target (`href`, `xlink:href`, `action`), since an image is rendered without script.
+
+#### NEW-18 (P2) A link inside a declarative shadow root is invisible to `domFileLinks`; combined with the still-open attribute-comment lint blind spot, a lesson passes with a link into `labs/`
+
+**Where:**
+- `lint-workspace.mjs:410-425` `domFileLinks` uses `document.querySelectorAll('*')`, which does not enter shadow roots.
+- `stripHtml` still treats `<!--` inside an attribute value as the start of a comment. This is NEW-08 PoC 2, never fixed.
+
+**PoC** (`re/r6-bypass.sh shadow_hidden`): lesson 1 gets `<i title="<!--"></i><span><template shadowrootmode="open"><a href="../labs/01-demo/index.html">Open the lab</a></template></span><i title="-->"></i>`.
+
+Result: lint 0 errors, `check.mjs` **All pages clean, exit 0**. Clicking the link opens the lab page, which runs inline script in the course origin (`PWNED 1`, key written). Without the attribute comment, lint alone catches it (`link-unchecked-page`), so `check.mjs`'s DOM layer contributes nothing here.
+
+**Fix:**
+1. Walk shadow roots in `domFileLinks` and in the DOM audit (`el.shadowRoot`, recursively). For closed roots (`shadowrootmode="closed"`), use CDP `DOM.getDocument({ depth: -1, pierce: true })`, or forbid `<template shadowrootmode>` and `shadowroot` in lint.
+2. Fix the attribute-comment blind spot: tokenize tags before looking for comments.
+
+### Final verdict on the gate "lint + `check.mjs` pass ⇒ no inline or non-course code runs in the course pages under Chromium"
+
+**Not yet releasable as a security claim. It is close.** Inside the pages the check opens, I could not get inline or non-course code to run in six rounds:
+- inline scripts and handlers are caught by the canonical CSP, the isolated-world probe and the DevTools `scriptParsed` evidence;
+- polyglots are caught by the `.js`-only rule;
+- forging the evidence is caught because it is read through DevTools;
+- every way a script file can create inline code is blocked by the CSP.
+
+What still fails is the edge of the checked set: documents one click away that the check never opens.
+
+**Block release on (both P2, both small fixes):**
+1. **NEW-17:** a scripted SVG with a prefixed `<script>` passes `svg-script` and is a linkable asset.
+2. **NEW-18:** a shadow-DOM link plus the attribute-comment lint gap leads into unchecked `labs/`.
+
+**Accepted residual risks** (documented in SECURITY.md or above):
+1. **Workspace script files** (`assets/*.js`, practice, scene and figure files) run with page privileges, and navigation or links they create are out of scope. Agent-written code needs review.
+2. **Data files execute in Node** during lint and check. They run in a hardened child process: no environment, no code generation, file reads limited by the permission model, typed arrays removed, a hard kill. The network is not covered; ADR-004's JSON-only course data is the real fix.
+3. **One shared `file://` storage origin in Chromium.** Any local page can read or alter every course's progress, or plant a `newer-format` document that stops saving (a notice is shown).
+4. **The check is a snapshot.** Pages or links added later, and `labs/` content, are covered only when the check runs again.
+5. **Verification is Chromium-only.** CSP `'self'` on `file://` and the DevTools evidence are Chromium behaviour.
+6. **Minor items:**
+   - NEW-11, a test gap only;
+   - the probe's untested inline-handler arm (round 3);
+   - NEW-16-class links, which need a shell to create;
+   - theoretical UNC paths on Windows.
