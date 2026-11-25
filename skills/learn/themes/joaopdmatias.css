@@ -1,20 +1,31 @@
 /* Theme: joaopdmatias.com
    Monochrome editorial: warm paper (#f5f1eb) / deep navy-black (#0a0e14),
    Space Mono uppercase headlines, Geist body, Geist Mono code, square corners,
-   and the site's faint 6-column grid. Black/white is the accent; colour is kept
-   only for meaning (ok/bad, act/confirm/triage) and for the dark motion scenes. */
+   and the site's faint 6-column grid. Links stay black/white; one warm orange
+   --signal marks the single thing to notice (next action, current step, the
+   challenge). Colour otherwise only carries meaning (ok/bad).
+
+   Fonts: no web-font request by default. The stacks below use Geist and Space Mono
+   when they are installed on the machine and fall back to system fonts otherwise.
+   Loading them from Google Fonts would add a third-party request on every page open
+   (it sends the learner's IP and user agent to Google), block rendering on the
+   network, and fail silently offline, while courses must work from disk without one.
+   To opt in anyway, uncomment the next line. Better: self-host the .woff2 files
+   (both families are OFL) in assets/fonts/ with @font-face rules here.
 @import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=Geist+Mono:wght@400;700&family=Space+Mono:wght@400;700&display=swap");
+*/
 
 :root {
   --bg: #f5f1eb; --fg: #000000; --muted: #666666; --rule: #dcd8d1;
-  --accent: #000000; --code-bg: #e5e1db; --card: #ffffff;
+  --control-border: #76716a; /* 4.30 on bg, 4.84 on card, 3.71 on code-bg */
+  --accent: #000000; --signal: #b4410f; /* 5.04 on bg */ --code-bg: #e5e1db; --card: #ffffff;
   --grid: rgba(0, 0, 0, .07);
 
-  --font-body: "Geist", system-ui, sans-serif;
-  --font-head: "Space Mono", ui-monospace, monospace;
-  --font-ui: "Geist", system-ui, sans-serif;
-  --font-label: "Space Mono", ui-monospace, monospace;
-  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --font-body: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-head: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-ui: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-label: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --head-weight: 700; --head-transform: uppercase; --head-tracking: .02em;
   --radius: 0; --radius-sm: 0;
 
@@ -23,25 +34,26 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0a0e14; --fg: #ffffff; --muted: #999999; --rule: #262c36;
-    --accent: #ffffff; --code-bg: #1a1e24; --card: #1a1e24;
+    --bg: #0a0e14; --fg: #ffffff; --muted: #999999; --rule: #262c36; --control-border: #6e7684; /* 4.22 / 3.66 */
+    --accent: #ffffff; --signal: #ff8a5b; /* 8.32 on bg */ --code-bg: #1a1e24; --card: #1a1e24;
     --grid: rgba(255, 255, 255, .07);
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0a0e14; --fg: #ffffff; --muted: #999999; --rule: #262c36;
-  --accent: #ffffff; --code-bg: #1a1e24; --card: #1a1e24;
+  --bg: #0a0e14; --fg: #ffffff; --muted: #999999; --rule: #262c36; --control-border: #6e7684;
+  --accent: #ffffff; --signal: #ff8a5b; --code-bg: #1a1e24; --card: #1a1e24;
   --grid: rgba(255, 255, 255, .07);
 }
 
 /* Signature details */
 body { font-size: 17px; }
-h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.1; }
+h1 { font-size: clamp(1.7rem, 5vw, 2.5rem); line-height: 1.15; }
 .kicker, th, nav.links, figcaption, .sc-title { font-family: var(--font-label); text-transform: uppercase; letter-spacing: .12em; }
 h1 code, h2 code, h3 code { font: inherit; background: none; padding: 0; }
 nav.links { font-size: .75rem; }
 a { text-underline-offset: 4px; }
 .box, .quiz-q, .sc-player { box-shadow: none; }
+.lc-node { border-radius: 0; }
 .sc-chapters button { border-radius: 0; }
 .sc-player { border: 1px solid var(--sc-line); }
 

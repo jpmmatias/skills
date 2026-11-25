@@ -1,4 +1,15 @@
 /* Theme: default.
    Overrides style.css tokens only. Replace this file with a theme from the
    skill's themes/ folder or the user's ~/.config/learn/theme.css.
-   Format: THEME-FORMAT.md in the skill. */
+   Format: THEME-FORMAT.md in the skill.
+
+   Tokens a theme usually sets (see style.css :root for the full list and defaults):
+     --bg --fg --muted --rule --card --code-bg      surfaces and text
+     --accent                                       links
+     --signal                                       the one thing to notice (next action, current step,
+                                                    the challenge); defaults to --accent. Keep it distinct
+                                                    from --fg, even in a monochrome theme.
+     --control-border                               button and input borders: must reach 3:1 against
+                                                    --bg, --card and --code-bg in light and dark (WCAG 1.4.11)
+     --font-body --font-head --font-ui --font-mono  end every stack with a system fallback
+   The default theme uses style.css as is. */
