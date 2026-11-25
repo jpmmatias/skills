@@ -508,3 +508,64 @@ Lesson 1 links to all three. Result: `check.mjs <copy> --no-axe` gives lint 0 er
 ### Known residual (unchanged, by design)
 
 Code in workspace **script files** (`assets/*.js`, practice, scene and figure files) runs with page privileges. The inline-code defences do not claim to cover it. NEW-13 differs: it hides code in a *page*, not in a script file, and the check reports that page clean.
+
+## Re-verification 5 (2026-11-25)
+
+This pass checks HEAD `33c0bc8`. Its changes:
+- script sources must be plain in-course `.js` files (lint, DOM audit and `Debugger.scriptParsed`);
+- `findCoursePages()` finds every `.html`/`.htm` page recursively, skipping `labs/`, `node_modules` and dot-folders;
+- a new rule, `link-unchecked-page`, stops lessons linking to `.html`/`.htm` files under `labs/`.
+
+I reproduced everything in Chromium on `file://`, on scratch copies of `examples/transformers` (`rev-sec/re/r4-polyglot.sh`, `re/r5-bypass.sh`). Nothing else in the repository was changed.
+
+### Status
+
+| ID | Status | Evidence on HEAD |
+|---|---|---|
+| NEW-13 | **Fixed** (one residual: NEW-16) | `r4-polyglot.sh` fails the check in all three variants (`query`, `hash`, `plain`): lint reports "script source is not a plain .js file", and `check.mjs` reports "script compiled from …html?v=2" or "inline script compiled", exit 1 |
+| NEW-14 | **Fixed for `.html`/`.htm` outside labs/; not fixed in general** (NEW-15) | The three-page PoC now fails. The `lessons/extra/notes.html` and `lessons/0004-bonus.htm` pages are checked (`csp-missing`, inline script compiled), and the `href` into `labs/…/index.html` gives a `link-unchecked-page` error. Exit 1 |
+
+### New findings
+
+#### NEW-15 (P2) Pages the check never opens are still one click from a lesson: SVG `xlink:href`, `file:` URLs, and `.xhtml`/`.svg` documents
+
+**Where:** `lint-workspace.mjs` `findCoursePages` (only `/\.html?$/`, and `labs/` is skipped entirely). The `link-unchecked-page` rule looks at `href`, `src`, `action`, `formaction` and `data` only. It skips any value with a scheme (so `file:` URLs are skipped) and matches only `labs/…\.html?`.
+
+**PoC** (`re/r5-bypass.sh <variant>`): each variant makes one change to lesson 1 and adds one target page with an inline `<script>` that writes `localStorage`. "Runs" means after clicking the link in lesson 1.
+
+| variant | lint | `check.mjs` | runs |
+|---|---|---|---|
+| `<svg><a xlink:href="../labs/01-demo/index.html">` | 0 errors | **All pages clean, exit 0** | **yes** (`PWNED 1`) |
+| `<a href="file:///…/labs/01-demo/index.html">` (absolute `file:` URL into the workspace) | 0 errors | **clean, exit 0** | **yes** |
+| `<a href="extra.xhtml">`, an XHTML page in `lessons/` | 0 errors | **clean, exit 0** | **yes** |
+| `<a href="figure.svg">`, an SVG document with `<script>` in `lessons/` | 0 errors | **clean, exit 0** | **yes** |
+| `<a href="../labs/01-demo/run.xhtml">` | 0 errors | **clean, exit 0** | **yes** |
+| `<a href="../labs/01-demo/">` (the folder link the rule recommends) | 0 errors | clean, exit 0 | Chromium shows a directory listing; one more click opens `index.html`, which runs |
+
+**Impact:** agent-written documents run inline script in the shared `file://` origin, with every course's progress, one click from a page the gate passed. The impact is the same as NEW-14's.
+
+**Fix:**
+1. Discover and check every document type Chromium renders with script: `.html`, `.htm`, `.xhtml`, `.xht`, `.svg`, `.xml`, `.mhtml`. Include `labs/` as well, or forbid such files there; an unchecked lab that one click can reach is not "the learner's own project" when the agent wrote it.
+2. Apply the link rule to every URL-bearing attribute (`xlink:href`, SVG `href`, `srcset`, `ping`, `poster`). Resolve `file:` URLs and treat them like relative links: forbid absolute `file:` links entirely, since a course needs none. Flag folder links into `labs/`.
+3. Better still, in `check.mjs`: follow every same-origin link target found in a checked page, and fail if it is not itself a checked page or a `.js`/`.css`/image/Markdown file.
+
+#### NEW-16 (P3) A symlinked `.js` name can load an HTML page as script
+
+`lessons/evil.js → 0001-tokens-to-vectors.html` (symlink), with the lesson HTML written as the NEW-13 polyglot and `<script src="evil.js">`. Lint gave 0 errors, `check.mjs` reported all clean (exit 0), and the payload ran (`PWNED 0`). The compiled URL ends in `.js`. Script files are not passed through the safe-read check that refuses symbolic links and hard links. Creating a link needs a shell, not a file write, so this is P3. **Fix:** run `checkWorkspaceFile` on every `<script src>` target in lint, refusing symbolic and hard links. In `check.mjs`, compare `realpath(url)` against the `.js` rule.
+
+### Verdict for the gate "lint + `check.mjs` pass ⇒ no inline or non-course code runs in the course pages (Chromium)"
+
+**Not yet.** For the pages the check opens, the gate now holds against everything I tried in five rounds. That covers inline scripts, inline handlers, CSP neutralisation, forging the evidence (it is read through DevTools), polyglots, and every way a script file can create inline code under the canonical CSP. The gate fails at its boundary: which documents count as course pages, and which links lead out of the checked set (NEW-15). Fixing that is small.
+
+**Block release on:**
+- NEW-15: an unchecked page one click away, through `xlink:href`, `file:` links, `.xhtml`/`.svg` documents, or `labs/` pages.
+
+**Accept, as documented residual risks:**
+1. **Workspace script files** (`assets/*.js`, practice, scene and figure files) run with page privileges. This is by design; agent-written code needs review.
+2. **`course.js` and practice files execute in Node** during lint and check. They run in a hardened child process: no environment, no code generation, file reads limited by the permission model, typed arrays removed, a hard kill. The network is not covered (ADR-004: the real fix is JSON-only data).
+3. **One shared `file://` storage origin.** Any local HTML file the learner opens can read or alter every course's progress (export reminds them of this).
+4. **Chromium-only verification.** CSP `'self'` on `file://` and the DevTools evidence are Chromium behaviour.
+5. **NEW-16:** symlinked script names; this needs a shell.
+6. **NEW-11:** a test gap only; the behaviour is fixed.
+7. **Navigation started by script files**, and a `newer-format` document planted by another page, which stops saving (with a notice).
+8. **UNC paths on Windows** (theoretical, untested).
