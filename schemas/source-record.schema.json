@@ -130,10 +130,13 @@
             "maxLength": 1000
           },
           "strength": {
+            "description": "Strength of the evidence base for this claim, as in the RESOURCES.md claims ledger (skills/learn/references/grounding.md). 'disputed' needs a source on each side; 'gap' means no source backs it.",
             "enum": [
+              "consensus",
               "supported",
-              "partial",
-              "disputed"
+              "single-study",
+              "disputed",
+              "gap"
             ]
           }
         }
