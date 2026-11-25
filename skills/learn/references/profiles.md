@@ -14,4 +14,4 @@
 | Agent calls per lesson (max) | 1 | **6** (you + researcher + 2 reviewers × 2 rounds) | **14** (you + researcher + 4 roles × 3 rounds; the planner adds 1 per course) |
 | Tokens per lesson (estimate, not measured) | 30–45k | 70–100k | 200–350k |
 
-Counters live in `.review/l<N>/state.md` (`budget:`). A retry of a failed reviewer counts as an agent call.
+Counters live in `.review/l<N>/state.md` (`budget:`). A retry of a failed reviewer counts as an agent call. Reviewer fetches (the expert's re-fetches) count toward `fetches_used`. A paused panel can be extended once, with the learner's yes ([review-panel → Budget](../workflows/review-panel.md#budget)).

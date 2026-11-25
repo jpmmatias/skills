@@ -9,9 +9,9 @@ What to do when something is missing or breaks. The principle: degrade visibly, 
 | No browser or Playwright | `check.mjs` cannot launch, or the learner declines the install | ask once to install; otherwise run the lint ([write-lesson → Verify](../workflows/write-lesson.md#verify)); never say "verified" | author `check: skipped`, `check_reason` |
 | Check keeps failing | still failing after 2 fix passes | stop fixing; deliver with the problems listed, or escalate in Deep | author `check: fail` and the problems |
 | No subagent support, or role files missing | no subagent or task tool; `lesson-panel/agents/` absent | Balanced and Deep run as Fast; tell the learner once that the review was not independent | verdicts `independence: self` |
-| Reviewer crashes, times out, or writes a bad file | file missing, unparsable, wrong round or sha | retry once, then `BLOCKED`; never fall back to an earlier round's file | `r<N>-<role>.md` `verdict: BLOCKED` |
+| Reviewer crashes, times out, or writes a bad file | file missing, unparsable, wrong round or sha | retry once, then `BLOCKED`; never fall back to an earlier round's file | `r<R>-<role>.md` `verdict: BLOCKED` |
 | Reviewers disagree | contradictory fixes at one location | precedence expert > novice > flow; declined items carry a reason; escalate if a blocker remains | author `addressed[]`, `escalation.md` |
-| Budget exhausted (fetches, rounds, agent calls) | `state.md` counters | finish the current step; `status: paused`; tell the learner what remains and that `/learn` resumes | `state.md` |
+| Budget exhausted (fetches, rounds, agent calls) | `state.md` counters | finish the current step; `status: paused`; tell the learner what remains and that `/learn` resumes; on resume, one extension with the learner's yes ([review-panel → Budget](../workflows/review-panel.md#budget)) | `state.md` `budget_extension` |
 | Missing prerequisite (`MISSION.md`, plan, NOTES decision, sources block) | the workflow's Preconditions | route to the workflow that produces it; never improvise the artifact | `NOTES.md` line |
 | Pipeline skill without `learn` | its Requires preflight | stop and print the install command | — |
 | Storage unavailable in the browser | the runtime's notice | progress is not kept; suggest a normal (non-private) window and export | — |

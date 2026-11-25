@@ -1,6 +1,6 @@
 # Pedagogy
 
-The learning model behind every workflow. Thresholds below are design choices, chosen to keep practice effortful but mostly successful; they are not research constants.
+The learning model behind every workflow. Thresholds below are design choices, chosen to keep practice effortful but mostly successful; they are not research constants. The empirical claims in this file (retrieval practice, spacing, interleaving, worked → faded examples, pretesting, the zone of proximal development) are mainstream findings stated from general knowledge; none was fetched or verified for this skill.
 
 ## Philosophy
 
@@ -9,7 +9,7 @@ To learn at depth the learner needs three things:
 - **Skills**, from practice with tight feedback loops: in-browser items, real-world steps, and [labs](labs.md).
 - **Wisdom**, from contact with other practitioners. When a question needs wisdom, answer as well as you can, then point to a well-moderated community; respect an opt-out.
 
-Some topics lean on knowledge (theoretical physics), others on skills (yoga). For acquiring knowledge, difficulty is the enemy: it eats working memory. For skills, effortful retrieval is the tool.
+Some topics lean on knowledge (theoretical physics), others on skills (yoga). While a learner first meets new material, keep extraneous load low (clear explanations, worked examples, one idea at a time). Once it has been taught, make retrieval effortful for both knowledge and skills: recall from memory, spaced over days, mixed with neighbours.
 
 ## Fluency vs storage strength
 
@@ -44,10 +44,10 @@ Adapt only on assessment evidence, never on time on page, scrolling or self-rate
 
 | Signal | Action |
 |---|---|
-| Diagnostic showed every objective of a lesson | offer test-out: skip to the faded example and the challenge (the learner chooses) |
-| First-try accuracy on an objective < 0.6 after 3 items | a second worked example with a different surface, then a parallel item set |
-| 0.6–0.85 | proceed as planned |
-| > 0.85 with a recall item correct | say the learner looks challenge-ready; next time fade more steps |
+| The diagnostic meets the lesson's `test-out` rule ([plan-course](../workflows/plan-course.md#steps)) | offer test-out: skip to the faded example and the challenge (the learner chooses) |
+| First-try accuracy on an objective < 0.6 after 3 items (1 of 3 or worse) | a second worked example with a different surface, then a parallel item set |
+| 0.6 to < 0.8 | proceed as planned |
+| ≥ 0.8 with a recall, fade or order item correct (the L3 bar) | say the learner looks challenge-ready; next time fade more steps. The browser's "You look ready for the challenge" line uses ≥ 0.8 of the lesson's set without the recall condition; practice is still not proof |
 | A required objective is lapsed or below L3 when the next lesson starts | a short review first ([next-step rule](../workflows/continue-course.md#the-next-step-rule)) |
 | Challenge criteria `not_met` | remediation of those criteria only, then resubmission |
 | Two failed reviews in a row on an objective | re-teach with a new explanation or model |

@@ -17,7 +17,8 @@ round: 2
 round_cap: 2                    # balanced 2, deep 3
 status: in_review               # drafting | in_review | approved | escalated | paused
 sources: done                   # pending after an offline session: the next online session researches first
-budget: { fetches_used: 5, fetches_max: 8, agent_calls_used: 4, agent_calls_max: 6 }
+budget: { fetches_used: 5, fetches_max: 8, agent_calls_used: 4, agent_calls_max: 6 }   # reviewer fetches count too
+budget_extension: ""            # set once, on a resume from paused: "<date> +K calls +F fetches"
 history:
   - { round: 1, verdicts: { expert: REVISE, novice: APPROVE } }
 ---
@@ -94,10 +95,11 @@ File: `.review/l<N>/escalation.md`.
 ---
 lesson: l3
 round: 2
-reason: round_cap               # round_cap | blocked_reviewer | declined_blocker
+reason: round_cap               # round_cap | blocked_reviewer | declined_blocker | draft_moved
 open:
-  - { id: E-1, severity: blocker, expert: "…", author: "…", proposal: "cut the section; label the rest illustrative" }
+  - { id: E-1, severity: blocker, expert: "…", author: "…", proposal: "cut the claim and what depends on it" }
 question: "One question for the learner"
+resolution: ""                  # written after the learner answers; then status approved, or one more round
 ---
 ```
 

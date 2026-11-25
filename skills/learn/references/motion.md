@@ -4,7 +4,7 @@ When a lesson gets motion, and how to build it. Source ids `K…`: [grounding �
 
 ## Decide
 
-Decide per lesson, on purpose, while planning; never by omission. Learners notice when a mechanism that clearly moves is shown as a still.
+Decide per lesson, on purpose, while planning; never by omission.
 
 **Build a scene** when at least one holds:
 - **Process over time.** The concept *is* a sequence: tokens sampled one by one, a request through layers, a retry loop, an event-loop tick.
@@ -24,7 +24,7 @@ Record it in `NOTES.md` as `L1: scene — <why>` or `L2: no scene — <what inst
 
 ## Why motion, and its limits
 
-In a meta-analysis, representational animations outperformed static pictures (d ≈ 0.40), with an overall effect of d ≈ 0.37 [K3]. That supports animating the change itself; it says nothing in favour of decorative motion, so add none.
+A meta-analysis reported an advantage of representational animations over static pictures (d ≈ 0.40; unverified figure, K3 was not fetched) [K3]. Its effects may differ by kind of knowledge, so using animation for conceptual topics such as programming is a design choice, not a finding. Nothing in it favours decorative motion, so add none.
 
 ## Animation rules
 
@@ -48,7 +48,7 @@ Rules, following Mayer's multimedia principles [K2]:
 - **Segmenting:** 3–6 chapters, one idea each, with chapter buttons; the learner sets the pace.
 - **Modality:** optional narration (`say`) over the animation rather than the same words on screen.
 - **Redundancy:** with narration on, show only the chapter title, never the narrated sentence as a caption.
-- **No presenter:** no on-camera host or avatar; spend the pixels on the mechanism.
+- **No presenter** (a design choice, not one of the principles in K2): no on-camera host or avatar; spend the pixels on the mechanism.
 - **Real data only:** terminal output and numbers come from a real run or a cited source (`data-src`); label anything else **illustrative**, visibly.
 - **Poster frame:** paused, and under reduced motion, the final frame stands alone as a static figure.
 - Under about 20 seconds of motion in total. Watching earns no XP; always follow a scene with retrieval practice.

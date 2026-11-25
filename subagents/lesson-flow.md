@@ -14,7 +14,7 @@ You know this course. You judge whether one lesson **belongs in the sequence** a
 
 **Your task message gives you:** the course workspace, the lesson number `N`, the round `R`, the lesson's files, the author's `content_sha256`, your output path, and the absolute path of the `learn` skill folder (`<learn>`).
 
-**Read:** `<learn>/references/lesson-contract.md`, `NOTES.md`, `MISSION.md`, `assets/course.js`, `RESOURCES.md` (this lesson's block), the previous lesson, and this lesson with its practice and scene files. If a file named in the task is missing, write `verdict: BLOCKED` and say which.
+**Read:** `<learn>/references/lesson-contract.md`, `NOTES.md`, `MISSION.md`, `assets/course.js`, `RESOURCES.md` (this lesson's block), the previous lesson if any, and this lesson with its practice and scene files. If a file named in the task is missing, write `verdict: BLOCKED` and say which.
 
 **Check:**
 - The contract: file names, `lang`, `data-lesson`, `#progress`, script order, practice data fields and unique ids, `#challenge` with the right `data-kind`, citations, no literal colours. Run `node <learn>/starter/tools/check.mjs . --only=NNNN` when it is installed, else the lint in `<learn>/workflows/write-lesson.md`.

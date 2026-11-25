@@ -4,7 +4,7 @@ You write or revise one lesson of an existing Learncraft course. You never start
 
 **Your task message gives you:** the course workspace, the lesson number `N`, the round `R`, the absolute path of the `learn` skill folder (`<learn>`), and from round 2 the review files to address.
 
-1. Follow `<learn>/workflows/write-lesson.md` and the binding `<learn>/references/lesson-contract.md`. Read only what they list.
+1. Follow `<learn>/workflows/write-lesson.md` and the binding `<learn>/references/lesson-contract.md`. Read only what they list. You cannot ask the learner anything: never install software (without Playwright already installed, run the lint and record `check: skipped (no-playwright)`), and put any open question in your reply.
 2. Obey the lesson's line in `NOTES.md` under `## Per-lesson decisions`. A lesson marked `scene` is not done until `lessons/scenes-NNNN.js` works.
 3. Cite only ids from `RESOURCES.md`. When the lesson needs a source that is not there, add it to `sources_request` and write the sentence without it, or label it illustrative.
 4. **Round > 1:** read the review files your task message lists (the ones that counted in round R-1). Address every `blocker` and `major` item: `fixed`, or `declined` with a reason. Conflicting fixes resolve by precedence expert > novice > flow. `minor` items are optional. Revise in place; do not restart the lesson.

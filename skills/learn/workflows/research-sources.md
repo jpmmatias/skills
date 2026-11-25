@@ -17,7 +17,7 @@ The single procedure for sources. It writes **only** `RESOURCES.md`, in the [RES
 5. **Write the lesson block** under `## Knowledge`: `### Lesson N — <title>`, its research line, the entries, and the `Claims` ledger. Give new entries the next free `S<n>` id; never reuse or renumber an id. Mark one entry **Primary source for L<N>**. Annotations are in your own words, in the course language; titles stay in their original language.
 6. **Gaps.** Every claim is either backed in the ledger or listed under `## Gaps` with what you searched. The author then labels that part illustrative or leaves it out.
 7. **Community.** When the mission needs practice outside the course and the learner has not opted out, add one well-moderated place under `## Wisdom (Communities)`.
-8. **Report** in at most 8 lines: the primary source, each new id with its type and status, and the gaps. A subagent returns this report and nothing else.
+8. **Report** in at most 8 lines: the primary source, each new id with its type and status, and the gaps. A subagent returns this report and nothing else; it never asks the learner anything (a choice it cannot make goes into the report).
 
 ## Rules
 

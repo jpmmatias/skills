@@ -25,8 +25,8 @@ kind: demonstrated            # demonstrated | claimed | misconception | mission
 milestone: m2                 # the milestone a challenge or cold check concerned
 result: pass                  # pass | miss
 criteria:
-  - { text: "Picks a threshold and justifies it with the measured pass rates", status: met, evidence: "results.json: 0.92 at 0.7" }
-  - { text: "The new property catches a failure seen in the results", status: met, evidence: "case 14 now fails" }
+  - { text: "Picks a threshold and justifies it with the measured pass rates", status: met, evidence: "results.json: 0.92 at 0.7", objectives: [l4.o1] }
+  - { text: "The new property catches a failure seen in the results", status: met, evidence: "case 14 now fails", objectives: [l4.o2, l3.o1] }
 transfer: false               # true only when the task's context differs from all practice and earlier challenges
 transfer_reason: ""           # one line, required in practice when transfer is true
 date: 2026-11-24
@@ -39,11 +39,11 @@ date: 2026-11-24
 | `kind` | `demonstrated`: the learner showed it in assessed work (a challenge, a cold check). `claimed`: the learner said so; a placement hint, never evidence. `misconception`: a wrong belief surfaced, with the correction. `mission-change`: the mission moved. `prior`: diagnostic results used for placement. |
 | `milestone` | the milestone id, for challenge and cold-check records |
 | `result` | `pass` or `miss`, for challenge and cold-check records |
-| `criteria` | each pass criterion copied verbatim, with `status` (`met`, `not_met`, `unverifiable`) and the quote or number that decided it. For `kind: prior`, one entry per diagnostic item: `met` when correct, `not_met` when partial or incorrect. |
+| `criteria` | each pass criterion copied verbatim, with `status` (`met`, `not_met`, `unverifiable`), the quote or number that decided it, and `objectives`: the objective ids it demonstrates. Only named objectives can reach L4 ([mastery](references/mastery.md#levels)). For `kind: prior`, one entry per diagnostic item: `text` = `<topic-slug>: <item>`, `met` when correct, `not_met` when partial or incorrect (the grade goes in `evidence`); plan-course adds `objectives` after planning. |
 | `transfer`, `transfer_reason` | `true` only with a one-line justification in `transfer_reason` (≤ 300 characters), repeated in the Evidence section |
 | `date` | `YYYY-MM-DD` |
 
-A record that unlocks a milestone (`course.js` `evidence: 'LR-NNNN'`) must have `kind: demonstrated`, `result: pass`, every criterion `met`, and an **Evidence** section.
+A record that unlocks a milestone (`course.js` `evidence: 'LR-NNNN'`) must be a milestone-challenge record (title `Milestone m<k> challenge: pass`) with `kind: demonstrated`, `result: pass`, every criterion `met` and naming its `objectives`, and an **Evidence** section. Cold checks (`Cold check m<k>: pass`) and lesson challenges (`Lesson N challenge: pass`, no `milestone`) share that frontmatter but never unlock a milestone; the milestone's record is always the one `course.js` names.
 
 ## Optional sections
 

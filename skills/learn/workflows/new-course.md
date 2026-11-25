@@ -13,7 +13,7 @@ One message, **at most four questions**, before writing anything. A detailed out
 3. **Environment** (hands-on topics only): the stack or equipment they will use, plus accounts, API keys and budget for paid services.
 4. **Language**: only when it is ambiguous (they wrote in one language and asked for another, or mixed languages). Otherwise use the language they write in and state it in one line.
 
-The theme takes a question only under [Theme](#theme) rule 3, and only if a slot is still free; otherwise use the default and mention how to change it. Do not ask about the profile: say once that Balanced is the default and `--fast`/`--deep` exist.
+Ask about the theme only when [Theme](#theme) rule 3 applies and you asked fewer than four questions. Otherwise use the default theme and tell the learner how to change it. Do not ask about the profile: say once that Balanced is the default and `--fast`/`--deep` exist.
 
 After the answers:
 - Verify the environment yourself where you can (`node -v`, `which ollama`, whether a key variable is set, without printing it) and record it with the date in `NOTES.md`.
@@ -49,9 +49,9 @@ Before planning, find the learner's real floor with **3–6 short items** in one
 
 - Prefer recall and application ("What does X return when …?", "Write the line that …") over multiple choice.
 - Tell the learner: answer without looking anything up, and "I don't know" is a good answer that saves them a lesson they don't need.
-- Grade each answer as `correct`, `partial` or `incorrect` with one line of feedback. Do not teach yet.
-- Write one learning record with `kind: prior` listing each item, its outcome and the objective it probed. It places the course; it does not set a mastery level ([mastery](../references/mastery.md#who-records-what)).
-- If the learner declines, write `diagnostic: declined` in `NOTES.md` and plan from the claims, starting one step below the claimed floor.
+- Grade each answer as `correct`, `partial` (the core idea is right but a required step or term is missing or wrong) or `incorrect`, with one line of feedback. Do not teach yet.
+- Write one learning record with `kind: prior` and one `criteria` entry per item: `text` = `<topic-slug>: <the item>` (a short tag for what it probed, since objectives do not exist yet), `status: met` only when `correct`, and `evidence` = the grade and the learner's answer (`partial: …`). After planning, [plan-course](plan-course.md#steps) maps each tag to objective ids and adds `objectives:` to the entry. The record places the course; it does not set a mastery level ([mastery](../references/mastery.md#who-records-what)).
+- If the learner declines, write `diagnostic: declined` in `NOTES.md` and plan from the claims, starting at the last lesson whose objectives they claimed to know (one lesson below the claimed floor), or at lesson 1 if they claimed none.
 
 ## Hand off
 
