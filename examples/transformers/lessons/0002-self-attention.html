@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'">
+<title>Lesson 2 · Self-attention</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+  .formula { font: 1.05rem/1.6 var(--font-mono); text-align: center; background: var(--code-bg); border-radius: var(--radius); padding: .75rem .5rem; margin: 1.25rem 0; overflow-wrap: anywhere; }
+  table.num td, table.num th { font: 13.5px/1.45 var(--font-mono); white-space: nowrap; }
+  table.num td.hl { color: var(--signal); font-weight: 700; }
+</style>
+</head>
+<body data-lesson="2">
+<main>
+  <nav class="links" aria-label="Course"><a href="../index.html">← Course map</a> <a href="../review.html">Review</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+
+  <header>
+    <p class="kicker">Lesson 2 · Compute one attention head</p>
+    <h1>Self-attention</h1>
+    <p class="lede">After lesson 1, every token is a vector that knows only itself and its position. Attention is the step where each token's vector takes in information from the other tokens.</p>
+    <div id="progress"></div>
+  </header>
+
+  <p><strong>Why this matters for your mission:</strong> attention is where a word like “it” in your prompt gets connected to what it refers to, and its causal mask is the reason a model can only write left to right, one token at a time, which is what you see when a reply streams.</p>
+
+  <div class="terms">
+    <div class="term"><b>query (q)</b>What this token is looking for, as a vector.</div>
+    <div class="term"><b>key (k)</b>What each token offers to be found by, as a vector.</div>
+    <div class="term"><b>value (v)</b>What each token hands over if it is attended to.</div>
+    <div class="term"><b>softmax</b>Turns any list of scores into positive weights that add up to 1: exponentiate each, divide by the total.</div>
+  </div>
+
+  <h2>One query, many keys</h2>
+  <p>The Transformer paper describes attention as mapping a query and a set of key–value pairs to an output: the output is a weighted sum of the values, and each value's weight comes from how well the query matches that value's key<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>. In <em>self</em>-attention all three come from the same sequence: every token's input vector is multiplied by three learned matrices, W<sub>Q</sub>, W<sub>K</sub> and W<sub>V</sub>, to give its own q, k and v<sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>. For all queries at once, stacked as rows of matrices<sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>:</p>
+  <p class="formula">Attention(Q, K, V) = softmax( Q·Kᵀ / √d<sub>k</sub> ) · V</p>
+  <p>Here d<sub>k</sub> is the length of each key vector. Read it right to left for one query: dot the query with every key, divide by √d<sub>k</sub>, softmax, then use the weights to average the values.</p>
+
+  <h3>The toy sentence</h3>
+  <p>To compute this by hand we need small vectors. The ones below are <strong>toy numbers, chosen by hand</strong> so the pattern is easy to read: d<sub>k</sub> = 4 and values have 2 dimensions. You can read the four key dimensions loosely as “a thing”, “an action”, “a small word”, “a pronoun”. That reading is our design; a trained head learns its own numbers, and nobody writes them down like this.</p>
+  <figure>
+    <div class="table-wrap">
+      <table class="num">
+        <thead><tr><th scope="col">pos</th><th scope="col">token</th><th scope="col">q</th><th scope="col">k</th><th scope="col">v</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td>The</td><td>[1, 0, 0, 0]</td><td>[0, 0, 1, 0]</td><td>[0.1, 0.1]</td></tr>
+          <tr><td>1</td><td>cat</td><td>[0, 0, 1, 0]</td><td>[2, 0, 0, 0]</td><td>[0.9, 0.8]</td></tr>
+          <tr><td>2</td><td>sat</td><td>[2, 0, 0, 0]</td><td>[0, 2, 0, 0]</td><td>[0.2, −0.8]</td></tr>
+          <tr><td>3</td><td>because</td><td>[0, 2, 0, 0]</td><td>[0, 0, 1, 0]</td><td>[−0.6, 0.1]</td></tr>
+          <tr><td>4</td><td>it</td><td>[2, 0, 0, 0.5]</td><td>[0.5, 0, 0, 1.5]</td><td>[−0.2, 0.7]</td></tr>
+          <tr><td>5</td><td>was</td><td>[0, 0, 0, 2]</td><td>[0, 1, 0.5, 0]</td><td>[−0.8, −0.5]</td></tr>
+          <tr><td>6</td><td>tired</td><td>[1.5, 0, 0, 1]</td><td>[0.5, 1, 0, 0]</td><td>[0.6, −0.4]</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figcaption>Illustrative q, k and v for “The cat sat because it was tired” (each word is one GPT-2 token). In a real model these would be the input vectors times W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>.</figcaption>
+  </figure>
+
+  <h3>Worked example: what does “it” attend to?</h3>
+  <p>Query: q(it) = [2, 0, 0, 0.5]. In a decoder, “it” (position 4) may look only at positions 0–4; the next section explains why. √d<sub>k</sub> = √4 = 2.</p>
+  <figure>
+    <div class="table-wrap">
+      <table class="num">
+        <thead><tr><th scope="col">key</th><th scope="col">q·k</th><th scope="col">÷ 2</th><th scope="col">e<sup>x</sup></th><th scope="col">weight</th></tr></thead>
+        <tbody>
+          <tr><td>The</td><td>0</td><td>0</td><td>1.000</td><td>0.078</td></tr>
+          <tr><td>cat</td><td>2·2 = 4</td><td>2</td><td>7.389</td><td class="hl">0.578</td></tr>
+          <tr><td>sat</td><td>0</td><td>0</td><td>1.000</td><td>0.078</td></tr>
+          <tr><td>because</td><td>0</td><td>0</td><td>1.000</td><td>0.078</td></tr>
+          <tr><td>it</td><td>2·0.5 + 0.5·1.5 = 1.75</td><td>0.875</td><td>2.399</td><td>0.188</td></tr>
+          <tr><td colspan="3">total</td><td>12.788</td><td>1.000</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figcaption>Each weight is its e<sup>x</sup> divided by the total 12.788. Computed from the toy numbers above.</figcaption>
+  </figure>
+  <p>The output for “it” is the weighted average of the five visible values:<br>
+  0.078·[0.1, 0.1] + 0.578·[0.9, 0.8] + 0.078·[0.2, −0.8] + 0.078·[−0.6, 0.1] + 0.188·[−0.2, 0.7] ≈ <strong>[0.46, 0.55]</strong>.<br>
+  The new vector for “it” now carries mostly what “cat” offered. That is the whole trick: a token's vector is rebuilt from the values of the tokens its query matches.</p>
+
+  <p class="note"><strong>Why does the ÷ √d<sub>k</sub> line exist?</strong> If the components of q and k are independent with mean 0 and variance 1, their dot product has variance d<sub>k</sub>, so scores grow with the vector size. The authors suspected that large scores push the softmax into regions where its gradients are extremely small, and scale by 1/√d<sub>k</sub> to counteract it<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>. With the original model's d<sub>k</sub> = 64, that means dividing by 8<sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>.</p>
+
+  <h3>Your turn: the query “was”</h3>
+  <p>q(was) = [0, 0, 0, 2]. It may see positions 0–5. Every key except one gives a raw score of 0 (check the table). Fill in the one that doesn't.</p>
+  <div data-practice-item="l2-fade-was"></div>
+
+  <h2>Change the query, watch the weights</h2>
+  <p>The same computation, live. Pick a query token; the bars are its weights, and on the right (below, on a phone) each value is a point and the output is the diamond: a weighted average, so it always lands inside the cloud of visible values, pulled toward the heavy ones. The τ slider divides the scores once more; it is <strong>not part of real attention</strong> (τ = 1 there). Push it to 0.25 to see what unscaled, large scores would do: the softmax puts nearly all the weight on one token.</p>
+  <figure>
+    <div data-lc="attention-explorer" id="attention-explorer" data-query="4"></div>
+    <figcaption>Scaled dot-product attention on the toy sentence, computed live from the table above. Keyboard: Tab to a slider, then the arrow keys.</figcaption>
+  </figure>
+  <p>Things to try: “The” with the mask on (it can only attend to itself, so its weight is 1); “The” with the mask off (it reaches forward to “cat”, a token a decoder would not have yet); “was” (it finds “it”).</p>
+
+  <h2>The causal mask</h2>
+  <p>A decoder-only model such as GPT-2 is trained to predict each next token from the ones before it, at every position of a training text at once. If position 4 could read position 5, it could copy the answer. So decoder self-attention masks every later position: their scores are set to −∞ before the softmax, which makes their weights exactly 0<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup><sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>. GPT-2's code builds a lower-triangular mask and subtracts 10<sup>10</sup> from the blocked scores, which has the same effect<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>.</p>
+  <figure>
+    <div data-lc="mask-grid" data-highlight="4"></div>
+    <figcaption>The causal mask for the toy sentence. The highlighted row is the worked example: “it” sees “The” through “it”.</figcaption>
+  </figure>
+
+  <h2>Many heads at once</h2>
+  <p>A real layer runs several attention heads side by side, each with its own W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>, and concatenates their outputs. The original base model used 8 heads with d<sub>k</sub> = 64 each, over 512-wide vectors<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>; GPT-2's code defaults to 12 heads over 768 dimensions, again 64 per head<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>. Each head does exactly what you computed above.</p>
+
+  <section class="practice" aria-labelledby="practice-h">
+    <h2 id="practice-h">Check yourself</h2>
+    <p class="lc-muted">Use pen and paper for the numbers; a calculator for e<sup>x</sup> is fine.</p>
+    <div data-practice-item="l2-recall-two-keys"></div>
+    <div data-practice-item="l2-choice-scale"></div>
+    <div data-practice-item="l2-order-head"></div>
+    <div data-practice-item="l2-choice-output"></div>
+    <div data-practice-item="l2-recall-mask-count"></div>
+  </section>
+
+  <section class="challenge" id="challenge" data-kind="milestone" data-milestone="m2" aria-labelledby="challenge-h">
+    <p class="kicker">Milestone challenge</p>
+    <h2 id="challenge-h">One head, by hand, on your own phrase</h2>
+    <p>Take a 4-token phrase from one of your own prompts (tokenize it as in lesson 1). Give each token toy vectors: q and k with d<sub>k</sub> = 2 or 4, and a 2-D v. Choose them so that one token should clearly attend to another, and say which before you compute. Then compute one causal attention head for two queries, the last token and the second token, in a spreadsheet or in plain code without a library attention function. Finally, run the last token once more without the ÷ √d<sub>k</sub>.</p>
+    <h3>What to send back</h3>
+    <p>Your vectors, your prediction, a table per query (q·k, scaled score, weight, output), the spreadsheet or code, and the no-scaling run.</p>
+    <h3>Pass criteria</h3>
+    <ol class="criteria">
+      <li>For both queries the table shows q·k, the score divided by √d<sub>k</sub> and the softmax weights, and each query's weights add up to 1.00 (± 0.01).</li>
+      <li>The second token's row gives weight 0 to positions 2 and 3 (masked); the last token's row uses all four positions.</li>
+      <li>Each output vector equals the sum of weight × value, with the arithmetic written out for at least one component.</li>
+      <li>The no-scaling run reports the largest weight with and without ÷ √d<sub>k</sub>, next to your written prediction from before the run.</li>
+    </ol>
+    <p>When you are done, send your work to your teacher in the terminal.</p>
+  </section>
+
+  <h2>Primary source</h2>
+  <p><a href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a> (Vaswani et al., 2017)<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup>: read the section on scaled dot-product attention, including the footnote on why the dot products grow. The course author could not open arXiv while writing (the host was blocked), so every passage used here was checked in the Annotated Transformer's copy of the text<sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>.</p>
+
+  <h2>Go deeper</h2>
+  <ul class="deeper">
+    <li><a href="https://nlp.seas.harvard.edu/annotated-transformer/">The Annotated Transformer</a> <span>Article with code, about an hour. The paper's own text next to a working PyTorch implementation; the attention function is ten lines.</span></li>
+    <li><a href="https://jalammar.github.io/illustrated-transformer/">The Illustrated Transformer</a> <span>Article, about 25 minutes. The same six steps you computed, drawn as pictures, with the “it” example on a real trained model.</span></li>
+    <li><a href="https://www.3blue1brown.com/lessons/attention">Attention in transformers, step-by-step</a> <span>Video, about 26 minutes per a search index (not checked by the course author). A slow, visual second pass on queries, keys, values and masking.</span></li>
+    <li><a href="https://github.com/openai/gpt-2">openai/gpt-2, <code>src/model.py</code></a> <span>Code, 10 minutes. Find <code>attention_mask</code> and <code>multihead_attn</code>: the mask and the scaled dot product from this lesson, in the released model.</span></li>
+  </ul>
+
+  <p>Stuck on a number, or curious what real attention heads in a trained model look at? Ask your agent in the terminal.</p>
+
+  <nav class="links" aria-label="Lessons"><a href="0001-tokens-to-vectors.html">← Previous: From text to vectors</a> <a href="0003-blocks-and-generation.html">Next: Blocks and generation →</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+  <footer>Example course. Sources and their verification status: <a href="../RESOURCES.md">RESOURCES.md</a>.</footer>
+</main>
+<script src="../assets/core.js"></script>
+<script src="../assets/store.js"></script>
+<script src="../assets/course.js"></script>
+<script src="0002.practice.js"></script>
+<script src="../assets/progress.js"></script>
+<script src="../assets/practice.js"></script>
+<script src="../assets/viz.js"></script>
+<script src="0002.figures.js"></script>
+</body>
+</html>

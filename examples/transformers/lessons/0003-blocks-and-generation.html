@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'">
+<title>Lesson 3 · Blocks and generation</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+  .stepper svg.dg { max-width: 420px; }
+  table.num td, table.num th { font: 13.5px/1.45 var(--font-mono); white-space: nowrap; }
+  pre.trace { font-size: 13.5px; overflow-x: auto; }
+</style>
+</head>
+<body data-lesson="3">
+<main>
+  <nav class="links" aria-label="Course"><a href="../index.html">← Course map</a> <a href="../review.html">Review</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+
+  <header>
+    <p class="kicker">Lesson 3 · Explain a streamed reply</p>
+    <h1>Blocks and generation</h1>
+    <p class="lede">One attention head is one step. A model stacks it into blocks, stacks the blocks, and then runs the whole stack once for every token it writes.</p>
+    <div id="progress"></div>
+  </header>
+
+  <p><strong>Why this matters for your mission:</strong> when you stream a reply or set <code>temperature</code> on an API call, you are watching and steering the loop in this lesson. By the end you can say what happens between two streamed tokens and predict what a temperature change will do.</p>
+
+  <div class="terms">
+    <div class="term"><b>residual stream</b>The running vector of each token. Every sub-layer reads it and <em>adds</em> its result back to it.</div>
+    <div class="term"><b>layer norm</b>Rescales one vector to mean 0 and spread 1, then applies a learned scale and shift.</div>
+    <div class="term"><b>MLP</b>A small two-layer network applied to each token's vector on its own.</div>
+    <div class="term"><b>logits</b>Raw scores, one per vocabulary token, before the softmax turns them into probabilities.</div>
+  </div>
+
+  <h2>Inside one block</h2>
+  <p>A decoder block has two sub-layers: the masked self-attention of lesson 2, then an MLP. The version below is GPT-2's, read straight from its released code: normalise, run the sub-layer, <strong>add the result back</strong>, twice<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup><sup class="cite"><a href="../RESOURCES.md#s13" data-src="S13">13</a></sup>. Step through it.</p>
+
+  <div class="stepper">
+    <svg viewBox="0 0 360 470" class="dg">
+      <defs><marker id="ah-blk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs>
+      <g data-step="1">
+        <rect class="node-hot" x="10" y="10" width="200" height="44" rx="6"/>
+        <text class="t-title" x="22" y="30">x</text>
+        <text class="t-sub" x="22" y="46">one 768-wide vector per token</text>
+      </g>
+      <g data-step="2">
+        <rect class="node" x="190" y="84" width="160" height="34" rx="6"/><text class="t-title" x="270" y="106" text-anchor="middle">LayerNorm</text>
+        <rect class="node" x="190" y="138" width="160" height="44" rx="6"/><text class="t-title" x="270" y="158" text-anchor="middle">Masked attention</text>
+        <text class="t-sub" x="270" y="174" text-anchor="middle">lesson 2, 12 heads</text>
+        <path class="arrow" d="M150,54 L150,70 L270,70 L270,82" style="marker-end:url(#ah-blk)"/>
+        <path class="arrow" d="M270,118 L270,136" style="marker-end:url(#ah-blk)"/>
+      </g>
+      <g data-step="3">
+        <circle class="node-hot" cx="70" cy="214" r="15"/><text class="t-title" x="70" y="219" text-anchor="middle">+</text>
+        <path class="arrow" d="M70,54 L70,197" style="marker-end:url(#ah-blk)"/>
+        <path class="arrow" d="M270,182 L270,214 L88,214" style="marker-end:url(#ah-blk)"/>
+        <text class="t-mono" x="20" y="130" transform="rotate(-90 20 130)" text-anchor="middle">residual</text>
+      </g>
+      <g data-step="4">
+        <rect class="node" x="190" y="250" width="160" height="34" rx="6"/><text class="t-title" x="270" y="272" text-anchor="middle">LayerNorm</text>
+        <rect class="node" x="190" y="304" width="160" height="44" rx="6"/><text class="t-title" x="270" y="324" text-anchor="middle">MLP</text>
+        <text class="t-sub" x="270" y="340" text-anchor="middle">768 → 3,072 → 768, GELU</text>
+        <path class="arrow" d="M70,229 L70,236 L270,236 L270,248" style="marker-end:url(#ah-blk)"/>
+        <path class="arrow" d="M270,284 L270,302" style="marker-end:url(#ah-blk)"/>
+      </g>
+      <g data-step="5">
+        <circle class="node-hot" cx="70" cy="380" r="15"/><text class="t-title" x="70" y="385" text-anchor="middle">+</text>
+        <path class="arrow" d="M70,229 L70,363" style="marker-end:url(#ah-blk)"/>
+        <path class="arrow" d="M270,348 L270,380 L88,380" style="marker-end:url(#ah-blk)"/>
+        <path class="arrow" d="M70,395 L70,418" style="marker-end:url(#ah-blk)"/>
+        <rect class="node-hot" x="10" y="420" width="250" height="40" rx="6"/>
+        <text class="t-title" x="22" y="438">x′ → the next block</text>
+        <text class="t-sub" x="22" y="453">same shape; GPT-2 small stacks 12</text>
+      </g>
+    </svg>
+    <div class="captions">
+      <p data-step="1">Start: <i>x</i>, one 768-wide vector per token (lesson 1's embeddings, or the previous block's output).</p>
+      <p data-step="2">Normalise each vector, then run masked self-attention on the normalised copies.</p>
+      <p data-step="3">Add attention's output back onto <i>x</i>. The straight line is the residual connection: <i>x</i> itself passes through untouched.</p>
+      <p data-step="4">Normalise again, then the MLP: widen each vector 4×, apply GELU, project back. Each token is processed on its own here.</p>
+      <p data-step="5">Add the MLP's output back. The result has the same shape as <i>x</i>, so blocks stack: GPT-2 small has 12.</p>
+    </div>
+  </div>
+
+  <p>In GPT-2's code this is two lines, <code>x = x + attn(ln_1(x))</code> and <code>x = x + mlp(ln_2(x))</code>; the MLP width is 4 × 768 = 3,072 with a GELU<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>. Because every sub-layer only <em>adds</em> to <i>x</i>, a token's vector is gradually edited as it rises through the stack rather than replaced.</p>
+
+  <p class="note"><strong>Which version is this?</strong> This is the <em>pre-LN</em> order (normalise before the sub-layer), used by GPT-2<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup> and, with RMSNorm in place of layer norm, by Hugging Face's Llama implementation<sup class="cite"><a href="../RESOURCES.md#s9" data-src="S9">9</a></sup>. The original 2017 Transformer used <em>post-LN</em>: LayerNorm(<i>x</i> + Sublayer(<i>x</i>)), and a ReLU feed-forward of 512 → 2,048 → 512<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>. <span class="unverified" title="Not independently verified">A 2020 analysis reports that pre-LN can be trained without the learning-rate warm-up post-LN needs</span><sup class="cite"><a href="../RESOURCES.md#s14" data-src="S14">14</a></sup>.</p>
+
+  <h3>Worked example: shapes through GPT-2 small</h3>
+  <p>The prompt “The cat sat on the” is 5 tokens (lesson 1). Follow the shape of the data; every size is from GPT-2's code defaults and vocabulary<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup><sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>.</p>
+<pre class="trace" tabindex="0" role="region" aria-label="Shapes through GPT-2 small (scrolls sideways)"><code>token ids                          5
++ embeddings (wte row + wpe row)   5 × 768
+block 1 … block 12                 5 × 768     each: x + attn(ln_1(x)), x + mlp(ln_2(x))
+final layer norm (ln_f)            5 × 768
+× wteᵀ  (the token table again)    5 × 50,257  one score per vocabulary token, per position
+keep the last row                  50,257      the logits for the next token</code></pre>
+  <p>Only the last row is used to pick the next token: thanks to the causal mask, it is the only position that has seen the whole prompt<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>. GPT-2 reuses its token-embedding table to turn that vector into scores.</p>
+  <h3>Your turn</h3>
+  <div data-practice-item="l3-fade-preln"></div>
+
+  <h2>Writing a reply, one token at a time</h2>
+  <p>GPT-2's sampling loop does the same five things for every new token: take the last position's logits, divide them by the temperature, turn them into probabilities, draw one token, append it, and run again<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup><sup class="cite"><a href="../RESOURCES.md#s13" data-src="S13">13</a></sup>. Press ▶ or use the chapter buttons; the probabilities and the reply are illustrative.</p>
+  <div class="scene" data-scene="one-token-at-a-time"></div>
+  <p class="lc-muted">A real implementation does not recompute everything for the prompt on every step: GPT-2's code keeps the keys and values of earlier positions and only runs the new token through the blocks<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>. The result is the same; it is faster.</p>
+
+  <h2>Temperature</h2>
+  <p>Temperature <i>T</i> divides every logit before the softmax<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup><sup class="cite"><a href="../RESOURCES.md#s13" data-src="S13">13</a></sup>. The ranking of tokens never changes; only how far apart their probabilities are.</p>
+
+  <h3>Worked example: T = 2</h3>
+  <p>Illustrative logits for the token after “The cat sat on the”: <code>␣mat</code> 3.0, <code>␣floor</code> 2.2, <code>␣sofa</code> 1.8, <code>␣bed</code> 1.5, <code>␣roof</code> 0.5.</p>
+  <figure>
+    <div class="table-wrap">
+      <table class="num">
+        <thead><tr><th scope="col">token</th><th scope="col">logit</th><th scope="col">p at T = 1</th><th scope="col">logit ÷ 2</th><th scope="col">p at T = 2</th></tr></thead>
+        <tbody>
+          <tr><td>␣mat</td><td>3.0</td><td>0.49</td><td>1.50</td><td>0.34</td></tr>
+          <tr><td>␣floor</td><td>2.2</td><td>0.22</td><td>1.10</td><td>0.23</td></tr>
+          <tr><td>␣sofa</td><td>1.8</td><td>0.15</td><td>0.90</td><td>0.18</td></tr>
+          <tr><td>␣bed</td><td>1.5</td><td>0.11</td><td>0.75</td><td>0.16</td></tr>
+          <tr><td>␣roof</td><td>0.5</td><td>0.04</td><td>0.25</td><td>0.10</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figcaption>Halving every logit shrinks the gaps between them, so the softmax spreads out: <code>␣mat</code> drops from 0.49 to 0.34 and <code>␣roof</code> more than doubles. Computed from the illustrative logits.</figcaption>
+  </figure>
+  <p>Now drag the temperature yourself. Below 1 the top token takes more of the probability; near 0 the choice becomes greedy (always the top token); above 1 the tail gets more chances.</p>
+  <figure>
+    <div data-lc="temp-explorer" id="temp-explorer" data-t="1"></div>
+    <figcaption>Probabilities for the five illustrative logits, computed live as softmax(logit ÷ <i>T</i>). At <i>T</i> = 0 the figure shows greedy decoding.</figcaption>
+  </figure>
+
+  <section class="practice" aria-labelledby="practice-h">
+    <h2 id="practice-h">Check yourself</h2>
+    <p class="lc-muted">The last question goes back to lesson 2.</p>
+    <div data-practice-item="l3-order-block"></div>
+    <div data-practice-item="l3-choice-residual"></div>
+    <div data-practice-item="l3-choice-temperature"></div>
+    <div data-practice-item="l3-order-generate"></div>
+    <div data-practice-item="l3-recall-last-position"></div>
+    <div data-practice-item="l3-choice-mask-training"></div>
+  </section>
+
+  <section class="challenge" id="challenge" data-kind="milestone" data-milestone="m3" aria-labelledby="challenge-h">
+    <p class="kicker">Milestone challenge</p>
+    <h2 id="challenge-h">Predict, then measure, a temperature change</h2>
+    <p>Pick one prompt from your own work that has more than one reasonable short answer (a product name, a one-word label, a first word). Write down what you expect at temperature 0 and at a high temperature (for example 1.5, or the highest your API allows). Then call your API 10 times at each setting with a short length limit, and compare.</p>
+    <h3>What to send back</h3>
+    <p>Your prediction (written before the runs), the 20 outputs grouped by setting, the model and settings you used, and a short explanation of the difference in terms of logits, temperature and sampling.</p>
+    <h3>Pass criteria</h3>
+    <ol class="criteria">
+      <li>The prediction is dated or placed before the results and names an expected number of distinct outputs at each setting.</li>
+      <li>The 20 outputs are listed with the model name, the temperature and the length limit for each group, and the number of distinct outputs per group is counted.</li>
+      <li>The explanation traces one output token through the loop: last-position logits, divided by temperature, softmax, one sampled token, appended.</li>
+      <li>Any mismatch between prediction and result is named, with one possible cause (for example ties near the top, or a provider applying other sampling settings).</li>
+    </ol>
+    <p>When you are done, send your work to your teacher in the terminal.</p>
+  </section>
+
+  <h2>Primary source</h2>
+  <p><a href="https://github.com/openai/gpt-2">openai/gpt-2</a>, <code>src/model.py</code> and <code>src/sample.py</code><sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>: under 300 lines together, and every block and sampling detail in this lesson is in them. The accompanying paper, <a href="https://d4mucfpksywv.cloudfront.net/better-language-models/language_models_are_unsupervised_multitask_learners.pdf">Language Models are Unsupervised Multitask Learners</a> (Radford et al., 2019)<sup class="cite"><a href="../RESOURCES.md#s6" data-src="S6">6</a></sup>, could not be opened by the course author (host blocked); the lesson relies on the code.</p>
+
+  <h2>Go deeper</h2>
+  <ul class="deeper">
+    <li><a href="https://github.com/karpathy/nanoGPT/blob/master/model.py">nanoGPT, <code>model.py</code></a> <span>Code, about 20 minutes. A readable GPT-2 in about 330 lines; <code>Block.forward</code> and <code>generate()</code> are this lesson, line for line.</span></li>
+    <li><a href="https://www.youtube.com/watch?v=kCc8FmEb1nY">Let's build GPT: from scratch, in code, spelled out</a> <span>Video, long (length not checked by the course author). Andrej Karpathy builds a small GPT live, including the causal mask and the generation loop.</span></li>
+    <li><a href="https://poloclub.github.io/transformer-explainer/">Transformer Explainer</a> <span>Interactive. Runs GPT-2 in your browser on your own text and shows each step up to the predicted next token: the full-size version of this lesson's figures (described from its README; not opened by the course author).</span></li>
+    <li><a href="https://arxiv.org/abs/2002.04745">On Layer Normalization in the Transformer Architecture</a> <span>Paper (not checked by the course author). Why the norm moved before the sub-layer.</span></li>
+  </ul>
+
+  <p>Want to know what the MLP layers store, or how top-k and top-p change the loop? Ask your agent in the terminal.</p>
+
+  <nav class="links" aria-label="Lessons"><a href="0002-self-attention.html">← Previous: Self-attention</a> <a href="../index.html">Course map</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+  <footer>Example course. Sources and their verification status: <a href="../RESOURCES.md">RESOURCES.md</a>.</footer>
+</main>
+<script src="../assets/core.js"></script>
+<script src="../assets/store.js"></script>
+<script src="../assets/course.js"></script>
+<script src="0003.practice.js"></script>
+<script src="../assets/progress.js"></script>
+<script src="../assets/practice.js"></script>
+<script src="../assets/viz.js"></script>
+<script src="../assets/diagram.js"></script>
+<script src="../assets/scene.js"></script>
+<script src="scenes-0003.js"></script>
+<script src="0003.figures.js"></script>
+</body>
+</html>

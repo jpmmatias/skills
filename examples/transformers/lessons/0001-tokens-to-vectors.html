@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'">
+<title>Lesson 1 · From text to vectors</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+  .toks { line-height: 2; margin: 0; }
+  .tok { display: inline-block; font: 14px/1.5 var(--font-mono); background: var(--code-bg); border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: 0 .3em; margin: 0 .12em; white-space: pre; }
+  .tok sub { font-size: 11px; color: var(--muted); margin-left: .25em; }
+  .tok-n { font: 600 .85rem var(--font-ui); color: var(--muted); white-space: nowrap; }
+  .enc { font: 600 .78rem var(--font-ui); color: var(--muted); letter-spacing: .04em; text-transform: uppercase; display: block; margin-top: .35rem; }
+  td.txt { font: 14px/1.5 var(--font-mono); white-space: nowrap; }
+  @media (max-width: 520px) {
+    table.tokt thead { display: none; }
+    table.tokt tr, table.tokt td { display: block; }
+    table.tokt td.txt { border-bottom: 0; padding-bottom: 0; font-weight: 700; }
+  }
+  .bpe td:first-child { white-space: nowrap; font: 600 .85rem var(--font-ui); color: var(--muted); }
+  .bpe code b { color: var(--signal); }
+  .bpe code { white-space: nowrap; }
+  svg.lookup { max-width: 460px; }
+  svg.lookup-narrow { display: none; max-width: 340px; }
+  @media (max-width: 520px) { svg.lookup { display: none; } svg.lookup-narrow { display: block; } }
+</style>
+</head>
+<body data-lesson="1">
+<main>
+  <nav class="links" aria-label="Course"><a href="../index.html">← Course map</a> <a href="../review.html">Review</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+
+  <header>
+    <p class="kicker">Lesson 1 · Read your prompt as the model does</p>
+    <h1>From text to vectors</h1>
+    <p class="lede">A model never sees your words. It sees a list of numbers, and then a list of vectors. This lesson follows a prompt from text to the vectors the first layer receives.</p>
+    <div id="progress"></div>
+  </header>
+
+  <p><strong>Why this matters for your mission:</strong> your mission says the APIs you call count your prompts and replies in tokens. This lesson shows what that unit is, why its count is not your word count, and what the model does with each token before any attention happens.</p>
+
+  <div class="terms">
+    <div class="term"><b>token</b>A piece of text the model treats as one unit: a word, part of a word, a space plus a word, a punctuation mark.</div>
+    <div class="term"><b>vocabulary</b>The fixed list of every token a tokenizer can produce. Each entry has a number, its <em>token id</em>.</div>
+    <div class="term"><b>embedding</b>A vector of learned numbers that stands for one token id (or one position) inside the model.</div>
+  </div>
+
+  <h2>Text becomes tokens</h2>
+  <p>Here are real tokenizer outputs for a few short strings, from two of OpenAI's encodings: <code>gpt2</code> (GPT-2's tokenizer) and the newer <code>o200k_base</code><sup class="cite"><a href="../RESOURCES.md#s3" data-src="S3">3</a></sup><sup class="cite"><a href="../RESOURCES.md#s4" data-src="S4">4</a></sup>. A box is one token; <code>␣</code> marks a space.</p>
+
+  <figure>
+    <div class="table-wrap">
+      <table class="tokt">
+        <thead><tr><th scope="col">Text</th><th scope="col">Tokens</th></tr></thead>
+        <tbody>
+          <tr><td class="txt">The cat sat on the mat.</td>
+            <td><span class="enc">gpt2 · with token ids</span><p class="toks"><span class="tok">The<sub>464</sub></span><span class="tok">␣cat<sub>3797</sub></span><span class="tok">␣sat<sub>3332</sub></span><span class="tok">␣on<sub>319</sub></span><span class="tok">␣the<sub>262</sub></span><span class="tok">␣mat<sub>2603</sub></span><span class="tok">.<sub>13</sub></span> <span class="tok-n">7 tokens</span></p></td></tr>
+          <tr><td class="txt">Tokenization</td>
+            <td><span class="enc">gpt2</span><p class="toks"><span class="tok">Token</span><span class="tok">ization</span> <span class="tok-n">2</span></p></td></tr>
+          <tr><td class="txt">strawberry<br>␣strawberry</td>
+            <td><span class="enc">gpt2</span><p class="toks"><span class="tok">st</span><span class="tok">raw</span><span class="tok">berry</span> <span class="tok-n">3</span></p><p class="toks"><span class="tok">␣strawberry</span> <span class="tok-n">1</span></p></td></tr>
+          <tr><td class="txt">1234567</td>
+            <td><span class="enc">gpt2</span><p class="toks"><span class="tok">123</span><span class="tok">45</span><span class="tok">67</span> <span class="tok-n">3</span></p>
+                <span class="enc">o200k_base</span><p class="toks"><span class="tok">123</span><span class="tok">456</span><span class="tok">7</span> <span class="tok-n">3</span></p></td></tr>
+          <tr><td class="txt">Olá, tudo bem?</td>
+            <td><span class="enc">gpt2</span><p class="toks"><span class="tok">Ol</span><span class="tok">á</span><span class="tok">,</span><span class="tok">␣t</span><span class="tok">udo</span><span class="tok">␣be</span><span class="tok">m</span><span class="tok">?</span> <span class="tok-n">8</span></p>
+                <span class="enc">o200k_base</span><p class="toks"><span class="tok">Olá</span><span class="tok">,</span><span class="tok">␣tudo</span><span class="tok">␣bem</span><span class="tok">?</span> <span class="tok-n">5</span></p></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figcaption>Real output of the <code>gpt2</code> and <code>o200k_base</code> rank files, run with js-tiktoken 1.0.21 on 2026-11-25<sup class="cite"><a href="../RESOURCES.md#s4" data-src="S4">4</a></sup>. Three Portuguese words cost GPT-2 eight tokens; the newer encoding needs five.</figcaption>
+  </figure>
+
+  <p>Three things to notice. The space before a word belongs to the word: GPT-2's tokenizer first splits text with a pattern that keeps a leading space attached to the following letters<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>, so <code>␣strawberry</code> and <code>strawberry</code> are different tokens. Numbers are cut into chunks, not digits. And the same text can cost a different number of tokens under a different tokenizer, so a count is only meaningful together with the tokenizer that produced it. As a rough scale, OpenAI's tokenizer docs say a token is about 4 bytes of text on average<sup class="cite"><a href="../RESOURCES.md#s3" data-src="S3">3</a></sup>.</p>
+
+  <h2>How BPE learns its pieces</h2>
+  <p>Both encodings above use <strong>byte pair encoding</strong> (BPE), <span class="unverified" title="Not independently verified">brought to neural language models by Sennrich, Haddow and Birch in 2016</span><sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. It learns its vocabulary from a training text: start from single symbols, count every pair of neighbours, merge the most frequent pair into a new symbol, and repeat<sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>. Each merge adds one token to the vocabulary.</p>
+
+  <h3>Worked example</h3>
+  <p>A tiny training corpus: five words and how often each appears (the corpus from the Hugging Face docs<sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>). Spaces between symbols show the current split.</p>
+  <figure>
+    <div class="table-wrap">
+      <table class="bpe">
+        <thead><tr><th scope="col">Step</th><th scope="col">Corpus (word, count)</th><th scope="col">Why</th></tr></thead>
+        <tbody>
+          <tr><td>start</td><td><code>h u g</code> 10 · <code>p u g</code> 5 · <code>p u n</code> 12 · <code>b u n</code> 4 · <code>h u g s</code> 5</td><td>Base vocabulary: b g h n p s u</td></tr>
+          <tr><td>merge 1</td><td><code>h <b>ug</b></code> 10 · <code>p <b>ug</b></code> 5 · <code>p u n</code> 12 · <code>b u n</code> 4 · <code>h <b>ug</b> s</code> 5</td><td><code>u g</code> occurs 10 + 5 + 5 = 20 times, the most of any pair</td></tr>
+          <tr><td>merge 2</td><td><code>h ug</code> 10 · <code>p ug</code> 5 · <code>p <b>un</b></code> 12 · <code>b <b>un</b></code> 4 · <code>h ug s</code> 5</td><td><code>u n</code> occurs 12 + 4 = 16 times; <code>h u</code> was 15 and has vanished into <code>h ug</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figcaption>Vocabulary after two merges: b g h n p s u <b>ug</b> <b>un</b>. GPT-2 ran this kind of procedure on bytes until it had 50,000 merges: with 256 byte tokens and one end-of-text token, that makes its 50,257-token vocabulary<sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>.</figcaption>
+  </figure>
+  <p class="note"><strong>Why does this step exist?</strong> Why count pairs <em>weighted by how often each word appears</em>, instead of once per word? Because the goal is to make the training text short in tokens: a pair inside a frequent word saves a token every time that word appears.</p>
+
+  <h3>Your turn: the third merge</h3>
+  <p>Same corpus, after merge 2. Count every adjacent pair, weighted by the word counts, and name the third merge.</p>
+  <div data-practice-item="l1-fade-next-merge"></div>
+
+  <h2>Each token id picks a row</h2>
+  <p>After tokenizing, the model has a list of ids. It turns each id into a vector by <strong>looking up a row</strong> in a learned table, the token-embedding table. Nothing is computed from the spelling: id 3797 always fetches row 3797. In GPT-2's code the table is called <code>wte</code>, and its default width is 768 numbers per row<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>.</p>
+
+  <figure>
+    <svg class="dg lookup" viewBox="0 0 460 250" role="img" aria-label="Embedding lookup in GPT-2: the token ' cat' has id 3797, which selects row 3797 of the 50,257 by 768 token-embedding table. Its position, 1, selects row 1 of the 1,024 by 768 position table. The two rows are added into one input vector of 768 numbers.">
+      <text x="10" y="22" class="t-title">“␣cat” → id 3797</text>
+      <rect class="node" x="10" y="34" width="200" height="92" rx="6"/>
+      <text x="20" y="54" class="t-sub">token table wte · 50,257 × 768</text>
+      <rect x="20" y="64" width="180" height="8" class="dg-track"/>
+      <rect x="20" y="78" width="180" height="12" class="dg-win"/>
+      <rect x="20" y="96" width="180" height="8" class="dg-track"/>
+      <text x="20" y="120" class="t-mono">row 3797</text>
+      <text x="250" y="22" class="t-title">position 1</text>
+      <rect class="node" x="250" y="34" width="200" height="92" rx="6"/>
+      <text x="260" y="54" class="t-sub">position table wpe · 1,024 × 768</text>
+      <rect x="260" y="64" width="180" height="12" class="dg-win"/>
+      <rect x="260" y="82" width="180" height="8" class="dg-track"/>
+      <rect x="260" y="96" width="180" height="8" class="dg-track"/>
+      <text x="260" y="120" class="t-mono">row 1</text>
+      <path d="M110,130 L110,160 L222,182" class="dg-edge"/>
+      <path d="M350,130 L350,160 L238,182" class="dg-edge"/>
+      <circle cx="230" cy="190" r="12" class="node-hot"/>
+      <text x="230" y="195" text-anchor="middle" class="t-title">+</text>
+      <path d="M230,202 L230,214" class="dg-edge"/>
+      <rect x="80" y="216" width="300" height="12" class="dg-win"/>
+      <text x="230" y="246" text-anchor="middle" class="t-sub">input vector for “␣cat” at position 1 · 768 numbers</text>
+    </svg>
+    <svg class="dg lookup-narrow" viewBox="0 0 340 312" role="img" aria-label="Embedding lookup in GPT-2: the token ' cat' has id 3797, which selects row 3797 of the 50,257 by 768 token-embedding table. Its position, 1, selects row 1 of the 1,024 by 768 position table. The two rows are added into one input vector of 768 numbers.">
+      <text x="10" y="18" class="t-title">“␣cat” → id 3797</text>
+      <rect class="node" x="10" y="28" width="320" height="78" rx="6"/>
+      <text x="20" y="48" class="t-sub">token table wte · 50,257 × 768</text>
+      <rect x="20" y="56" width="300" height="7" class="dg-track"/>
+      <rect x="20" y="68" width="300" height="11" class="dg-win"/>
+      <text x="20" y="98" class="t-mono">row 3797</text>
+      <text x="170" y="132" text-anchor="middle" class="t-title">+</text>
+      <text x="10" y="158" class="t-title">position 1</text>
+      <rect class="node" x="10" y="166" width="320" height="78" rx="6"/>
+      <text x="20" y="186" class="t-sub">position table wpe · 1,024 × 768</text>
+      <rect x="20" y="194" width="300" height="11" class="dg-win"/>
+      <rect x="20" y="210" width="300" height="7" class="dg-track"/>
+      <text x="20" y="236" class="t-mono">row 1</text>
+      <text x="170" y="268" text-anchor="middle" class="t-title">=</text>
+      <rect x="20" y="278" width="300" height="11" class="dg-win"/>
+      <text x="170" y="306" text-anchor="middle" class="t-sub">input vector for “␣cat” at position 1 · 768 numbers</text>
+    </svg>
+    <figcaption>GPT-2's input step: one row for the token plus one row for its position, added<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>. Sizes are GPT-2's code defaults and vocabulary; positions count from 0, so “␣cat” in “The cat…” is position 1.</figcaption>
+  </figure>
+
+  <h2>Where is the word order?</h2>
+  <p>The next lesson's attention step compares vectors by their contents. Nothing in that comparison says which token came first. The original Transformer paper adds positional information for exactly this reason: the model “contains no recurrence and no convolution”, so order has to be put into the vectors<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>. Three designs you will meet:</p>
+  <ul>
+    <li><strong>Learned position table</strong> (GPT-2): a second table, <code>wpe</code>, with one learned row per position, 1,024 rows by default, added to the token row as in the figure above<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>.</li>
+    <li><strong>Fixed sinusoids</strong> (the original 2017 Transformer): dimension pair <i>i</i> of position <i>pos</i> gets sin(<i>pos</i> / 10000<sup>2<i>i</i>/<i>d</i></sup>) and cos(<i>pos</i> / 10000<sup>2<i>i</i>/<i>d</i></sup>), added to the embedding. The authors report that learned positions gave nearly identical results<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>.</li>
+    <li><strong>Rotary positions</strong> (RoPE; for example the Llama implementation in Hugging Face Transformers): nothing is added to the input; instead the queries and keys inside attention are rotated by an angle that depends on position<sup class="cite"><a href="../RESOURCES.md#s9" data-src="S9">9</a></sup><sup class="cite"><a href="../RESOURCES.md#s10" data-src="S10">10</a></sup>.</li>
+  </ul>
+
+  <p>Try the sinusoidal version. The values below are computed from the formula with a toy width of 16 dimensions (the original model used 512). Move the position and compare it with the next one.</p>
+  <figure>
+    <div data-lc="pe-explorer" id="pe-explorer" data-dims="16" data-max="60" data-pos="3"></div>
+    <figcaption>Sinusoidal positional encoding, toy width 16, computed live from the formula. Filled bars: the chosen position. Outlines: the next position. Low dimensions change quickly from one position to the next; high dimensions barely move, so together they give every position a distinct pattern.</figcaption>
+  </figure>
+
+  <section class="practice" aria-labelledby="practice-h">
+    <h2 id="practice-h">Check yourself</h2>
+    <p class="lc-muted">Answer from memory first, then read the feedback under each option.</p>
+    <div data-practice-item="l1-choice-portuguese"></div>
+    <div data-practice-item="l1-recall-merge-rule"></div>
+    <div data-practice-item="l1-choice-lookup"></div>
+    <div data-practice-item="l1-order-input"></div>
+    <div data-practice-item="l1-choice-why-position"></div>
+  </section>
+
+  <section class="challenge" id="challenge" data-kind="milestone" data-milestone="m1" aria-labelledby="challenge-h">
+    <p class="kicker">Milestone challenge</p>
+    <h2 id="challenge-h">Tokenize your own prompts</h2>
+    <p>Take three prompts you really send to an LLM API: one short, one long, and one with something unusual in it (code, numbers, a name, another language). Run them through a real tokenizer for the model family you use: <code>tiktoken</code> for OpenAI encodings, or the tokenizer your provider or open model publishes. Before one extra run, write down a prediction of how a small edit will change the count.</p>
+    <h3>What to send back</h3>
+    <p>A table (Markdown is fine) with, for each prompt: the word count, the token count, the tokens as the tokenizer printed them, and the tokenizer's name and version. Below it, your prediction and the result of the extra run, and one sentence on how the model you use encodes position, with the link where you found it.</p>
+    <h3>Pass criteria</h3>
+    <ol class="criteria">
+      <li>The table lists 3 prompts of your own with word count, token count, printed tokens, and the tokenizer name and version.</li>
+      <li>Two splits from your table are explained in one or two sentences each, naming the cause: a leading space, a rare word broken into frequent pieces, a number chunked, or a non-English word.</li>
+      <li>A prediction written before the extra run (expected token count after one edit) sits next to the measured count, with one sentence on any difference.</li>
+      <li>One sentence names the position method of the model you use (learned table, sinusoids, rotary, or other) and links the documentation or code you checked.</li>
+    </ol>
+    <p>When you are done, send your work to your teacher in the terminal.</p>
+  </section>
+
+  <h2>Primary source</h2>
+  <p><a href="https://doi.org/10.18653/v1/P16-1162">Neural Machine Translation of Rare Words with Subword Units</a> (Sennrich, Haddow &amp; Birch, ACL 2016)<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>: the paper behind BPE tokenizers. The course author could not open it (the host was blocked), so the lesson relies on the verified docs above; read its algorithm section with the worked example in mind.</p>
+
+  <h2>Go deeper</h2>
+  <ul class="deeper">
+    <li><a href="https://github.com/huggingface/transformers/blob/main/docs/source/en/tokenizer_summary.md">Tokenization algorithms</a> <span>Docs, about 8 minutes. BPE, byte-level BPE, Unigram, SentencePiece and WordPiece side by side, on the same tiny corpus as above.</span></li>
+    <li><a href="https://github.com/openai/tiktoken">tiktoken README</a> <span>Docs, about 4 minutes. OpenAI's tokenizer: install it and count your own prompts for the challenge; includes an educational module that visualises merges.</span></li>
+    <li><a href="https://github.com/openai/gpt-2">openai/gpt-2, <code>src/encoder.py</code> and <code>src/model.py</code></a> <span>Code, 15 minutes of reading. The real byte-level BPE (about 120 lines) and the two embedding tables, in the model that defined the decoder-only recipe.</span></li>
+    <li><a href="https://arxiv.org/abs/2104.09864">RoFormer: Enhanced Transformer with Rotary Position Embedding</a> <span>Paper (not checked by the course author). Read it once you have done lesson 2: rotary positions act on queries and keys.</span></li>
+  </ul>
+
+  <p>Something unclear, or want to see how your own provider's tokenizer splits a sentence? Ask your agent in the terminal.</p>
+
+  <nav class="links" aria-label="Lessons"><a href="../index.html">← Course map</a> <a href="0002-self-attention.html">Next: Self-attention →</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+  <footer>Example course. Sources and their verification status: <a href="../RESOURCES.md">RESOURCES.md</a>.</footer>
+</main>
+<script src="../assets/core.js"></script>
+<script src="../assets/store.js"></script>
+<script src="../assets/course.js"></script>
+<script src="0001.practice.js"></script>
+<script src="../assets/progress.js"></script>
+<script src="../assets/practice.js"></script>
+<script src="../assets/viz.js"></script>
+<script src="0001.figures.js"></script>
+</body>
+</html>
