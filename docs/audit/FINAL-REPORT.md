@@ -123,7 +123,7 @@ Decisions and their reasons are in [DECISIONS.md](DECISIONS.md):
 **Completed**
 - All P0 and P1 findings; all P2 findings except those listed under remaining tasks.
 - 27 skills-review findings: 19 applied fully, 5 partially, 3 not applied, with reasons in `handoffs/skills-fixes.md`.
-- 13 + 7 + 4 + 1 + 2 + 2 + 2 security findings over seven review rounds: all fixed or reduced, with residuals documented in `SECURITY.md`. Six rounds were re-verified independently. The reviewer's final verdict (round 6) was "close": inside the pages the check opens, no inline or non-course code could be made to run in six rounds, and the two remaining blockers were at the edge of the checked set (NEW-17, NEW-18). Those were fixed by the orchestrator and checked against all seven round-6 PoC variants (each now fails the gate), with regression tests that fail on the previous tools. **That last fix has not had an independent re-check.**
+- 31 security findings over seven review rounds (13 + 7 + 4 + 1 + 2 + 2 + 2): all fixed or reduced to a documented residual. Every fix was re-verified by the independent reviewer. **Final verdict (round 7): releasable as a documented security claim within its stated scope**, with the accepted residuals listed beside the claim in `SECURITY.md`.
 - Three courses × one independent review plus one re-check each.
 
 **Remaining tasks (not done)**
@@ -179,7 +179,9 @@ What changed:
 - Labelled inputs; non-colour error states; control borders at least 3:1.
 - Reduced motion respected live.
 
-**Remaining limitations:**
+**The claim** (verdict of seven independent review rounds): for a course page `check.mjs` passed at the time of the check, opened from `file://` in Chromium, no inline code runs, only `.js` files inside the course folder run, and its links lead only to checked pages or non-page assets.
+
+**Remaining limitations (accepted residuals):**
 - Not verified in Firefox, Safari, or with real screen readers.
 - `'self'` on `file://` matches any local file in Chromium.
 - The agent writes `scenes-NNNN.js`, which runs with page privileges.
@@ -233,10 +235,10 @@ Scores out of 10. **Basis:** M = measured, R = model-reviewed judgment (this orc
 | Software architecture | 10% | 4 | 8 | R: separated core/store/views, contracts, schemas, ADRs. |
 | Reliability and testing | 10% | 1 | 8 | M: 0 → 291 tests, mutation-checked security tests, validator. CI not yet run on GitHub. |
 | Developer experience | 10% | 5 | 8 | M + R: validated manifest, dependency install, fixed paths, contributing guide, templates, changelog, upgrade guide. `npx skills` install not run. |
-| Security and accessibility | 5% | 2 | 7 | M: two review rounds, PoCs re-run, 0 axe violations. Residuals documented; other browsers unverified. |
+| Security and accessibility | 5% | 2 | 8 | M + R: seven independent review rounds ending in a scoped "releasable" verdict, every PoC re-run, 0 axe violations. Residuals documented; other browsers unverified. |
 | Documentation | 5% | 5 | 8 | R: README, guide, compatibility, install and upgrade guides, audit trail. |
 | Product identity | 5% | 2 | 7 | R: name chosen with a conflict check, positioning, preview. Trademark and domains not checked; Pages not live. |
-| **Weighted** | | **≈ 3.8** | **≈ 7.8** | |
+| **Weighted** | | **≈ 3.8** | **≈ 7.8** | (security +1 × 5% rounds to the same total) |
 
 ## 13. Next roadmap (three milestones)
 

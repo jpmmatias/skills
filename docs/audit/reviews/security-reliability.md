@@ -638,3 +638,41 @@ What still fails is the edge of the checked set: documents one click away that t
    - the probe's untested inline-handler arm (round 3);
    - NEW-16-class links, which need a shell to create;
    - theoretical UNC paths on Windows.
+
+## Re-verification 7 and final verdict (2026-11-25)
+
+This pass checks HEAD `a1e58fe`. Its changes:
+- SVG is accepted only as an image source;
+- `svg-script` matches prefixed elements and `<!ENTITY`;
+- `check.mjs` reads links through CDP `DOM.getDocument({ depth: -1, pierce: true })` and fails on any author shadow root;
+- lint rejects declarative shadow DOM;
+- `stripHtml` copies whole tags, so a `<!--` inside an attribute value no longer starts a comment.
+
+I reproduced everything in Chromium on `file://` (`rev-sec/re/r6-bypass.sh`, `re/r7-use.sh`). Nothing else in the repository was changed. As requested, only P1/P2 items are reported.
+
+### Status
+
+| ID | Status | Evidence on HEAD |
+|---|---|---|
+| NEW-17 | **Fixed** | `svg_prefixed_script` and `svg_xhtml_script`: lint `svg-script` plus "an SVG opened as a document"; `check.mjs` exit 1 |
+| NEW-18 | **Fixed** | `shadow_hidden` (the attribute-comment trick plus a declarative shadow root) and `shadow_dom_link`: lint `shadow-dom`, and `check.mjs` reports the shadow root and the link. Exit 1. The attribute-comment blind spot left open since round 2 (NEW-08 PoC 2) is closed: the link is now visible to lint |
+| New attempts | **No P1/P2 found** | **`<use href="sprite.svg#g">`** into an external SVG whose `<a>` points into `labs/`: Chromium refuses external `use` on `file://` ("Unsafe attempt to load URL"), so the link is not rendered and the click did nothing; `check.mjs` fails the page on that console error anyway. **MathML `<mtext href>`:** not a working link in Chromium (the click did nothing), and both lint (`link-unchecked-page`) and the DOM layer flag it. **`<object type=image/svg+xml>`:** banned (`embed-element`, and the DOM audit flags `<object>`). **Content sniffing:** none on `file://` (round 6). Tokenizer tricks only affect lint, which is no longer the authority: the CDP DOM walk (links), `Debugger.scriptParsed` (code) and the isolated-world probe (CSP) decide. **Imperative `attachShadow`, and links or navigation created by workspace script files:** out of scope by design, confirmed |
+
+### Final verdict
+
+**Releasable as a documented security claim: yes**, if the claim is worded within its scope:
+
+> For a course page that `check.mjs` (with its lint step) passed at the time of the check, opened from `file://` in Chromium: no inline code runs, and no script runs except `.js` files inside the course folder. Every same-origin link from that page leads only to another checked page or to a non-document asset.
+
+Across seven rounds, every bypass of this claim I found was fixed, and the fixes were re-verified by reproduction. The last two rounds found only boundary cases (P2), and this round found none.
+
+**Accepted residual risks.** State them next to the claim; SECURITY.md already covers most of them:
+1. **Workspace script files run with full page privileges.** This covers `assets/*.js`, practice, scene and figure files, and anything they create at run time (links, navigation, shadow roots). The claim is about inline and non-course code; agent-written script files need code review.
+2. **Data files are executed in Node** during lint and check. They run in a hardened child process: empty environment, no code generation, the permission model restricts file reads, typed arrays and WebAssembly are removed, and the process is hard-killed. The network is not restricted. The definitive fix is ADR-004's follow-up: `course.js` as JSON only.
+3. **One shared `file://` storage origin in Chromium.** Any other local HTML file the learner opens can read or alter every course's progress, or plant a `newer-format` document that stops saving (a notice is shown).
+4. **The check is a snapshot.** Pages, links or `labs/` content added after the check are covered only when it runs again. `labs/` pages are never checked; lessons may link only to their `.md`/`.txt` files.
+5. **Verification is Chromium-only.** CSP `'self'` on `file://`, the DevTools evidence and the absence of MIME sniffing were verified in Chromium only.
+6. **Minor items:**
+   - NEW-11 and the probe's handler arm are test gaps; the behaviour is correct;
+   - links created with a shell (symbolic or hard links) are refused, but this was only partly re-tested;
+   - UNC paths on Windows are theoretical and untested.

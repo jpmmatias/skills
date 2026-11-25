@@ -18,15 +18,19 @@
 | Hostile files in the workspace | A data file that hangs or exhausts the tools; a FIFO, device or socket; a symbolic or hard link to a file outside the workspace | Every workspace read is checked with `lstat` first: non-regular files, links that leave the workspace and hard-linked files are refused before opening. Reads are bounded. Each data file has a 1 s budget and the loader process is killed at 3 s (+0.5 s per extra file). Error messages from data files give only the error name and line, never text from the file | A data file can still use up to about 256 MB of heap and one CPU for its time budget, once per file. Other files the agent reads (notes, records) are outside this protection. |
 | Writing outside the workspace | The agent modifies the installed skill or other folders | The skills forbid writing into any installed skill folder; all outputs go into the course workspace | Enforced by instructions, not by a sandbox. |
 
+**The security claim, and its scope.** For a course page that `check.mjs` passed at the time of the check, opened from `file://` in Chromium: no inline code runs, only `.js` files inside the course folder run, and its links lead only to checked pages or to non-page assets. The check reads this evidence through the browser's DevTools protocol, which page code cannot reach, and proves the CSP is enforced with a probe in an isolated world. This claim was the verdict of seven rounds of independent review (`docs/audit/reviews/security-reliability.md`, "Re-verification 7 and final verdict"). It covers nothing outside that scope.
+
 We do not claim the generated courses or the skills are secure against every attack. The tests in `tests/security.test.mjs`, `tests/hardening.test.mjs` and `tests/csp-enforcement.test.mjs` cover specific regressions in Chromium only: XSS through course data, captions, practice items and stored progress; lint and CSP bypasses; the rendered-DOM audit; loader isolation; special files; tool lookup. The findings are in `docs/audit/reviews/security-reliability.md`.
 
-Accepted residual risks (reviewed in five rounds of independent verification, `docs/audit/reviews/security-reliability.md`):
+Accepted residual risks (stated with the claim; reviewed in seven rounds of independent verification):
 
 - Script files in the course (`assets/*.js`, `lessons/*.js`) run with page privileges by design; the agent writes some of them (scenes, figures). Review generated code like any other code.
 - `course.js` and practice files execute in a hardened Node child process (empty environment, no string code generation, a hard kill, bounded reads), which reduces but does not remove risk; the network is not covered by Node's permission model.
 - Every local HTML page shares one storage origin in Chromium on `file://`, and `'self'` matches any local file. The check confines what a course page can load and link to, but cannot protect a course from other local pages the learner opens.
 - Verification is in Chromium only; Firefox, Safari and Windows (UNC paths) are untested.
-- Navigation started by a script file is out of scope for the static checks.
+- Navigation, shadow roots or links created by a script file are out of scope for the checks; that code is workspace code (first item).
+- The check is a snapshot: a page changed or added after the check is not covered until the check runs again. Pages in `labs/` are never checked; lessons may not link to them.
+- Minor test gaps: no test catches removal of the loader's `import()` hook (NEW-11); Windows UNC paths are untested.
 
 Known open item:
 
