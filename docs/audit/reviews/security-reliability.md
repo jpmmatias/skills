@@ -230,3 +230,99 @@ Tabs: two stores that write in turn lose nothing, because of merge-on-write (10 
 | Learner's privacy and network | Exfiltration or phishing by navigation | `connect-src 'none'`, no remote assets, `check.mjs` warns on third-party requests | Navigation (`<base>`, meta refresh, links) is not covered; there is no `base-uri` / `form-action` in the CSP (SR-03). UNC links on Windows (SR-12, theoretical) |
 | The agent | Prompt injection through imported `progress/*.json` notes (up to 2000 chars per event) or fetched sources | Grounding rules: fetched or imported text is data | Theoretical. A shared export could carry instructions that the agent reads during review. Not tested |
 | Availability of pages | Large logs, malformed items | Per-component isolation | SR-09 main-thread cost grows linearly; SR-08 one bad item blanks the practice |
+
+## Re-verification (2026-11-25)
+
+I re-checked HEAD `bbf8b08`, which includes fix commit `6ba5e99` (claims in `docs/audit/handoffs/security-fixes.md`) and the CSP/example sync. I did not take the handoff on trust: every row below comes from re-running the original proofs of concept, new bypass attempts, or mutation tests on HEAD. Tools: headless Chromium (Playwright 1.63) on `file://` and Node 22.23, run from the scratchpad (`rev-sec/re/*`, `rev-sec/mutate*.mjs`). No repository file was changed except this section.
+
+**How the tests were judged.** I copied the repository to the scratchpad and applied 15 single-fix reverts (mutations), one at a time. After each I ran `security`, `hardening`, `runtime-fixes`, `store` and `lint-workspace` tests (125 tests, all green on HEAD). **11 of 15 mutations were caught.** Of the 4 not caught, 2 are equivalent (another layer still blocks the payload) and 2 are real test gaps (see SR-02 and SR-07 below).
+
+### Status of the original findings
+
+| ID | Status | Evidence on HEAD |
+|---|---|---|
+| SR-01 | **Fixed** | `sanitize()` was run on 68 payloads: the original 32, plus CR, FF and NUL control variants, numeric references without `;`, mixed hex, `&NewLine;` before the colon, `https:\\`, `https:/`, `https:host`, network paths using tab, space, entity or leading-tab tricks, `&bsol;`, entity UNC, soft hyphen, NBSP, BOM, `data&colon;`, `vbscript&#x3a;`, `FILE://host`, `userinfo@`, upper-case `JAVA&#9;SCRIPT:`, duplicate `href` and `xlink:href`. **0 unsafe**, and no live markup. Clicking the original prompt, why and scene-caption links (no CSP): nothing ran. Reverting `safeHref` makes 2 tests fail. Residual: NEW-04 |
+| SR-02 | **Partially fixed** | All 6 host-function escapes (`console.log`, `addEventListener`, `document.querySelector`, `Learncraft.practice`, a missing proxy key, `this.constructor`) now end in "Code generation from strings disallowed". Results: sync loop, microtask and Atomics.wait stop after about 1.04 s; global getter → child killed at 3.0 s; `WebAssembly.Module` blocked; no `process`, `require` or `setTimeout` globals. The tool always keeps running. Not fixed: NEW-02 (special files hang or crash the **parent**, past the kill timeout), NEW-03 (memory is not capped), NEW-05 (host-realm objects are reachable inside the child, and the tests cannot see whether the vm layer is present) |
+| SR-03 | **Partially fixed** (the gate is still bypassable) | All 8 snippets from the original review are now caught: `svg/onload`, `&Tab;`, `&colon;`, `&#1;`, `srcdoc`, `object`, `base`, meta refresh. A missing CSP is an error. But **9 new snippets pass lint and execute** (with no CSP), and the CSP check accepts `script-src-attr 'unsafe-inline'` / `script-src-elem 'unsafe-inline'`. Together they give a lesson that lints clean and runs script **with a CSP present**, shown on an example course: NEW-01 |
+| SR-04 | **Fixed** | Setting `practice: '../../outside/evil.js'` loaded nothing on review.html (`__x` undefined, no errors). Lint without schemas reports a `practice-path` error. Reverting the runtime allow-list makes 1 test fail |
+| SR-05 | **Fixed** | When another page fills the quota mid-session: `persistent:false` and **1 notice** is shown. A 9 MB import gets "The file is too large (8.5 MB; the limit is 5 MB). Nothing was imported." A 4.9 MB import into nearly full storage gets "Imported 14000 into this page only: they are NOT saved…", plus the notice. Reverting the failure notification makes 3 tests fail |
+| SR-06 | **Fixed** (one gap, NEW-06) | Unknown-kind events and fields over the length limit survive a write (quarantined). A `schemaVersion: 3` doc is left untouched, and the writer reports `newer-format`. 6 corruptions keep the newest 3 backups, with timestamps. Each revert fails 1 test |
+| SR-07 | **Partially fixed** | `LIVE_MARKUP` now judges links by the resolved protocol, links are clicked, and the poisoned storage carries a real `__proto__` in a valid doc. Not detected: removing the whole child **vm layer** (host stubs, codegen allowed) left 0 failures, even though my probe then got `typeof process === 'object'`. The SR-02 test swallows the escape's exception and only looks for a marker file, which the permission model blocks anyway. Removing the permission flag as well is caught (1 failure). Inheriting `process.env` is not caught unless the other layers are also removed. No test covers NEW-01's markup or CSP forms |
+| SR-08 | **Fixed** | `options: [null, …]` gives 3 rendered items and 1 error box on both the lesson and review pages. Moving `version()` back outside `mount` is *not* caught, because `version()` is now null-safe: the mutation is equivalent for this input, so it does not indicate a test gap |
+| SR-09 | **Fixed** | `recordAttempt` takes 0.8 / 6.8 / 24 ms at 1 k / 10 k / 30 k events (was 6 / 71 / 249). A 19 MB, 60 k-event import is refused immediately. Ten hanging practice files make lint take 19 s (bounded) |
+| SR-10 | **Fixed** | The terminal class injection no longer runs. The allow-list is a plain object, so `constructor` and `__proto__` pass, but they are harmless identifiers. Reverting it fails 1 test |
+| SR-11 | **Partially fixed** | A planted `<repo>/node_modules/playwright` is no longer used for a workspace in `<repo>/.learncraft`, with or without `allowWorkspace`. Reverting the order fails 1 test. Residual: NEW-07 |
+| SR-12 | **Fixed** (Windows not tested) | `\\host\share`, `/\host`, `&#92;&#92;host`, `&bsol;` and `FILE://host` are all dropped |
+| SR-13 | **Fixed** | Strict dates: of `"1"`, year 275760, Feb 30, 2099 and one valid date, only the valid one is accepted. A dashboard in a second tab went from "not started" to "Seen · 1 of 2 answered · review due …" without a reload. Loosening `isDate` fails 1 test |
+
+### New findings
+
+#### NEW-01 (P1) Lint and CSP gate bypass: a lesson that `check.mjs` calls clean runs inline script with a CSP present
+
+**Where:** `skills/learn/starter/tools/lint-workspace.mjs:83-87` (`stripHtml` blanks comments with `<!--[\s\S]*?-->` and every `<script>`/`<style>` body, whatever the namespace), `:89-151` (only start tags are tokenised, with no tree-construction states), `:263-287` (`cspProblems` reads only `script-src` or `default-src`).
+
+**PoC 1** (`re/r3-lint.mjs`): each snippet is in a lesson; "ran" means without CSP.
+
+| snippet | lint | ran |
+|---|---|---|
+| `<!--><svg onload=…>-->` (an abruptly closed empty comment) | missed | yes |
+| `<!---><svg onload=…>-->` | missed | yes |
+| `<!-- a --!><svg onload=…> -->` (`--!>` closes a comment) | missed | yes |
+| `<script src="../assets/viz.js"><!-- </script><svg onload=…> --></script>` | missed | yes |
+| `<svg><style><img src=x onerror=…></style></svg>` (`style` in SVG is not raw text; `img` breaks out) | missed | yes |
+| `<svg><script><img src=x onerror=…></script></svg>` | missed | yes |
+| `<svg><a><animate attributeName="href" values="javascript:…"/>…</a></svg>` (clicked) | missed | yes |
+| `<svg><a><set attributeName="href" to="javascript:…"/>…</a></svg>` (clicked) | missed | yes |
+| `<noscript><p title="</noscript><img src=x onerror=…>"></noscript>` | missed | yes |
+
+**PoC 2** (`re/r3-lint.mjs`, `re/r3b-chain.mjs`): CSP `default-src 'self'; script-src 'self'; script-src-attr 'unsafe-inline'; … connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'` gets **no** `csp-*` finding, and an inline `onload`/`onerror` runs. `script-src-elem 'self' 'unsafe-inline'` + `<!--><script>…</script>-->` also gets **0 findings on the page** and runs.
+
+**PoC 3, on an example course:** in a scratch copy of `examples/transformers`, I added `script-src-attr 'unsafe-inline'` to lesson 1's CSP and `<!--><svg onload="document.title='PWNED '+localStorage.length">-->` after the `<h1>`. `node check.mjs <copy> --only=0001 --no-axe` printed `Lint: 0 error(s), 0 warning(s)` … `✓ lessons/0001-tokens-to-vectors.html` … `All pages clean.` Opening the page set its title to `PWNED 1`: the script runs in the shared `file://` origin and can read and rewrite every course's progress.
+
+**Impact:** this is the scenario SR-03 was about, now with the CSP present: agent-written lesson HTML passes the documented gate ("run check.mjs before telling the learner a lesson is ready") and executes. With the template CSP left unchanged, every snippet above is blocked. So the attacker needs to weaken one directive as well, and the linter does not notice that.
+
+**Fix:**
+1. **CSP:** require the template policy exactly (or parse it and reject any `script-src-attr`, `script-src-elem`, `'unsafe-*'`, `'strict-dynamic'`, nonce or hash), and require `object-src 'none'; base-uri 'none'; form-action 'none'`.
+2. **Markup:** stop judging script-bearing markup with regexes. `check.mjs` already renders every page in Chromium, so add a rendered-DOM audit as the authority: any element with an `on*` attribute; `a`/`area` (HTML and SVG) whose resolved protocol is not http(s), mailto or a workspace file; `animate`, `set` or `animateTransform` whose `attributeName` is `href` or `xlink:href`; `iframe[srcdoc]`; `base`; `meta[http-equiv=refresh]`; `object`/`embed`. Also listen for `securitypolicyviolation` and count every violation as an error. Keep the static lint as a fast pre-check, but tokenize comments the way the spec does (`<!-->`, `<!--->`, `--!>`) and do not blank `<style>` or `<script>` bodies inside `<svg>` or `<math>`.
+
+#### NEW-02 (P2) The data loader can be hung or crashed from the parent side, beyond the 3 s kill
+
+**Where:** `load-data.mjs:63-68`. The parent `statSync`s and `readFileSync`s each data file **before** spawning the child. Special files report `size` 0 and are never refused. Lint and validate also `readFileSync` pages and `RESOURCES.md` the same way (unchanged code).
+
+**PoC** (`re/amp.mjs`):
+- `lessons/0001.practice.js → /dev/zero` (symlink): the lint process **aborted** (`std::bad_alloc`, exit 134).
+- `lessons/0001.practice.js` as a FIFO: lint **hung until killed** (exit 124 after 25 s).
+- `assets/course.js → ../fake-secret.txt` (symlink): the lint printed `course.js did not evaluate: token is not defined`. Fragments of the target file's identifiers reach the lint output, which the agent reads. The permission model cannot help here, because the parent reads the file and sends it in on stdin.
+
+**Impact:** `check.mjs` (the pre-delivery gate) can be crashed or hung forever by a special file in the workspace, and can echo pieces of files outside it. Plain file writes cannot create these: it takes a symlink or FIFO, for example from a cloned repository in repository-learning mode or from a shell command. Hence P2, not P1.
+
+**Fix:** use `lstat` and refuse anything that is not a regular file, including symlinks or symlinks resolving outside the workspace (`realpath` must stay under `ws`). Read with `openSync` + `fstatSync().isFile()` + a bounded `readSync` loop (at most `MAX_SOURCE*4` bytes). Apply the same helper to every workspace read in `lint-workspace.mjs` and `check.mjs`. Do not echo V8 parse or ReferenceError messages; report "did not evaluate (line N)".
+
+#### NEW-03 (P3) The loader's memory cap does not cover ArrayBuffers
+
+`--max-old-space-size=256` limits only the JS heap. `re/vm/d2-mem.js` filled 700 MB typed arrays: the child reached about **2.0 GB RSS** before the 1 s vm timeout stopped it. All files share one child sequentially, and every file gets its own 1 s window (with a kill at 3 s + 0.5 s per file), so several hostile files can push the machine into swap or the OOM killer. **Fix:** load each file in its own child, or cap the child's address space (`prlimit --as` / `ulimit -v` where available), and lower the per-file budget.
+
+#### NEW-04 (P3) `%2e%2e` path segments get past `workspaceHref`, `sanitize` and the `lesson-file-path` rule
+
+`Learncraft.workspaceHref('%2e%2e/%2e%2e/outside.html')` and `'x/%2e%2e/%2e%2e/%2e%2e/etc/passwd'` resolve **outside the workspace**: the URL parser treats `%2e%2e` as `..`. A literal `..` is refused. `sanitize()` keeps `<a href="%2e%2e/%2e%2e/%2e%2e/etc/passwd">` (which resolves to `file:///…/etc/passwd`). `SAFE_REL` in lint only rejects a literal `..`. The schema pattern for `file` (`[A-Za-z0-9._-]`) does reject `%`. Impact: only a link to a local file; no script runs. **Fix:** percent-decode `%2e`/`%2E` (and `.%2e`, `%2e.`) before the `..` test, or resolve `new URL(p, rootURL)` and require the result to start with `rootURL`.
+
+#### NEW-05 (P3) Host-realm objects are reachable inside the loader's vm, and the tests cannot see the vm layer
+
+Inside the child, `import('node:fs')` rejects with `ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING`, a **host-realm** `TypeError` (`e instanceof Error === false`; `re/vm/b-import.js`). From it the data can reach and modify the child's host prototypes. Two layers currently stop escalation: the process-wide `--disallow-code-generation-from-strings` (`e.constructor.constructor(...)` → EvalError) and the permission model. I found no route to `process` in about an hour (V8 CallSite `getFunction`/`getThis` return `undefined` for the strict host frames). But SR-07 shows that removing the in-context isolation goes unnoticed by the tests. If that happens with the permission model still on, the hostile code reaches `process` (`process.getBuiltinModule('node:net')`), and the network is not covered by the permission model. **Fix:** pass `importModuleDynamically` that throws a context-realm error (or use `vm.constants.USE_MAIN_CONTEXT_DEFAULT_LOADER` only after review). In `hardening.test.mjs`, assert that each escape attempt **throws inside the context** (report `typeof process` back through `window.COURSE` instead of swallowing it), not only that no marker file appears.
+
+#### NEW-06 (P3) Quarantined events are exported but dropped on import
+
+`exportJSON()` includes quarantined events (SR-06), but `importJSON()` validates strictly and rejects them (`events[1]: unknown kind hint`; `re/r5-store-extra.mjs` A). A learner who moves to another browser with export → import loses exactly the events quarantine is meant to protect. **Fix:** have `importJSON` quarantine object events that fail validation (inside the same caps), not reject them, and count them separately in the message.
+
+#### NEW-07 (P3) The SR-11 residual: a project-scoped skill install inside the studied repo still loads that repo's `playwright`
+
+`searchBases` walks the **parent folders of the script's own folder**. With the skill installed per project (`<repo>/.claude/skills/learn/…`) and no tools folder, `loadPlaywright` resolved `<repo>/node_modules/playwright` (`from: check.mjs folder`) and **ran the planted file** (`PLANTED playwright executed`). This needs both a project-level install and no `~/.cache/learncraft/tools`. **Fix:** stop the script-folder walk at the skill or repository root (the folder that holds `SKILL.md` or `.claude-plugin`), or search only `HERE/node_modules`.
+
+### Residual risks noted, not counted as findings
+
+- Any local page can write a `schemaVersion: 99` document to a course key. Every open tab then stops saving and fresh loads refuse to touch it (`newer-format`; `re/r5-store-extra.mjs` B). This is the right choice for data safety, but in the shared `file://` origin it is a cheap denial of service. The notice tells the learner; clearing it needs manual action.
+- `course.js` remains JavaScript (ADR-004). A hostile file can detect the Node stub environment and hand the linter clean data while handing the browser something else. Runtime guards (sanitize, the practice allow-list, `workspaceHref`) are therefore the controls that matter, not lint.
+
+### Examples as targets
+
+All three example courses lint clean on HEAD. Their 7 runtime assets are byte-identical to the starter, and every page carries the tightened CSP. The bespoke figure scripts (`probability/lessons/0003.figures.js`, `react-rendering/lessons/0002.figures.js`, `transformers/lessons/0002.figures.js`) build markup only from constants and `esc()`'d labels: no data-driven sink was found. NEW-01 was demonstrated on a scratch copy of `examples/transformers`.
