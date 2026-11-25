@@ -18,7 +18,11 @@
 | Hostile files in the workspace | A data file that hangs or exhausts the tools; a FIFO, device or socket; a symbolic or hard link to a file outside the workspace | Every workspace read is checked with `lstat` first: non-regular files, links that leave the workspace and hard-linked files are refused before opening. Reads are bounded. Each data file has a 1 s budget and the loader process is killed at 3 s (+0.5 s per extra file). Error messages from data files give only the error name and line, never text from the file | A data file can still use up to about 256 MB of heap and one CPU for its time budget, once per file. Other files the agent reads (notes, records) are outside this protection. |
 | Writing outside the workspace | The agent modifies the installed skill or other folders | The skills forbid writing into any installed skill folder; all outputs go into the course workspace | Enforced by instructions, not by a sandbox. |
 
-We do not claim the generated courses or the skills are secure against every attack. The tests in `tests/security.test.mjs` and `tests/hardening.test.mjs` cover specific regressions in Chromium only: XSS through course data, captions, practice items and stored progress; lint and CSP bypasses; the rendered-DOM audit; loader isolation; special files; tool lookup. The findings are in `docs/audit/reviews/security-reliability.md`.
+We do not claim the generated courses or the skills are secure against every attack. The tests in `tests/security.test.mjs`, `tests/hardening.test.mjs` and `tests/csp-enforcement.test.mjs` cover specific regressions in Chromium only: XSS through course data, captions, practice items and stored progress; lint and CSP bypasses; the rendered-DOM audit; loader isolation; special files; tool lookup. The findings are in `docs/audit/reviews/security-reliability.md`.
+
+Known open item:
+
+- **Open (P3, NEW-11):** removing the loader's `import()` hook would not make any test fail, although the hook itself is in place and blocks host error objects today.
 
 ## In scope
 
@@ -34,5 +38,3 @@ Out of scope: issues that need an attacker who already controls your agent, your
 Please report privately through GitHub: on the repository page, open **Security → Report a vulnerability** (GitHub private vulnerability reporting / security advisories). Include the affected file or skill, steps to reproduce (a minimal `course.js` or lesson is ideal), and the impact you observed.
 
 Do not open a public issue for a vulnerability. This is a personal project maintained in spare time: expect an acknowledgement within about a week. Fixes are released as a new version in the marketplace manifest and noted in the changelog; you are credited unless you ask not to be.
-
-- **Open (P3, NEW-11):** removing the loader's `import()` hook would not make any test fail, although the hook itself is in place and blocks host error objects today.
