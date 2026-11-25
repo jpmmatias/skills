@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'">
+<title>Lesson 3 · Effects, Strict Mode and memoization</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body data-lesson="3">
+<main>
+  <nav class="links" aria-label="Course"><a href="../index.html">← Course map</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a> <a href="../review.html">Review</a></nav>
+
+  <header>
+    <p class="kicker">Lesson 3 · Diagnose with evidence</p>
+    <h1>Effects, Strict Mode and memoization</h1>
+    <p class="lede">Three things make React look busier than it is: effects that seem to run at odd moments, development-only double calls, and renders that change nothing. This lesson separates real costs from false alarms, and shows when <code>memo</code>, <code>useMemo</code> and <code>useCallback</code> actually skip work.</p>
+    <div id="progress"></div>
+  </header>
+
+  <p><strong>Why this matters for your mission:</strong> the second milestone asks you to explain a surprising re-render or effect run from evidence and pick the fix the evidence supports. Most wrong fixes come from one of the three false alarms above.</p>
+
+  <h2>Effects run after the commit</h2>
+  <p>An Effect is code that runs <em>because the component was displayed</em>, to synchronise with something outside React. The docs place it precisely: “Effects run at the end of a commit after the screen updates”<sup class="cite"><a href="../RESOURCES.md#s12" data-src="S12">12</a></sup>. So the render you learned about in lessons 1–2 is already over, and the DOM is already updated, when your Effect starts. Predict before stepping through: does the Effect come before or after the browser paints?</p>
+  <div data-lc="flow" data-flow='{
+    "title": "An update with an Effect",
+    "nodes": [{"id":"trigger","label":"Trigger","sub":"set state"},{"id":"render","label":"Render","sub":"call components"},{"id":"commit","label":"Commit","sub":"update the DOM"},{"id":"paint","label":"Paint","sub":"the browser"},{"id":"effect","label":"Effects","sub":"useEffect setup"}],
+    "edges": [{"from":"trigger","to":"render","label":"queue"},{"from":"render","to":"commit","label":"diff"},{"from":"commit","to":"paint","label":"screen"},{"from":"paint","to":"effect","label":"usually"}],
+    "steps": [
+      {"edges":[0,1],"caption":"<b>Trigger and render</b> as in lesson 2: the handler finishes, then React calls the components. Effects do not run during rendering."},
+      {"edges":[2],"caption":"<b>Commit, then paint.</b> React updates the DOM; the browser can now paint the new screen."},
+      {"edges":[3],"caption":"<b>Effects.</b> After the commit, React runs the Effects whose dependencies changed. For an update that was not caused by an interaction, React generally lets the browser paint first. For a click or other interaction, React <i>may</i> run the Effect before the paint, so do not rely on the order between paint and Effect."}],
+    "summary": "Trigger → render → commit → paint → Effects. Effects always come after the commit; for interactions they may come before the paint. Press Next to step through."}'></div>
+  <p>The answer is “usually after, but do not count on it”. If an Effect was not caused by an interaction, React “will generally let the browser paint the updated screen first”; if it was caused by an interaction such as a click, React “may run your Effect before the browser paints”<sup class="cite"><a href="../RESOURCES.md#s13" data-src="S13">13</a></sup>. What you <em>can</em> rely on is that the Effect runs after the commit. One consequence matters for performance: an Effect that immediately sets state starts the whole trigger → render → commit sequence again, which is why the docs recommend computing derived values during rendering instead<sup class="cite"><a href="../RESOURCES.md#s20" data-src="S20">20</a></sup>.</p>
+  <div data-practice-item="l3-order-effect"></div>
+
+  <h2>Strict Mode: double calls on purpose, in development only</h2>
+  <p>If you see a component log twice or an Effect connect, disconnect and connect again, check whether you are in development with <code>&lt;StrictMode&gt;</code> on before you call it a bug. Strict Mode repeats certain calls to expose impure rendering and missing cleanup, and “all of these checks are development-only and do not impact the production build”<sup class="cite"><a href="../RESOURCES.md#s14" data-src="S14">14</a></sup>.</p>
+  <div class="table-wrap">
+    <table>
+      <caption class="lc-muted">What runs on the first mount, with Strict Mode on</caption>
+      <thead><tr><th scope="col">Code</th><th scope="col">Development (Strict Mode)</th><th scope="col">Production build</th></tr></thead>
+      <tbody>
+        <tr><td>Component body (top-level code)</td><td>called twice<sup class="cite"><a href="../RESOURCES.md#s14" data-src="S14">14</a></sup></td><td>called once</td></tr>
+        <tr><td>Event handlers</td><td>not repeated<sup class="cite"><a href="../RESOURCES.md#s14" data-src="S14">14</a></sup></td><td>run when the event fires</td></tr>
+        <tr><td><code>useEffect</code> setup</td><td>setup → cleanup → setup<sup class="cite"><a href="../RESOURCES.md#s12" data-src="S12">12</a></sup></td><td>setup once</td></tr>
+        <tr><td>Ref callbacks</td><td>setup → cleanup → setup<sup class="cite"><a href="../RESOURCES.md#s14" data-src="S14">14</a></sup></td><td>once</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The right reaction to an Effect firing twice is not a <code>useRef</code> guard but a cleanup: “The right question isn’t ‘how to run an Effect once’, but ‘how to fix my Effect so that it works after remounting’”<sup class="cite"><a href="../RESOURCES.md#s12" data-src="S12">12</a></sup>. With a correct cleanup, the user cannot tell setup → cleanup → setup from a single setup.</p>
+  <div class="box">
+    <p class="kicker">Version note: React 18 → 19</p>
+    <p>The Effect double-run on mount arrived with React 18, as a new development-only Strict Mode check<sup class="cite"><a href="../RESOURCES.md#s9" data-src="S9">9</a></sup>. React 19 changed two details: during the development double render, <code>useMemo</code> and <code>useCallback</code> reuse the memoized results from the first render, and ref callbacks are double-invoked on the initial mount<sup class="cite"><a href="../RESOURCES.md#s15" data-src="S15">15</a></sup>. If your team is on 18, the ref-callback row above may not apply.</p>
+  </div>
+  <div data-practice-item="l3-strict-effect"></div>
+  <div data-practice-item="l3-strict-body"></div>
+
+  <h2>A re-render is not a DOM update</h2>
+  <p>Lesson 1’s rule is the most useful sentence in any performance discussion: React only changes the DOM where the output differs<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. A component that “re-renders 40 times” may have touched the DOM zero times. The cost of a wasted render is the time spent calling it and its children, so the question is always <em>how long</em>, which the Profiler measures (its <code>actualDuration</code> counts milliseconds spent rendering a subtree in one update<sup class="cite"><a href="../RESOURCES.md#s21" data-src="S21">21</a></sup>).</p>
+  <div data-practice-item="l3-interleave-dom"></div>
+
+  <h2>When memoization skips work</h2>
+  <p><code>memo(Component)</code> lets React skip re-rendering a child when its parent re-renders, if every prop is equal by <code>Object.is</code> to last time. It never stops a re-render caused by the component’s own state or by a context it reads, and the docs call it “a performance optimization, not a guarantee”<sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>. Its weak spot is identity: an object or function created during render is a new value every time, which makes <code>memo</code> “completely useless”<sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>. That is what <code>useCallback</code> (for functions) and <code>useMemo</code> (for values) are for: keeping the same identity across renders until a dependency changes<sup class="cite"><a href="../RESOURCES.md#s17" data-src="S17">17</a></sup><sup class="cite"><a href="../RESOURCES.md#s16" data-src="S16">16</a></sup>.</p>
+
+  <h3>Worked example: memo that does nothing</h3>
+  <pre tabindex="0"><code>const List = memo(function List({ items, onPick }) { … });
+
+function App() {
+  const [theme, setTheme] = useState('light');
+  // ↓ a new function on every App render
+  return &lt;List items={ITEMS} onPick={id =&gt; select(id)} /&gt;;
+}</code></pre>
+  <p><code>ITEMS</code> is a module-level constant, so it is equal every time; <code>onPick</code> is not. Every <code>App</code> render passes a new function, <code>memo</code> sees a changed prop, and <code>List</code> renders anyway, along with every row. <b>Why does the arrow function count as changed when its code is identical?</b> Answer for yourself, then try it below: turn on <code>memo</code> for <code>List</code> alone, toggle the theme, and watch <code>List</code> still render.</p>
+  <figure>
+    <div data-lc="render-sim" data-mode="memo" data-trigger="theme" data-goal></div>
+    <figcaption>The lesson 2 model with optimizations. A thin outer frame marks a component wrapped in <code>memo</code>; dashed = skipped by <code>memo</code>. <b>Goal:</b> make both updates render only two components each. Then check whether the DOM changes are any different.</figcaption>
+  </figure>
+  <p>Now the faded version: fix the example so <code>memo</code> can do its job.</p>
+  <div data-practice-item="l3-fade-usecallback"></div>
+
+  <h3>When is it worth it?</h3>
+  <p>The reference pages give the same short list for all three tools<sup class="cite"><a href="../RESOURCES.md#s16" data-src="S16">16</a></sup><sup class="cite"><a href="../RESOURCES.md#s17" data-src="S17">17</a></sup><sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>:</p>
+  <ol>
+    <li><b><code>memo</code></b> helps when a component re-renders often with the same props and its rendering is expensive. If there is no perceptible lag, it is unnecessary.</li>
+    <li><b><code>useCallback</code> / <code>useMemo</code></b> help when the value goes to a <code>memo</code> component, or is a dependency of another Hook (such as an Effect that should not re-run).</li>
+    <li><b><code>useMemo</code></b> also helps for a calculation that is noticeably slow and whose inputs rarely change. Measure it: wrap it in <code>console.time</code>; the docs suggest about 1&nbsp;ms or more as worth memoizing, tested with CPU throttling because your machine is faster than your users’<sup class="cite"><a href="../RESOURCES.md#s16" data-src="S16">16</a></sup>.</li>
+  </ol>
+  <p>Outside those cases there is “no benefit”, and also “no significant harm”, apart from less readable code<sup class="cite"><a href="../RESOURCES.md#s16" data-src="S16">16</a></sup>.</p>
+  <div data-practice-item="l3-inline-object"></div>
+  <div data-practice-item="l3-usememo-when"></div>
+
+  <div class="box">
+    <p class="kicker">Status note: React Compiler (checked November 2026)</p>
+    <p>React Compiler reached its first stable release, 1.0, on October 7, 2025<sup class="cite"><a href="../RESOURCES.md#s19" data-src="S19">19</a></sup>. It is a <b>build-time tool</b> you opt into (mainly a Babel plugin), not part of the React runtime, and it works with React 17 and up<sup class="cite"><a href="../RESOURCES.md#s18" data-src="S18">18</a></sup><sup class="cite"><a href="../RESOURCES.md#s19" data-src="S19">19</a></sup>. It automatically applies the equivalent of <code>memo</code>, <code>useMemo</code> and <code>useCallback</code> to components and hooks (not to every function), which is exactly the “skip renders with equal inputs” idea above, done for you<sup class="cite"><a href="../RESOURCES.md#s18" data-src="S18">18</a></sup>. <code>useMemo</code> and <code>useCallback</code> remain as escape hatches, and for existing code the docs advise leaving existing memoization in place or testing carefully before removing it<sup class="cite"><a href="../RESOURCES.md#s18" data-src="S18">18</a></sup>. The compiler changes which renders happen, not the rules of this course: renders, commits and Effects work as taught. Check your build config to know whether it is on in your app.</p>
+  </div>
+
+  <section class="challenge" id="challenge" data-kind="milestone" data-milestone="m2" aria-labelledby="challenge-h">
+    <p class="kicker">Milestone challenge · Diagnose with evidence</p>
+    <h2 id="challenge-h">One surprising render, explained and fixed (or left alone)</h2>
+    <p>In your own app, find one component that renders more often than you expect, or one Effect that runs more often than you expect. Record the interaction in the React DevTools Profiler, decide on the cause using the rules from this course, make at most <b>one</b> change, and record the same interaction again. “No change, because it is cheap” is a valid outcome if the numbers support it.</p>
+    <h3>What to send back</h3>
+    <p>Two Profiler screenshots or exports (before and after) of the same interaction, the diff of your one change (or the measurement that justified no change), and a three-sentence explanation: what rendered or ran, why, and what the change did.</p>
+    <h3>Pass criteria</h3>
+    <ol class="criteria">
+      <li>The before recording names the target component or Effect and shows how many commits it rendered (or ran) in, for one named interaction.</li>
+      <li>The explanation names one cause from the course (own state, parent rendered, a new function or object prop, an Effect setting state, or Strict Mode in development) and points to the line of code it comes from.</li>
+      <li>The after recording of the same interaction shows the target rendering (or running) in fewer commits, or, for “no change”, the before recording shows the target’s render time in milliseconds next to the threshold you used.</li>
+      <li>If the cause was Strict Mode, the claim is backed by a production build run, or by the setup → cleanup → setup pattern in the console.</li>
+    </ol>
+    <p>When you are done, send your work to your teacher in the terminal.</p>
+  </section>
+
+  <h2>Go deeper</h2>
+  <p><b>Primary source:</b> <a href="https://react.dev/learn/synchronizing-with-effects">Synchronizing with Effects</a> on react.dev (docs, 26 min). The section “How to handle the Effect firing twice in development?” is the one to keep open while you do the challenge.</p>
+  <ul class="deeper">
+    <li><a href="https://react.dev/reference/react/memo">memo reference</a> <span>Docs, 7 min. “Should you add memo everywhere?” and the principles that make most memoization unnecessary.</span></li>
+    <li><a href="https://react.dev/learn/you-might-not-need-an-effect">You Might Not Need an Effect</a> <span>Docs, 21 min. The common Effects that cause extra render passes, and what to write instead.</span></li>
+    <li><a href="https://react.dev/blog/2025/10/07/react-compiler-1">React Compiler v1.0</a> <span>Release post, 7 min. What the stable compiler does, the React 17/18 setup, and why to pin its version.</span></li>
+    <li><a href="https://www.youtube.com/watch?v=zyVRg2QR6LA&amp;t=20274s">Exploring React Performance</a> <span>Talk by Joe Savona (React team) at React Conf 2025, inside the day-1 stream. <span class="unverified" title="Not independently verified">Not watched when this course was written (the video host was blocked), so no lesson claim rests on it.</span></span></li>
+  </ul>
+  <p>Stuck on something, or curious about a case in your code? Ask your agent a follow-up question in the terminal.</p>
+  <nav class="links" aria-label="Lessons"><a href="0002-state-updates.html">← Previous: How a state update spreads</a> <a href="../index.html">Course map</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+  <footer>Sources: <a href="../RESOURCES.md">RESOURCES.md</a> · Example course: no learner progress is included.</footer>
+</main>
+<script src="../assets/core.js"></script>
+<script src="../assets/store.js"></script>
+<script src="../assets/course.js"></script>
+<script src="0003.practice.js"></script>
+<script src="../assets/progress.js"></script>
+<script src="../assets/practice.js"></script>
+<script src="../assets/viz.js"></script>
+<script src="../assets/diagram.js"></script>
+<script src="0002.figures.js"></script>
+</body>
+</html>

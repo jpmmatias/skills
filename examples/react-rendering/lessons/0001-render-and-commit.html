@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'">
+<title>Lesson 1 · What “render” means</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body data-lesson="1">
+<main>
+  <nav class="links" aria-label="Course"><a href="../index.html">← Course map</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a> <a href="../review.html">Review</a></nav>
+
+  <header>
+    <p class="kicker">Lesson 1 · Predict a render</p>
+    <h1>What “render” means</h1>
+    <p class="lede">“It re-rendered” is the most overloaded sentence in React. This lesson pins it down: what React does when it renders, what it does afterwards, and how it decides to keep or throw away what is on screen.</p>
+    <div id="progress"></div>
+  </header>
+
+  <p><strong>Why this matters for your mission:</strong> you cannot predict a re-render until “render” means one precise thing, and most re-render worries disappear once you see that rendering and changing the DOM are different steps.</p>
+  <p class="note">This course teaches <b>React 19</b> as documented on react.dev, whose docs were at version 19.3 when the course was written<sup class="cite"><a href="../RESOURCES.md#s24" data-src="S24">24</a></sup>. Everything in this lesson also holds for React 18.</p>
+
+  <h2>Five words first</h2>
+  <div class="terms">
+    <div class="term"><b>element</b>A plain object your component returns, describing what to show: “an &lt;h1&gt; with this text”. Not a DOM node.<sup class="cite"><a href="../RESOURCES.md#s3" data-src="S3">3</a></sup></div>
+    <div class="term"><b>render</b>React calling your component function to get its elements.<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup></div>
+    <div class="term"><b>commit</b>React changing the real DOM to match the latest render.<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup></div>
+    <div class="term"><b>paint</b>The browser drawing the updated page. Not React’s job.<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup></div>
+    <div class="term"><b>reconciliation</b>The older docs’ name for React comparing the new elements with the previous ones to decide what to keep.<sup class="cite"><a href="../RESOURCES.md#s4" data-src="S4">4</a></sup></div>
+  </div>
+
+  <h2>Rendering is React calling your components</h2>
+  <p>React’s own definition is short: <b>“Rendering” is React calling your components</b><sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. Your component is a function; calling it produces elements, which the React docs describe as “a lightweight description of a piece of the user interface”<sup class="cite"><a href="../RESOURCES.md#s3" data-src="S3">3</a></sup>. Nothing on screen has changed yet when a render finishes.</p>
+  <pre tabindex="0"><code>function Greeting({ name }) {
+  return &lt;h1 className="greeting"&gt;Hello, {name}&lt;/h1&gt;;
+}
+// Calling it gives a description, roughly:
+// { type: 'h1', props: { className: 'greeting', children: ['Hello, ', 'Taylor'] } }</code></pre>
+  <p>A render is triggered for one of two reasons: it is the component’s <b>initial render</b>, or the <b>state</b> of the component or one of its ancestors was updated<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. Rendering is recursive: if the component returns other components, React renders those next, and so on down<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. Lesson 2 follows that recursion through a real tree.</p>
+
+  <h2>One update, four steps</h2>
+  <p>Every screen update in a React app goes through the same sequence: trigger, render, commit, and then the browser paints<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. Before you step through it, predict: at which step does a DOM node actually change?</p>
+  <div data-lc="flow" data-flow='{
+    "title": "One React update",
+    "nodes": [{"id":"trigger","label":"Trigger","sub":"set state"},{"id":"render","label":"Render","sub":"call components"},{"id":"commit","label":"Commit","sub":"change the DOM"},{"id":"paint","label":"Paint","sub":"the browser"}],
+    "edges": [{"from":"trigger","to":"render","label":"queue"},{"from":"render","to":"commit","label":"diff"},{"from":"commit","to":"paint","label":"pixels"}],
+    "steps": [
+      {"edges":[0],"caption":"<b>Trigger.</b> A state setter is called (or the app starts). React queues a render; nothing is called yet."},
+      {"edges":[1],"caption":"<b>Render.</b> React calls the component that updated, then the components it returns, and works out which properties changed since last time. It does not touch the DOM yet."},
+      {"edges":[2],"caption":"<b>Commit, then paint.</b> React applies only the differences to the DOM; then the browser repaints the screen. If the render produced the same output, the commit changes nothing."}],
+    "summary": "Trigger → render → commit → paint. Only the commit changes the DOM. Press Next to step through one update."}'></div>
+  <p>The answer to the prediction: only the <b>commit</b> changes the DOM. During a re-render React works out which properties changed, but “won’t do anything with that information until the next step, the commit phase”<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. In the commit it applies “the minimal necessary operations”, and <b>React only changes the DOM nodes if there’s a difference between renders</b><sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. Paint is the browser’s work, not React’s.</p>
+
+  <h3>Worked example: a clock that never loses your typing</h3>
+  <pre tabindex="0"><code>function Clock({ time }) {          // ①
+  return (
+    &lt;&gt;
+      &lt;h1&gt;{time}&lt;/h1&gt;               {/* ② */}
+      &lt;input /&gt;                     {/* ③ */}
+    &lt;/&gt;
+  );
+}
+// The parent passes a new time string every second.</code></pre>
+  <ol class="anno-list">
+    <li><b>Trigger:</b> each second the parent’s state changes, so the parent and <code>Clock</code> render again<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>.</li>
+    <li><b>Render:</b> <code>Clock</code> returns an <code>&lt;h1&gt;</code> whose text differs from last time.</li>
+    <li><b>Render:</b> it also returns an <code>&lt;input&gt;</code> at the same place, with the same (no) props.</li>
+    <li><b>Commit:</b> React updates the <code>&lt;h1&gt;</code> text only. It leaves the <code>&lt;input&gt;</code> alone, so whatever you typed stays<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>.</li>
+  </ol>
+  <p><b>Why does ③ survive?</b> Answer before reading on: what would have to be different about line ③ for your typing to be lost? (Hold on to your answer; the next section gives the rule.)</p>
+  <div data-practice-item="l1-define-render"></div>
+  <div data-practice-item="l1-order-update"></div>
+  <div data-practice-item="l1-same-output-dom"></div>
+
+  <h2>Keep or reset: type, position and key</h2>
+  <p>After each render React compares the new elements with the previous ones, position by position. The legacy docs called this comparison <b>reconciliation</b> and stated plainly that “the reconciliation algorithm is an implementation detail”<sup class="cite"><a href="../RESOURCES.md#s4" data-src="S4">4</a></sup>. You do not need its internals (you will see the name Fiber in talks and blog posts: that is React’s internal implementation, which may change, and this course does not rely on it). You need three rules that the current docs state as behaviour<sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>:</p>
+  <div class="cases">
+    <div class="box">
+      <p class="kicker">Same type, same position</p>
+      <pre tabindex="0"><code>&lt;Counter /&gt;
+→ &lt;Counter /&gt;</code></pre>
+      <p><b>Kept.</b> React keeps the component’s state and its DOM, and updates only what changed. “React preserves a component’s state for as long as it’s being rendered at its position in the UI tree.”<sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup></p>
+    </div>
+    <div class="box">
+      <p class="kicker">Different type, same position</p>
+      <pre tabindex="0"><code>&lt;div&gt;&lt;Counter /&gt;&lt;/div&gt;
+→ &lt;section&gt;&lt;Counter /&gt;&lt;/section&gt;</code></pre>
+      <p><b>Reset.</b> A different component (or tag) at a position resets the state of its <em>entire subtree</em>, even the identical <code>Counter</code> inside<sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>.</p>
+    </div>
+    <div class="box">
+      <p class="kicker">Different key</p>
+      <pre tabindex="0"><code>&lt;Counter key="taylor" /&gt;
+→ &lt;Counter key="sarah" /&gt;</code></pre>
+      <p><b>Reset.</b> A key becomes part of the position, so React sees a different counter and creates its state afresh<sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>.</p>
+    </div>
+  </div>
+  <p>Two consequences are worth remembering. It is the position in the <em>returned tree</em> that counts, not where the JSX sits in your code: <code>{fancy ? &lt;Counter isFancy /&gt; : &lt;Counter /&gt;}</code> keeps its state when <code>fancy</code> flips, because both branches put a <code>Counter</code> at the same place<sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>. And keys must be stable: a key generated during render, such as <code>key={Math.random()}</code>, never matches the previous one, so every item’s component and DOM are recreated on every render, losing any input inside<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>.</p>
+  <p>That answers the clock question: the <code>&lt;input&gt;</code> survives because its <b>type</b> and <b>position</b> did not change. Wrap it in a different tag on alternate seconds, or give it a key that changes, and the typing would be lost.</p>
+
+  <h3>Worked example: resetting a form on purpose</h3>
+  <pre tabindex="0"><code>function Chat({ contact }) {
+  // Without a key, the draft typed to Alice would still be there after switching to Bob:
+  // same component, same position, so the state is kept.
+  return &lt;Draft key={contact.id} to={contact} /&gt;;   // a new id → a new Draft with empty state
+}</code></pre>
+  <p>The docs use exactly this pattern for a chat app, where keeping the draft would send a message to the wrong person<sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>. Now the faded version: complete it yourself.</p>
+  <div data-practice-item="l1-fade-reset-key"></div>
+  <div data-practice-item="l1-branch-same-type"></div>
+  <div data-practice-item="l1-random-key"></div>
+
+  <section class="challenge" id="challenge" data-kind="lesson" aria-labelledby="challenge-h">
+    <p class="kicker">Lesson challenge</p>
+    <h2 id="challenge-h">Keep or reset, in your own app</h2>
+    <p>Find one place in your own app where a value switches what is rendered at one spot: a conditional between two components, a list, a form that shows a different record, or a tab panel. Before you touch the browser, write down whether the state inside (typed text, an open menu, a counter) will be <b>kept</b> or <b>reset</b> when the value switches, and which rule you are using. Then try it.</p>
+    <h3>What to send back</h3>
+    <p>The parent’s JSX at that spot (15 lines at most), your prediction as you wrote it before testing, and what actually happened.</p>
+    <h3>Pass criteria</h3>
+    <ol class="criteria">
+      <li>The snippet shows the element type and the <code>key</code> (or “no key”) of the child at that position, both before and after the switch.</li>
+      <li>The prediction says “kept” or “reset” and names the rule it relies on: type, position or key.</li>
+      <li>The observed state before and after the switch is reported (for example the typed text), and any mismatch with the prediction is explained with a corrected rule.</li>
+    </ol>
+    <p>When you are done, send your work to your teacher in the terminal.</p>
+  </section>
+
+  <h2>Go deeper</h2>
+  <p><b>Primary source:</b> <a href="https://react.dev/learn/render-and-commit">Render and Commit</a> on react.dev (docs, 4 min). It is the page this lesson follows most closely, with live sandboxes you can break.</p>
+  <ul class="deeper">
+    <li><a href="https://react.dev/learn/preserving-and-resetting-state">Preserving and Resetting State</a> <span>Docs, 16 min. Sandboxes for every keep/reset case in this lesson, including the chat-draft example.</span></li>
+    <li><a href="https://react.dev/learn/rendering-lists">Rendering Lists</a> <span>Docs, 8 min. Why keys must be unique among siblings and stable, and when an index key is acceptable.</span></li>
+    <li><a href="https://legacy.reactjs.org/docs/reconciliation.html">Reconciliation</a> <span>Legacy docs, 5 min. The original explanation of the two comparison heuristics; written for class components and no longer updated, so read it for the idea, not the API.</span></li>
+  </ul>
+  <p>Stuck on something, or curious about a case in your code? Ask your agent a follow-up question in the terminal.</p>
+  <nav class="links" aria-label="Lessons"><a href="../index.html">← Course map</a> <a href="0002-state-updates.html">Next: How a state update spreads →</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+  <footer>Sources: <a href="../RESOURCES.md">RESOURCES.md</a> · Example course: no learner progress is included.</footer>
+</main>
+<script src="../assets/core.js"></script>
+<script src="../assets/store.js"></script>
+<script src="../assets/course.js"></script>
+<script src="0001.practice.js"></script>
+<script src="../assets/progress.js"></script>
+<script src="../assets/practice.js"></script>
+<script src="../assets/viz.js"></script>
+<script src="../assets/diagram.js"></script>
+</body>
+</html>
