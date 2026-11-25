@@ -37,11 +37,18 @@
   </section>
 
   <!-- The challenge is the only card on the page: a transfer task on the learner's own material. -->
-  <section class="challenge" id="challenge" aria-labelledby="challenge-h">
+  <!-- data-kind="milestone" + data-milestone only on the last lesson of a milestone; otherwise data-kind="lesson". -->
+  <section class="challenge" id="challenge" data-kind="milestone" data-milestone="m1" aria-labelledby="challenge-h">
     <p class="kicker">Milestone challenge</p>
     <h2 id="challenge-h">CHALLENGE TITLE</h2>
     <p>THE TASK, ON THE LEARNER'S OWN MATERIAL.</p>
-    <p><strong>Pass criteria:</strong> WHAT THE REVIEW CHECKS.</p>
+    <h3>What to send back</h3>
+    <p>THE CONCRETE ARTIFACTS: A RESULTS FILE, A DIFF, A WRITTEN ANSWER.</p>
+    <h3>Pass criteria</h3>
+    <ol class="criteria">
+      <li>AN OBSERVABLE CHECK.</li>
+      <li>ANOTHER OBSERVABLE CHECK.</li>
+    </ol>
     <p>When you are done, send your work to your teacher in the terminal.</p>
   </section>
 
