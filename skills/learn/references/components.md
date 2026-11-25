@@ -70,10 +70,10 @@ Random data uses `Learncraft.rng(seed)`, so figures are reproducible. Exact opti
 
 ## scene
 
-`scene.js` plays motion scenes: `<div class="scene" data-scene="name"></div>` plus `Scene.register(name, { title, total, setup(stage, S), beats: [{ t, d, f(refs, p) }], chapters: [{ t, title, caption, say }] })` in `lessons/scenes-NNNN.js`. A scene is a pure function of time; helpers on `S` include `svg`, `terminal`, `seg`, `lerp`, `ease`, `fade`, `draw`, `along`, `layers`, `highlight`. Authoring rules: [motion → Scenes](motion.md#scenes).
+`scene.js` plays motion scenes: `<div class="scene" data-scene="name"></div>` plus `Scene.register(name, { title, total, setup(stage, S), beats: [{ t, d, f(refs, p) }], chapters: [{ t, title, caption, say }] })` in `lessons/scenes-NNNN.js`. Optional keys: `poster` (`'end'` by default, `'start'`, or a time in ms: the frame shown before play, in print and under reduced motion) and `phone: { focus: [x, y, w, h] }` (the stage region kept on screens under 480px; terminals move below the stage, so keep the mechanism within about 480 units). The stage is hidden from screen readers; captions and a Transcript disclosure carry the content. A scene is a pure function of time; helpers on `S` include `svg`, `terminal`, `seg`, `lerp`, `ease`, `fade`, `draw`, `along`, `layers`, `highlight`. Authoring rules: [motion → Scenes](motion.md#scenes).
 
 ## Styles, templates, examples
 
 - `style.css` (page and practice) imports `figures.css` (figures and scenes); `theme.css` sets the tokens ([THEME-FORMAT](../THEME-FORMAT.md)).
 - `${CLAUDE_SKILL_DIR}/starter/templates/`: `index.html` (dashboard), `review.html` (cold review session), `lesson.html`, `0001.practice.js` and `reference.html`.
-- `${CLAUDE_SKILL_DIR}/starter/examples/`: `scenes-0001-sampling.js` (a complete scene), explorable and figure examples, and `jev-confidence/` (domain-specific components from an earlier course). Copy from examples; they are not part of the generic runtime.
+- `${CLAUDE_SKILL_DIR}/starter/examples/`: `scenes-0001-sampling.js` (a complete scene), explorable and figure examples, and `jev-confidence/` (domain-specific components from an earlier course). Open `examples/index.html` for a working gallery of the figure and explorable primitives. Copy from examples; they are not part of the generic runtime.

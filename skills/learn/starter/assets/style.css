@@ -14,11 +14,6 @@
   --ok: #2f6b3a;
   --bad: #a12a2a;
   --card: #ffffff;
-  /* Deprecated: course-specific band colours, kept only until figures.css and the examples stop using them
-     (workstream C2 moves them to starter/examples/jev-confidence/). Do not use in new lessons. */
-  --act: #2f6b3a; --act-bg: #dcebdc;
-  --confirm: #8a6400; --confirm-bg: #f5e8c4;
-  --triage: #a12a2a; --triage-bg: #f3d9d6;
   /* Type, shape and scene tokens: a theme overrides these, never the rules below. */
   --font-body: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --font-head: var(--font-body);
@@ -35,14 +30,12 @@
   :root:not([data-theme="light"]) {
     --bg: #171614; --fg: #ebe7df; --muted: #a29d93; --rule: #34312c; --control-border: #77726a; /* 3.79 / 3.56 / 3.32 */
     --accent: #e08a62; --code-bg: #24221f; --ok: #7cc48a; --bad: #e98080; --card: #1e1c1a;
-    --act: #8fd19c; --act-bg: #1f3a24; --confirm: #e8c46a; --confirm-bg: #3d3216; --triage: #f09a9a; --triage-bg: #432222;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #171614; --fg: #ebe7df; --muted: #a29d93; --rule: #34312c; --control-border: #77726a;
   --accent: #e08a62; --code-bg: #24221f; --ok: #7cc48a; --bad: #e98080; --card: #1e1c1a;
-  --act: #8fd19c; --act-bg: #1f3a24; --confirm: #e8c46a; --confirm-bg: #3d3216; --triage: #f09a9a; --triage-bg: #432222;
   color-scheme: dark;
 }
 
