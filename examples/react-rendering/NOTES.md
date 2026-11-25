@@ -36,3 +36,5 @@ sources: read 2026-11-25. react.dev and legacy.reactjs.org did not resolve in th
 ## Revisions
 
 - revision 1 (2026-11-25): independent review `docs/audit/reviews/course-react.md`. Lesson 3 split into lesson 3 (Effects and Strict Mode) and lesson 4 (memoization); items whose answers changed got new ids; sources S28–S30 added, S26 retired to Gaps.
+- Renamed or re-scoped item ids in revision 1 (allowed here only because an example course has no learners; the lesson contract forbids renaming a published id in a real course): `l3-interleave-dom` → `l4-interleave-dom`, `l3-fade-usecallback` → `l4-fade-usecallback`; the Strict Mode items moved from objective `l3.o1` to `l3.o2`.
+- Lesson 3's Go deeper is docs-only: the only video candidate (S26) is unverified and listed under Gaps in `RESOURCES.md`.

@@ -71,7 +71,7 @@ function App() {
     <p>The before and after evidence (Profiler screenshots or exports, or the two console logs), the diff of your one change (or the measurement that justified no change), and a three-sentence explanation: what rendered or ran, why, and what the change did.</p>
     <h3>Pass criteria</h3>
     <ol class="criteria">
-      <li>The before evidence names one interaction and the target: for a component, the number of commits in which the Profiler shows it rendered; for an Effect, the number of times the <code>console.log</code> in its setup prints.</li>
+      <li>The before evidence names one interaction and the target: for a component, the number of commits in which the Profiler (or the Performance tracks) shows it rendered; for an Effect, the number of times the <code>console.log</code> in its setup prints.</li>
       <li>The explanation names one cause from the course (own state, parent rendered, a new function or object prop, an Effect setting state, or Strict Mode in development) and points to the line of code it comes from.</li>
       <li>The after evidence for the same interaction, collected the same way, shows a lower count, or, for “no change”, the before recording shows the target’s render time in milliseconds next to the threshold you used.</li>
       <li>If the cause was Strict Mode, the claim is backed by the same count in a production build, or by the setup → cleanup → setup pattern in the console (the Profiler shows one commit either way).</li>

@@ -25,7 +25,7 @@ Learncraft.practice(1, [
   { id: 'l1-same-output-clock', type: 'recall', objective: 'l1.o1',
     prompt: 'A parent passes <code>Clock</code> the same time string twice in a row, so <code>Clock</code> renders twice with identical props. After the second commit, how many DOM nodes end up different? (a number)',
     accept: ['0', 'zero', 'none'], tolerance: 0,
-    why: 'React only changes DOM nodes when there is a difference between renders. The second render repeats the first, so nothing ends up different. (React may still rewrite some attributes of form inputs during a commit, but their values do not change.)' },
+    why: 'React only changes DOM nodes when there is a difference between renders. The second render repeats the first, so nothing ends up different.' },
   { id: 'l1-fade-reset-key', type: 'fade', objective: 'l1.o2', code: true,
     prompt: 'Make React throw away the profile form’s state (its half-typed fields) whenever a different user is selected.',
     template: '<ProfileForm {{attr}}={user.id} user={user} />',

@@ -45,13 +45,13 @@
   <div data-lc="flow" data-flow='{
     "title": "One React update",
     "nodes": [{"id":"trigger","label":"Trigger","sub":"set state"},{"id":"render","label":"Render","sub":"call components"},{"id":"commit","label":"Commit","sub":"change the DOM"},{"id":"paint","label":"Paint","sub":"the browser"}],
-    "edges": [{"from":"trigger","to":"render","label":"queue"},{"from":"render","to":"commit","label":"diff"},{"from":"commit","to":"paint","label":"pixels"}],
+    "edges": [{"from":"trigger","to":"render","label":"queue"},{"from":"render","to":"commit","label":"compare"},{"from":"commit","to":"paint","label":"pixels"}],
     "steps": [
       {"edges":[0],"caption":"<b>Trigger.</b> A state setter is called (or the app starts). React queues a render; nothing is called yet."},
       {"edges":[1],"caption":"<b>Render.</b> React calls the component that updated, then the components it returns, and compares the result with the previous render to decide what to keep. It does not touch the DOM yet."},
       {"edges":[2],"caption":"<b>Commit, then paint.</b> React applies only the differences to the DOM; then the browser repaints the screen. If the render produced the same output, the commit changes nothing."}],
     "summary": "Trigger → render → commit → paint. Press Next to step through one update and check your prediction."}'></div>
-  <p>The answer to the prediction: the trigger and the render still happen, React still reaches the commit, and the commit has nothing to change. Only the <b>commit</b> ever changes the DOM. During a re-render React works out which properties changed, but “won’t do anything with that information until the next step, the commit phase”<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. In the commit it applies “the minimal necessary operations”, and <b>React only changes the DOM nodes if there’s a difference between renders</b><sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. Paint is the browser’s work, not React’s.</p>
+  <p>The answer to the prediction: the trigger and the render still happen, React still reaches the commit, and the commit has nothing to change. Only the <b>commit</b> ever changes the DOM. The docs describe the render this way: during a re-render React works out which properties changed, but “won’t do anything with that information until the next step, the commit phase”<sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. In the commit it applies “the minimal necessary operations”, and <b>React only changes the DOM nodes if there’s a difference between renders</b><sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. Paint is the browser’s work, not React’s.</p>
 
   <h3>Worked example: a clock that never loses your typing</h3>
   <pre tabindex="0"><code>function Clock({ time }) {          // ①
