@@ -7,6 +7,8 @@
 //   <div data-lc="bars" data-bars='{"refund":0.61,"complaint":0.27,"return":0.12}' data-label="Next-token probability"
 //        [data-format="fixed2|percent|int"] [data-max="1"] [data-sort="desc"] [data-summary="…"] [data-note="illustrative"]
 //        [data-alt='{…}' data-alt-label="Show the other ticket" data-alt-summary="…"]></div>
+//       data-bars may also be an ordered array: '[["1",0.2],["2",0.5],["10",0.3]]' or '[{"label":"1","value":0.2}]'
+//       (object keys that look like integers are reordered by JavaScript; an array keeps your order).
 //       Categorical bars; the largest value is signalled. The text alternative lists every value.
 //       With data-alt, a toggle (aria-pressed) animates between the two sets.
 //   <div data-lc="numberline" data-min="0" data-max="1" data-label="confidence"
@@ -19,7 +21,8 @@
 //   <div class="stepper" (or data-lc="stepper")> <svg>…<g data-step="1">…<path class="arrow"/></g>…</svg>
 //        <div class="captions"><p data-step="1">…</p>…</div> </div>
 //       Hand-drawn SVG, stepped on the timeline: each step draws its .arrow paths and sends a packet.
-//       Starts on step 1 (segmenting); print shows every step. Use a unique marker id per SVG.
+//       First paint (and print) shows the FINAL state: every step drawn, the last caption. Play or Next
+//       starts again from step 1 (segmenting). Use a unique marker id per SVG. Width is capped (figures.css).
 // Faded examples (.fade) and quizzes moved to practice.js. The ACT/CONFIRM/TRIAGE bands, band-quiz and
 // threshold explorer moved to starter/examples/jev-confidence/ as a worked example of a bespoke module.
 (function () {
@@ -38,8 +41,21 @@
   var textW = function (s, px) { return String(s).length * px * 0.6; };
 
   // ---------- bars ----------
+  // values (and alt) may be an object { label: value } or an ordered array [[label, value], …] / [{ label, value }]:
+  // object keys that look like integers ("1", "10", "2") are reordered by JavaScript, an array keeps the author's order.
+  function pairs(v) {
+    if (!Array.isArray(v)) return v || {};
+    var o = { __order: [] };
+    v.forEach(function (p) {
+      var k = Array.isArray(p) ? p[0] : p && p.label, x = Array.isArray(p) ? p[1] : p && p.value;
+      if (k == null) throw new Error('bars: each entry needs a label');
+      k = String(k); o[k] = +x; if (o.__order.indexOf(k) < 0) o.__order.push(k);
+    });
+    return o;
+  }
   function bars(el, cfg) {
-    var keys = [], add = function (o) { Object.keys(o || {}).forEach(function (k) { if (keys.indexOf(k) < 0) keys.push(k); }); };
+    cfg = Object.assign({}, cfg, { values: pairs(cfg.values), alt: cfg.alt ? pairs(cfg.alt) : cfg.alt });
+    var keys = [], add = function (o) { (o && o.__order ? o.__order : Object.keys(o || {})).forEach(function (k) { if (k !== '__order' && keys.indexOf(k) < 0) keys.push(k); }); };
     add(cfg.values); add(cfg.alt);
     if (!keys.length) throw new Error('bars need at least one value');
     keys.forEach(function (k) { if (!isFinite(cfg.values[k] || 0) || (cfg.alt && !isFinite(cfg.alt[k] || 0))) throw new Error('bar "' + k + '" is not a number'); });
@@ -211,7 +227,7 @@
     fit();
     var roFit = V.onResize(el, fit);
     var tl = L.timeline({
-      host: el, total: caps.length * D, prefix: 'stepper', keyStep: 'chapter', segment: 1100,
+      host: el, total: caps.length * D, prefix: 'stepper', keyStep: 'chapter', segment: 1100, wrap: true, // Next on the final state → step 1
       chapters: caps.map(function (c, i) { return { t: i * D, title: c.textContent.trim() }; }),
       ui: { prev: true, play: true, counter: true, next: true },
       onSeek: function (t, info) {
@@ -235,7 +251,7 @@
     el.tabIndex = el.tabIndex < 0 ? 0 : el.tabIndex;
     if (!el.getAttribute('role')) { el.setAttribute('role', 'group'); el.setAttribute('aria-roledescription', 'stepper'); }
     el.appendChild(tl.el);
-    tl.set(D * 0.9);
+    tl.set(caps.length * D); // final, true state at first paint; Play restarts from step 1
     if (capBox) capBox.setAttribute('aria-live', 'polite');
     return { timeline: tl, destroy: function () { tl.destroy(); roFit.disconnect(); } };
   }

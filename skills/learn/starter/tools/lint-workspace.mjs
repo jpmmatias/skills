@@ -12,12 +12,16 @@
 // skills.sh install ships only the skill folder: the structural rules below still run and one
 // warning says that schema validation was skipped. LEARNCRAFT_ROOT overrides the search.
 //
-// course.js and *.practice.js are evaluated in a Node `vm` context with stub globals. `vm` is not a
-// security boundary (ADR-004): run this only on your own workspace or this repository.
+// course.js and *.practice.js are JavaScript, so loading them runs them. load-data.mjs does that in a
+// separate, killable Node process with an empty environment and a vm context that reaches no host
+// object (security review SR-02). That reduces the risk of a hostile file; it does not remove it:
+// run this only on your own workspace or this repository, never on a workspace you do not trust.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep, posix } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import vm from 'node:vm';
+import { loadCourseJs, loadPracticeJs, loadDataFiles } from './load-data.mjs';
+
+export { loadCourseJs, loadPracticeJs, loadDataFiles };
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -57,42 +61,17 @@ export function loadSupport() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Loaders. Prefer D's helpers (scripts/lib/schema.mjs); fall back to an equivalent vm evaluation.
+// Loaders: one implementation for every tool (load-data.mjs; scripts/lib/schema.mjs re-exports it).
 // ---------------------------------------------------------------------------------------------
-function stubGlobals(extra = {}) {
-  const noop = () => {};
-  const doc = { addEventListener: noop, querySelector: () => null, querySelectorAll: () => [], readyState: 'complete' };
-  const win = { addEventListener: noop, document: doc, ...extra };
-  win.window = win; win.self = win; win.globalThis = win;
-  return win;
-}
-
+/** @deprecated kept for callers of the old fallback: same as loadCourseJs, but throws when COURSE is not set. */
 export function fallbackLoadCourseJs(path) {
-  const ctx = stubGlobals();
-  vm.createContext(ctx);
-  vm.runInContext(readFileSync(path, 'utf8'), ctx, { filename: path, timeout: 1000 });
-  if (!ctx.COURSE || typeof ctx.COURSE !== 'object') throw new Error('course.js did not assign window.COURSE');
-  return JSON.parse(JSON.stringify(ctx.COURSE));
+  const c = loadCourseJs(path);
+  if (!c || typeof c !== 'object') throw new Error('course.js did not assign window.COURSE');
+  return c;
 }
-
+/** @deprecated kept for callers of the old fallback: [{ n, items }]. */
 export function fallbackLoadPracticeJs(path) {
-  const calls = [];
-  const practice = (n, items) => { calls.push({ n, items: JSON.parse(JSON.stringify(items ?? null)) }); };
-  const Learncraft = new Proxy({ practice }, { get: (t, k) => (k in t ? t[k] : () => {}) });
-  const ctx = stubGlobals({ Learncraft });
-  vm.createContext(ctx);
-  vm.runInContext(readFileSync(path, 'utf8'), ctx, { filename: path, timeout: 1000 });
-  return calls;
-}
-
-async function loadCourse(path, support) {
-  if (support.schemaLib?.loadCourseJs) return await support.schemaLib.loadCourseJs(path);
-  return fallbackLoadCourseJs(path);
-}
-async function loadPractice(path, support) {
-  const calls = support.schemaLib?.loadPracticeJs ? await support.schemaLib.loadPracticeJs(path) : fallbackLoadPracticeJs(path);
-  // D's loader returns { lesson, items }; the documented interface said { n, items }. Accept both.
-  return calls.map((c) => ({ n: c.n ?? c.lesson, items: c.items }));
+  return loadPracticeJs(path).map((c) => ({ n: c.lesson, items: c.items }));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -107,29 +86,80 @@ export function stripHtml(html) {
     .replace(/(<(script|style)\b[^>]*>)([\s\S]*?)(<\/\2\s*>)/gi, (m, open, _t, body, close) => open + ' '.repeat(body.length) + close);
 }
 
+// Start-tag tokenizer following the HTML spec's attribute rules closely enough for security checks
+// (SR-03): "/" separates attributes (<svg/onload=…>), unquoted values run to whitespace or ">", the first
+// of two same-name attributes wins (as in the browser). `list` keeps every attribute, duplicates too.
+function scanAttrs(html, i, attrs, list) {
+  const n = html.length;
+  while (i < n) {
+    while (i < n && /[\s/]/.test(html[i])) i++;
+    if (i >= n || html[i] === '>') break;
+    let j = i + 1; // the first character may be "=" (spec: part of the name)
+    while (j < n && !/[\s/>=]/.test(html[j])) j++;
+    const name = html.slice(i, j).toLowerCase();
+    i = j;
+    while (i < n && /\s/.test(html[i])) i++;
+    let value = '';
+    if (html[i] === '=') {
+      i++;
+      while (i < n && /\s/.test(html[i])) i++;
+      const q = html[i];
+      if (q === '"' || q === "'") { const e = html.indexOf(q, i + 1); const end = e < 0 ? n : e; value = html.slice(i + 1, end); i = end + 1; }
+      else { let e = i; while (e < n && !/[\s>]/.test(html[e])) e++; value = html.slice(i, e); i = e; }
+    }
+    value = decodeEntities(value);
+    list.push([name, value]);
+    if (!(name in attrs)) attrs[name] = value;
+  }
+  return i;
+}
+
 export function parseAttrs(src = '') {
   const attrs = {};
-  const re = /([^\s"'<>\/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
-  let m;
-  while ((m = re.exec(src))) attrs[m[1].toLowerCase()] = decodeEntities(m[2] ?? m[3] ?? m[4] ?? '');
+  scanAttrs(src, 0, attrs, []);
   return attrs;
 }
 
+// Every named reference that decodes to ASCII (what a scheme check needs), plus the old short list.
+const NAMED = { tab: '\t', newline: '\n', excl: '!', quot: '"', num: '#', dollar: '$', percnt: '%', amp: '&', apos: "'",
+  lpar: '(', rpar: ')', ast: '*', midast: '*', plus: '+', comma: ',', period: '.', sol: '/', colon: ':', semi: ';',
+  lt: '<', equals: '=', gt: '>', quest: '?', commat: '@', lsqb: '[', lbrack: '[', bsol: '\\', rsqb: ']', rbrack: ']',
+  hat: '^', lowbar: '_', underbar: '_', grave: '`', diacriticalgrave: '`', lcub: '{', lbrace: '{', verbar: '|', vert: '|',
+  verticalline: '|', rcub: '}', rbrace: '}', nbsp: ' ', fjlig: 'fj' };
 export function decodeEntities(s) {
-  return s.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (m, e) => {
-    const k = e.toLowerCase();
-    if (k[0] === '#') return String.fromCodePoint(k[1] === 'x' ? parseInt(k.slice(2), 16) : parseInt(k.slice(1), 10));
-    return { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }[k];
+  return String(s).replace(/&(?:#[xX]([0-9a-fA-F]{1,8})|#(\d{1,10})|([A-Za-z][A-Za-z0-9]{1,31}));?/g, (m, hx, dec, name) => {
+    if (name) { const v = NAMED[name.toLowerCase()]; return v === undefined || (m.slice(-1) !== ';' && !/^(amp|lt|gt|quot|nbsp)$/i.test(name)) ? m : v; }
+    const cp = hx ? parseInt(hx, 16) : parseInt(dec, 10);
+    return cp > 0 && cp <= 0x10ffff && !(cp >= 0xd800 && cp <= 0xdfff) ? String.fromCodePoint(cp) : '�';
   });
 }
 
-/** Every start tag: { name, attrs, start, end } (end = index after '>'). */
+/** Every start tag: { name, attrs, all, start, end, raw } (end = index after '>'; all = every [name, value]). */
 export function tags(html) {
   const out = [];
-  const re = /<([a-zA-Z][\w:-]*)((?:\s+[^\s"'<>\/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*)\s*\/?>/g;
+  const re = /<([a-zA-Z][^\s/>]*)/g;
   let m;
-  while ((m = re.exec(html))) out.push({ name: m[1].toLowerCase(), attrs: parseAttrs(m[2]), start: m.index, end: re.lastIndex, raw: m[0] });
+  while ((m = re.exec(html))) {
+    const attrs = {}, all = [];
+    let i = scanAttrs(html, re.lastIndex, attrs, all);
+    const end = Math.min(html.length, i + 1);
+    out.push({ name: m[1].toLowerCase(), attrs, all, start: m.index, end, raw: html.slice(m.index, end) });
+    re.lastIndex = end;
+  }
   return out;
+}
+
+// What the browser's URL parser sees (SR-01 normalisation): references decoded, ASCII tab/LF/CR removed,
+// C0 controls and spaces trimmed. Returns { scheme, value } with scheme lower-cased ('' when relative).
+export function urlScheme(v) {
+  const probe = (x) => String(x).replace(/[\t\n\r]/g, '').replace(/^[\u0000- ]+|[\u0000- ]+$/g, '');
+  const once = probe(v), twice = probe(decodeEntities(v));
+  for (const p of [once, twice]) {
+    const m = /^([A-Za-z][A-Za-z0-9+.-]*):/.exec(p);
+    if (m && !/^(https?|mailto|tel)$/i.test(m[1])) return { scheme: m[1].toLowerCase(), value: p };
+  }
+  const m = /^([A-Za-z][A-Za-z0-9+.-]*):/.exec(once);
+  return { scheme: m ? m[1].toLowerCase() : '', value: once };
 }
 
 /** Inner HTML of the element whose start tag is at `tag` (matching depth of same-name tags). */
@@ -193,6 +223,8 @@ export function parseResources(text) {
 // Practice items (contract §4)
 // ---------------------------------------------------------------------------------------------
 const ITEM_ID = /^[a-z0-9][a-z0-9-]*$/;
+export const PRACTICE_FILE = /^lessons\/\d{4}\.practice\.js$/;
+const SAFE_REL = /^(?!\/)(?![a-z][a-z0-9+.-]*:)(?!.*(?:^|\/)\.\.(?:\/|$))[^\\\u0000-\u001f]+$/i;
 const ITEM_TYPES = new Set(['choice', 'recall', 'order', 'fade']);
 export const OPTION_RATIO_MAX = 1.6;
 
@@ -219,6 +251,38 @@ function structuralItemProblems(item) {
 // ---------------------------------------------------------------------------------------------
 // The linter
 // ---------------------------------------------------------------------------------------------
+const URL_ATTRS = new Set(['href', 'src', 'xlink:href', 'action', 'formaction', 'data', 'poster', 'background', 'ping', 'cite', 'codebase', 'manifest', 'lowsrc', 'dynsrc']);
+const NAV_ATTRS = new Set(['href', 'xlink:href', 'action', 'formaction']);
+const EMBEDS = new Set(['object', 'embed', 'applet', 'frame', 'frameset']);
+
+/**
+ * The CSP <meta> every page must carry (the templates have it): present, in <head> before any script, and with a
+ * script policy that only allows files ('self'). A missing CSP is an error (SR-03): it is the layer that stops a
+ * sanitiser or lint bypass from running.
+ */
+export function cspProblems(all) {
+  const metas = all.filter((t) => t.name === 'meta' && /^content-security-policy$/i.test(t.attrs['http-equiv'] || ''));
+  if (!metas.length) return [{ rule: 'csp-missing', message: 'no Content-Security-Policy <meta>: copy the one from the page template (templates/*.html) into <head>' }];
+  const out = [];
+  const meta = metas[0];
+  const firstScript = all.find((t) => t.name === 'script');
+  const body = all.find((t) => t.name === 'body');
+  if ((firstScript && firstScript.start < meta.start) || (body && body.start < meta.start)) out.push({ rule: 'csp-late', message: 'the Content-Security-Policy <meta> must be in <head>, before any <script> (later, it does not protect what came first)' });
+  const dir = {};
+  for (const part of String(meta.attrs.content || '').split(';')) {
+    const [k, ...v] = part.trim().split(/\s+/);
+    if (k && !(k.toLowerCase() in dir)) dir[k.toLowerCase()] = v.map((x) => x.toLowerCase());
+  }
+  const script = dir['script-src'] || dir['default-src'];
+  if (!script) out.push({ rule: 'csp-weak', message: "the CSP has neither script-src nor default-src: scripts are unrestricted (the template uses script-src 'self')" });
+  else {
+    const bad = script.filter((x) => !["'self'", "'none'"].includes(x));
+    if (bad.length) out.push({ rule: 'csp-weak', message: `the CSP script policy allows ${bad.join(' ')}: courses load scripts only from their own files (script-src 'self')` });
+  }
+  if (!dir['connect-src'] || dir['connect-src'].join(' ') !== "'none'") out.push({ rule: 'csp-weak', message: "the CSP must say connect-src 'none' (courses make no network requests)" });
+  return out;
+}
+
 const listHtml = (ws, d) => (existsSync(join(ws, d)) ? readdirSync(join(ws, d)).filter((f) => f.endsWith('.html')).sort().map((f) => `${d}/${f}`) : []);
 const toPosix = (p) => p.split(sep).join('/');
 
@@ -236,11 +300,17 @@ export async function inspectWorkspace(wsDir) {
 
   // course.js -------------------------------------------------------------------------------
   const coursePath = join(ws, 'assets', 'course.js');
+  const lessonsDir = join(ws, 'lessons');
+  const practiceFiles = existsSync(lessonsDir) ? readdirSync(lessonsDir).filter((f) => /\.practice\.js$/.test(f)).sort() : [];
+  // One loader process for course.js and every practice file (load-data.mjs).
+  const hasCourse = existsSync(coursePath);
+  const loaded = loadDataFiles([...(hasCourse ? [{ kind: 'course', path: coursePath }] : []), ...practiceFiles.map((f) => ({ kind: 'practice', path: join(lessonsDir, f) }))]);
+  const courseResult = hasCourse ? loaded.shift() : null;
   let course = null;
-  if (!existsSync(coursePath)) add('error', 'course-missing', 'assets/course.js', 'No assets/course.js: this is not a course workspace, or the manifest was deleted');
-  else {
-    try { course = await loadCourse(coursePath, support); } catch (e) { add('error', 'course-load', 'assets/course.js', `course.js did not evaluate: ${e.message}`); }
-  }
+  if (!hasCourse) add('error', 'course-missing', 'assets/course.js', 'No assets/course.js: this is not a course workspace, or the manifest was deleted');
+  else if (courseResult.error) add('error', 'course-load', 'assets/course.js', `course.js did not evaluate: ${courseResult.error}`);
+  else if (!courseResult.value || typeof courseResult.value !== 'object' || Array.isArray(courseResult.value)) add('error', 'course-load', 'assets/course.js', 'course.js did not assign window.COURSE = { … }');
+  else course = courseResult.value;
   const lessonsByFile = new Map();
   const objectives = new Set();
   if (course) {
@@ -298,7 +368,11 @@ export async function inspectWorkspace(wsDir) {
           if (typeof o?.id === 'string' && !o.id.startsWith(`l${l.n}.`)) add('warn', 'objective-id-prefix', 'assets/course.js', `objective "${o.id}" should start with "l${l.n}." (the store maps objectives to lessons by this prefix)`);
         }
       }
-      if (l?.practice && !existsSync(join(ws, l.practice))) add('error', 'practice-file-missing', 'assets/course.js', `lesson ${l.n} lists practice ${l.practice}, which does not exist`);
+      // lessons[].practice becomes a <script src> on review.html and the dashboard: a structural rule, not only
+      // the schema (skills.sh installs have no schemas), and the runtime refuses anything else (SR-04).
+      if (l?.practice != null && l.practice !== false && (typeof l.practice !== 'string' || !PRACTICE_FILE.test(l.practice))) add('error', 'practice-path', 'assets/course.js', `lesson ${l?.n}: practice ${JSON.stringify(l.practice)} must match lessons/NNNN.practice.js (the runtime ignores anything else)`);
+      else if (typeof l?.practice === 'string' && !existsSync(join(ws, l.practice))) add('error', 'practice-file-missing', 'assets/course.js', `lesson ${l.n} lists practice ${l.practice}, which does not exist`);
+      if (typeof l?.file === 'string' && !SAFE_REL.test(l.file)) add('error', 'lesson-file-path', 'assets/course.js', `lesson ${l.n}: file ${JSON.stringify(l.file)} must be a plain relative path inside the workspace (lessons/NNNN-slug.html)`);
     });
     // a planned lesson that is missing while a later one exists is a gap
     const lastWritten = Math.max(0, ...ls.filter((l) => typeof l?.file === 'string' && existsSync(join(ws, l.file))).map((l) => l.n));
@@ -325,12 +399,11 @@ export async function inspectWorkspace(wsDir) {
   // practice files ------------------------------------------------------------------------------
   const practice = new Map(); // lesson n -> items
   const itemIds = new Map();
-  const lessonsDir = join(ws, 'lessons');
-  const practiceFiles = existsSync(lessonsDir) ? readdirSync(lessonsDir).filter((f) => /\.practice\.js$/.test(f)).sort() : [];
-  for (const f of practiceFiles) {
+  for (const [k, f] of practiceFiles.entries()) {
     const rel = `lessons/${f}`;
-    let calls;
-    try { calls = await loadPractice(join(lessonsDir, f), support); } catch (e) { add('error', 'practice-load', rel, `did not evaluate: ${e.message}`); continue; }
+    const r = loaded[k];
+    if (r.error) { add('error', 'practice-load', rel, `did not evaluate: ${r.error}`); continue; }
+    const calls = (Array.isArray(r.value) ? r.value : []).map((c) => ({ n: c?.lesson, items: c?.items }));
     if (!calls.length) add('error', 'practice-load', rel, 'never calls Learncraft.practice(n, [...])');
     const fileN = /^(\d{4})\.practice\.js$/.exec(f)?.[1];
     for (const { n, items } of calls) {
@@ -377,18 +450,26 @@ export async function inspectWorkspace(wsDir) {
 
     const htmlTag = all.find((t) => t.name === 'html');
     if (!htmlTag?.attrs.lang) add('error', 'html-lang', rel, '<html> has no lang attribute (screen readers and narration need the course language)');
-    if (!all.some((t) => t.name === 'meta' && /^content-security-policy$/i.test(t.attrs['http-equiv'] || ''))) {
-      if (course?.schemaVersion === 2) add('warn', 'csp-missing', rel, 'no Content-Security-Policy <meta>; the page shell in templates/ has one');
-    }
+    // v2 pages come from templates that carry the CSP: missing or weak is an error. A v1 (pre-template) course gets
+    // the same findings as warnings, so an old course still opens but the gap is reported.
+    const cspLevel = course && course.schemaVersion >= 2 ? 'error' : 'warn';
+    for (const p of cspProblems(all)) add(cspLevel, p.rule, rel, p.message + (cspLevel === 'warn' ? ' (an error from schemaVersion 2)' : ''));
 
-    // scripts and handlers (security) ----------------------------------------------------------
+    // scripts, handlers, URLs and navigation (security; SR-03) -----------------------------------
     for (const t of all) {
-      for (const a of Object.keys(t.attrs)) {
-        if (/^on[a-z]+$/.test(a)) add('error', 'inline-handler', rel, `<${t.name} ${a}=…> inline event handler: use a component in assets/ (inline handlers run with page privileges and break the CSP)`);
+      for (const [a, v] of t.all) {
+        if (/^on/.test(a)) add('error', 'inline-handler', rel, `<${t.name} ${a}=…> inline event handler: use a component in assets/ (inline handlers run with page privileges and break the CSP)`);
+        else if (a === 'srcdoc') add('error', 'srcdoc', rel, `<${t.name} srcdoc=…> embeds a whole document (its markup can run script): link to a file instead`);
+        else if (URL_ATTRS.has(a)) {
+          const { scheme, value } = urlScheme(v);
+          if (scheme === 'javascript' || scheme === 'vbscript') add('error', 'javascript-url', rel, `<${t.name} ${a}="${scheme}:…"> (after the browser's normalisation: ${JSON.stringify(value.slice(0, 40))})`);
+          else if (scheme === 'data' && (NAV_ATTRS.has(a) || EMBEDS.has(t.name))) add('error', 'javascript-url', rel, `<${t.name} ${a}="data:…"> a data: URL here is a document that can run script`);
+          else if (/\\/.test(value) || (/^\/\//.test(value) && NAV_ATTRS.has(a))) add('error', 'network-path-url', rel, `<${t.name} ${a}="${value.slice(0, 40)}">: on file:// a leading // or a backslash becomes a network path (file://host/…, SMB on Windows)`);
+        }
       }
-      for (const a of ['href', 'src', 'xlink:href', 'action', 'formaction']) {
-        if (t.attrs[a] && /^\s*javascript:/i.test(t.attrs[a])) add('error', 'javascript-url', rel, `<${t.name} ${a}="javascript:…">`);
-      }
+      if (EMBEDS.has(t.name)) add('error', 'embed-element', rel, `<${t.name}> is not allowed in a course page (plugins and nested documents); use <img>, <video> or a link`);
+      if (t.name === 'base') add('error', 'base-element', rel, '<base> redirects every relative link and citation on the page');
+      if (t.name === 'meta' && /^refresh$/i.test(t.attrs['http-equiv'] || '')) add('error', 'meta-refresh', rel, '<meta http-equiv="refresh"> navigates the learner away without a click');
       if (t.name !== 'script') continue;
       const src = t.attrs.src;
       if (src === undefined) {

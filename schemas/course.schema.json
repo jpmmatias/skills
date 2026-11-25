@@ -113,6 +113,14 @@
           ],
           "pattern": "^LR-\\d{4}$",
           "description": "Learning record that demonstrates the milestone."
+        },
+        "objectives": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^l\\d+\\.o\\d+$"
+          },
+          "description": "Objective ids the passing challenge demonstrated (the union of the learning record's criteria[].objectives). Only these objectives show L4 (Applied); a mastered milestone without this list proves the milestone, never an objective-level L4."
         }
       },
       "anyOf": [
@@ -201,7 +209,8 @@
             "type": "integer",
             "minimum": 1
           },
-          "description": "Prerequisite lesson numbers."
+          "deprecated": true,
+          "description": "Deprecated and ignored by the runtime: prerequisites (as objective ids) live in NOTES.md, their single home. Still accepted as lesson numbers so older courses validate."
         }
       }
     },

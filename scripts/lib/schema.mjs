@@ -8,13 +8,15 @@
 // ignored. Any other keyword is reported by checkSchema(), so a schema cannot silently rely on something this
 // validator does not enforce. A full validator (e.g. ajv) can replace this one without changing the schemas.
 //
-// Security: loadCourseJs/loadPracticeJs evaluate files with node:vm. vm is NOT a security boundary; run them only
-// on the learner's own workspace and on this repository, never on untrusted files.
+// Security: loadCourseJs/loadPracticeJs RUN the data files (they are JavaScript). They are re-exported from the
+// skill's own loader (skills/learn/starter/tools/load-data.mjs), which runs them in a separate, killable Node process
+// with no environment, no code generation from strings, Node's permission model when available and a vm context with
+// no host objects. That reduces the risk of a hostile file; it does not remove it. Run them only on the learner's own
+// workspace and on this repository, never on files you do not trust.
 
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import vm from 'node:vm';
 
 export const SCHEMA_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'schemas');
 
@@ -196,17 +198,9 @@ export function loadSchema(name) {
   return JSON.parse(readFileSync(join(SCHEMA_DIR, `${name}.schema.json`), 'utf8'));
 }
 
-// ---------- loaders (node:vm; not a security boundary) ----------
+// ---------- loaders (one implementation, shipped inside the skill; see the security note at the top) ----------
 
-function runScript(path, extra) {
-  const code = readFileSync(path, 'utf8');
-  const sandbox = { console: { log() {}, warn() {}, error() {}, info() {} }, ...extra };
-  sandbox.window = sandbox; // `window.COURSE = …` and a top-level `var COURSE` both land on the sandbox
-  const ctx = vm.createContext(sandbox, { codeGeneration: { strings: false, wasm: false } });
-  vm.runInContext(code, ctx, { filename: path, timeout: 1000 });
-  return sandbox;
-}
-const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v))); // leave the vm realm; drop functions
+export { loadCourseJs, loadPracticeJs, loadDataFiles } from '../../skills/learn/starter/tools/load-data.mjs';
 
 /**
  * Load a UMD classic script (e.g. skills/learn/starter/assets/store.js) as CommonJS in this realm and return its
@@ -217,19 +211,6 @@ export function requireClassic(path) {
   const module = { exports: {} };
   new Function('module', 'exports', readFileSync(path, 'utf8'))(module, module.exports); // trusted repo file only
   return module.exports;
-}
-
-/** Evaluate a course.js and return a plain copy of window.COURSE (undefined if the file does not set it). */
-export function loadCourseJs(path) {
-  const sb = runScript(path, { Learncraft: {} });
-  return plain(sb.COURSE);
-}
-
-/** Evaluate an NNNN.practice.js and return its Learncraft.practice(n, items) calls as [{lesson, items}]. */
-export function loadPracticeJs(path) {
-  const calls = [];
-  runScript(path, { Learncraft: { practice(lesson, items) { calls.push(plain({ lesson, items })); } } });
-  return calls;
 }
 
 // ---------- semantic lints (rules a JSON Schema subset cannot express) ----------

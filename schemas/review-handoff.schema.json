@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/jpmmatias/skills/main/schemas/review-handoff.schema.json",
   "title": "Learncraft lesson-panel handoff files",
-  "description": "Frontmatter of the files under .review/<slug>/ (raw/02-ai-architecture.md Proposal 3): state.md ($defs.state, orchestrator-owned), r<N>-author.md ($defs.author) and r<N>-<role>.md ($defs.review). Validate one file with validate(schema, data, {ref: \"#/$defs/state\"}). Cross-file rules (reviewed_sha256 equals the author's content_sha256) and \"REVISE needs a blocker or major item\" (handoffLint) are checked outside the schema.",
+  "description": "Frontmatter of the files under .review/l<N>/ (raw/02-ai-architecture.md Proposal 3): state.md ($defs.state, orchestrator-owned), r<R>-author.md ($defs.author) and r<R>-<role>.md ($defs.review). Validate one file with validate(schema, data, {ref: \"#/$defs/state\"}). Cross-file rules (reviewed_sha256 equals the author's content_sha256) and \"REVISE needs a blocker or major item\" (handoffLint) are checked outside the schema.",
   "oneOf": [
     {
       "$ref": "#/$defs/state"
@@ -46,7 +46,7 @@
         "round": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 3
+          "maximum": 4
         },
         "round_cap": {
           "type": "integer",
@@ -134,11 +134,16 @@
               }
             }
           }
+        },
+        "budget_extension": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Why the round budget was extended (Deep: one extra revision after escalation, round 4)."
         }
       }
     },
     "author": {
-      "title": "r<N>-author.md",
+      "title": "r<R>-author.md",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -155,7 +160,7 @@
         "round": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 3
+          "maximum": 4
         },
         "content_sha256": {
           "type": "string",
@@ -258,7 +263,7 @@
       ]
     },
     "review": {
-      "title": "r<N>-<role>.md",
+      "title": "r<R>-<role>.md",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -285,7 +290,7 @@
         "round": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 3
+          "maximum": 4
         },
         "reviewed_sha256": {
           "type": "string",

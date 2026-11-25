@@ -111,6 +111,10 @@
               }
             }
           }
+        },
+        "pretest": {
+          "type": "boolean",
+          "description": "Asked before teaching (a guess). Recorded with context 'diagnostic': never a first try, never counted toward levels, XP, the lesson counter or review entry, and never drawn into a review session."
         }
       }
     },
@@ -158,15 +162,49 @@
           "type": "array",
           "minItems": 1,
           "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 200
-          }
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "answer"
+                ],
+                "properties": {
+                  "answer": {
+                    "type": [
+                      "string",
+                      "number"
+                    ],
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "tolerance": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "This answer's own numeric tolerance (overrides the item's)."
+                  }
+                }
+              }
+            ]
+          },
+          "description": "Accepted answers: strings (compared with matchAnswer: case, accents, quotes, dashes, spacing, leading/trailing punctuation), numbers, or { answer, tolerance } with its own numeric tolerance."
         },
         "tolerance": {
           "type": "number",
           "minimum": 0,
           "description": "Numeric answers within ± tolerance are accepted."
+        },
+        "pretest": {
+          "type": "boolean",
+          "description": "Asked before teaching (a guess). Recorded with context 'diagnostic': never a first try, never counted toward levels, XP, the lesson counter or review entry, and never drawn into a review session."
         }
       }
     },
@@ -219,6 +257,10 @@
             "minLength": 1,
             "maxLength": 500
           }
+        },
+        "pretest": {
+          "type": "boolean",
+          "description": "Asked before teaching (a guess). Recorded with context 'diagnostic': never a first try, never counted toward levels, XP, the lesson counter or review entry, and never drawn into a review session."
         }
       }
     },
@@ -295,6 +337,10 @@
         "tolerance": {
           "type": "number",
           "minimum": 0
+        },
+        "pretest": {
+          "type": "boolean",
+          "description": "Asked before teaching (a guess). Recorded with context 'diagnostic': never a first try, never counted toward levels, XP, the lesson counter or review entry, and never drawn into a review session."
         }
       }
     }

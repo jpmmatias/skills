@@ -35,7 +35,8 @@ When sources disagree:
 |---|---|---|
 | `learn:<courseId>:v2` | The v2 document (below) | Yes. The whole document is rewritten on every append. |
 | `learn:<courseId>` | v0 progress `{xp, answers{"L<n>:<id>": {ok, at}}, lessons{n: {stage, last}}}` | **Never.** It is read once to migrate, and never written or deleted. |
-| `learn:<courseId>:v2:corrupt` | The raw value of an unparseable or invalid v2 key, kept before starting over | Once, on load, best effort |
+| `learn:<courseId>:v2:corrupt` | The raw value of the **newest** unparseable or invalid v2 value, kept before starting over | On load, or when a write finds a corrupt value; best effort |
+| `learn:<courseId>:v2:corrupt:<ISO time>` · `…:corrupt:index` | Older corrupt values, moved aside when a newer one arrives; the index lists them. Only the newest 3 are kept (bounded) | Same |
 
 The v2 document has the same shape as an export, minus `exportedAt`:
 
@@ -72,7 +73,8 @@ The event log is **append-only**. The API has no edit or delete. Events are froz
 - **Shape:** it must have the right types and a known kind, source, context and outcome. Numbers must be finite numbers, and the kind-specific requirements must hold.
 - **Rebuilt, not trusted:** the event is rebuilt from known fields only, so unknown fields are dropped.
 - **Parsing:** JSON is parsed with a reviver that deletes `__proto__`, `constructor` and `prototype` keys at every depth.
-- **Rejected events** are counted in `load().rejected` and dropped. A document with a newer `schemaVersion` is opened read-only and never overwritten (`reason: 'newer-format'`).
+- **Dates:** `at`, `due`, `createdAt` and `updatedAt` must be strict ISO 8601 (the schema's pattern), a real calendar date and time, with a year from 2000 to 2199. Imported events dated more than one day in the future are rejected.
+- **Rejected events** are counted in `load().rejected` and never derived from. Stored events that are objects but fail validation (a newer `kind`, a longer field) are **quarantined**: kept verbatim (up to 500 events / 500 000 characters; any overflow goes to a corrupt backup), written back on every save, included in exports, re-validated on every load. `load().quarantined` and `store.quarantined()` count them. A document with a newer `schemaVersion` is opened read-only and never overwritten (`reason: 'newer-format'`), at load and at every later write.
 
 ## 4. Derivations: exact rules
 
@@ -97,18 +99,18 @@ Highest satisfied level wins. Thresholds follow raw/03-pedagogy.md §4 with the 
 | L1 | Seen | any `exposure` for the objective's lesson (`lesson` option, or the `l<n>` / `l<n>.` prefix of the objective id), or any attempt or review on the objective |
 | L2 | Familiar | ≥ 2 items with a first try, and first-try accuracy ≥ 0.6. Migrated legacy answers count here. |
 | L3 | Understood | Over **non-legacy** first tries only: ≥ 3 items, accuracy ≥ 0.8, and ≥ 1 unassisted correct first try of a recall type (`recall`, `fade`, `order`, `label`, `explain`; the type comes from `itemType` or the `itemTypes` map) |
-| L4 | Applied | `milestoneMastered: true` from the caller. `course.js` milestone status is the source of truth, set only after an agent challenge review. |
+| L4 | Applied | `milestoneMastered: true` from the caller. `course.js` milestone status is the source of truth, set only after an agent challenge review. The browser passes it **per objective**, only for objectives listed in a mastered milestone's `objectives` (from the record's `criteria[].objectives`); a mastered milestone without that list gives no objective L4. |
 | L5 | Retained | (L3 or L4) **and** a passed `review_session` taken ≥ 7 days after the previous success on the objective (an unassisted correct first try or a passed review) **and** the latest review passed. A failed latest review drops L5 until the next pass; it never deletes history. |
 | L6 | Transferred | `transferDemonstrated: true` from the caller (a challenge review with `transfer: true`) |
 
-`basis` returns `{attempts, items, firstTryCorrect, recallCorrect, reviews, legacy}`, so the UI can show how thin the evidence is. Never raises a level: opening a lesson twice, time on the page, retries after feedback, assisted answers, claims and agent estimates.
+`basis` returns `{attempts, items, firstTryCorrect, recallCorrect, reviews, legacy}`, so the UI can show how thin the evidence is. Attempts with `context: 'diagnostic'` (pretest guesses, items with `pretest: true`) are ignored by every derivation: never a first try, never in a level, XP, `lessonStats` or review entry. Never raises a level: opening a lesson twice, time on the page, retries after feedback, assisted answers, claims and agent estimates.
 
 ### Review schedule (`deriveSchedule(events, objective, {itemIds, now, t, formatDate, lesson})`)
 Leitner, five boxes, intervals **1 / 3 / 7 / 14 / 30 days**. Each card is one objective.
 
 1. **Entry.**
-   - When every id in `itemIds` has at least one attempt, the card enters box 1, due at entry + 1 day.
-   - Without `itemIds`, the first attempt on the objective enters it.
+   - **The runtime's one rule:** the first (non-diagnostic) attempt on the objective enters box 1, due at entry + 1 day. The browser never passes `itemIds`.
+   - The pure function still accepts `itemIds` ("every listed id has an attempt") for callers that want the stricter rule.
    - A `migration` event for the objective's lesson sets the legacy box (1 or 2) and its due date.
 2. **What moves a card.** Only `review_session` events. Attempts on lesson pages never move boxes.
 3. **Pass on or after the due date:** `box = min(box + 1, 5)`, `due = review time + interval[box]`. Being overdue gives no bonus and no penalty.
@@ -120,7 +122,7 @@ Leitner, five boxes, intervals **1 / 3 / 7 / 14 / 30 days**. Each card is one ob
    - `scheduled`: due date in the future.
    - `due`: now ≥ due date.
    - `lapsed`: the last review failed. This takes precedence over `due`.
-8. **Explanation strings.** Every change produces one, in English by default, e.g. `Nov 28: 1/2 correct → back to box 1, due Nov 29`, with UTC dates. An optional `t(key, vars)` translates the keys `schedule.new|enter|migrated|pass|early|fail`, using vars `date, correct, total, box, due`. If `t` returns the key itself or an empty value, the English string is used. `formatDate(ms)` overrides the date format.
+8. **Explanation strings.** Every change produces one, in English by default, e.g. `Nov 28: 1/2 correct → back to box 1, due Nov 29`, with UTC dates. An optional `t(key, vars)` translates the keys `schedule.new|first|enter|migrated|pass|early|fail`, using vars `date, correct, total, box, due`. If `t` returns the key itself or an empty value, the English string is used. `formatDate(ms)` overrides the date format.
 9. **Return value:** `{box, due, status, explanation, log}`. `due` is epoch milliseconds or `null`; `log` lists every explanation in order.
 
 A **review session passes** when the first-attempt correct share is ≥ 0.8; with two items, both must be right (`recordReviewSession`). `due(now, {itemIds})` lists due cards sorted by `(now − due) / interval[box]`, descending. A migrated lesson card `l<n>` is hidden once any `l<n>.*` objective has its own events; the migrated schedule still applies to those objectives through rule 1. The UI caps the list at 10.
@@ -146,21 +148,22 @@ Why the stored values cannot be trusted:
 
 **Why v0 is never deleted or written.** Leaving it untouched makes migration reversible:
 - Rolling back to an older runtime finds its data intact.
-- A corrupt v2 key can be re-migrated. Load backs up the bad value to `:v2:corrupt` and migrates v0 again.
+- A corrupt v2 key can be re-migrated. Load backs up the bad value to `:v2:corrupt` (older backups move to timestamped keys) and migrates v0 again.
 - The v0 key needs no separate backup copy, because it is never modified.
 
 Once `learn:<id>:v2` exists, v0 is ignored.
 
 ## 6. Export and import
 
-- **Export** (`exportJSON()`, `exportFilename()`) returns the v2 document plus `exportedAt`, pretty-printed, as `progress-<course>-<YYYY-MM-DD>.json`. The page saves it through a download link, which works on `file://`. The agent reads exports from the workspace's `progress/` folder.
+- **Export** (`exportJSON()`, `exportFilename()`) returns the v2 document plus `exportedAt`, pretty-printed, as `progress-<course>-<YYYY-MM-DD>.json` (UTC date; the dashboard uses this name). Quarantined events are included. The page saves it through a download link, which works on `file://`. The agent reads exports from the workspace's `progress/` folder.
 - **Import** (`importJSON(text, {force})`):
+  0. Refuses files over 5 000 000 characters or with more than 20 000 events, with a message saying so (`LIMITS`).
   1. Parses with the safe reviver.
   2. Requires `format: "learncraft-progress"` and `schemaVersion: 2`.
   3. **Refuses a different `course`** unless `{force: true}`.
   4. Validates each event; invalid events become `errors` (`events[i]: reason`, at most 50) and the valid ones are still added.
   5. Dedupes by `id`. Events without a `source` get `source: "import"`; existing sources are kept.
-  6. Merges in time order and returns `{added, skipped, errors}`.
+  6. Merges in time order and returns `{added, skipped, errors}`. Two non-enumerable extras: `persisted` (false when the merged log could not be saved: storage full or blocked; the dashboard then says "imported into this page only, NOT saved") and `reason`.
 - Import is idempotent: re-importing the same file adds nothing.
 
 ## 7. Privacy and data ownership
@@ -179,11 +182,15 @@ Once `learn:<id>:v2` exists, v0 is ignored.
 
 | Situation | Behaviour |
 |---|---|
-| Normal append | Re-read the stored document, merge by id (so a second tab's events are not clobbered), write the whole document |
+| Normal append | If the stored value is not the one this store last wrote, re-read it and merge by id (so a second tab's events are not clobbered); then write the whole document. Ids are kept in an in-memory set (no O(n) scans per event). |
+| Every write | Returns `{ ok, persisted, reason }`, kept in `store.lastWrite`. A failed write calls every subscriber with `(store, { type: 'write', persisted: false, reason })`; `progress.js` then shows the storage notice and announces it once. |
+| Another tab wrote (`storage` event on the key) | `refresh()` merges the stored document and calls subscribers with `{ type: 'external' }`; the dashboard and lesson strip redraw. |
+| A write finds a newer `schemaVersion` | Nothing is written; `persistent = false`, `reason: 'newer-format'`, subscribers are told. |
+| A write finds a corrupt value | It is backed up (as at load), then replaced. |
 | `QuotaExceededError` (`name`, or `code` 22 or 1014) | Compact `exposure` events older than 90 days into one count event **per lesson**, so L1 still holds; never compact attempts. Retry once. If it still fails, `persistent = false` and the store keeps working in memory. |
 | `localStorage` access or `getItem` throws (private mode, blocked site data, sandbox) | `load()` returns `persistent: false`. Everything works in memory, and export still works. The UI shows a one-line notice (C1). |
 | `setItem` throws for any other reason | `persistent = false` from then on |
-| Stored v2 unparseable, or for another course | Backup to `:v2:corrupt`, migrate v0 if present, otherwise start empty. `ok: false`, `reason: 'corrupt'`. |
+| Stored v2 unparseable, or for another course | Backup to `:v2:corrupt` (bounded, timestamped history), migrate v0 if present, otherwise start empty. `ok: false`, `reason: 'corrupt'`. |
 | Stored `schemaVersion` > 2 | Read-only: `persistent: false`, `reason: 'newer-format'`. It is never overwritten. |
 | Template course id `topic-slug` | `load().templateId === true` (C1 warns), and `courseLint` reports it |
 
@@ -221,9 +228,10 @@ Once `learn:<id>:v2` exists, v0 is ignored.
   | `handoffLint` | `REVISE` needs a blocker or major item |
 
 - **Loaders.**
-  - `loadCourseJs(path)` evaluates `course.js` in `node:vm`, with a stub `window`, a 1000 ms timeout and string code generation disabled, and returns a plain copy of `COURSE`.
-  - `loadPracticeJs(path)` captures the `Learncraft.practice(n, items)` calls.
-  - **`vm` is not a security boundary.** Run the loaders only on the learner's own workspace and on this repository.
+  - One implementation, shipped inside the skill: `skills/learn/starter/tools/load-data.mjs` (`schema.mjs` and `lint-workspace.mjs` re-export it, so a skills.sh install has it too).
+  - `loadCourseJs(path)` returns a plain copy of `COURSE` (undefined when unset); `loadPracticeJs(path)` returns the `Learncraft.practice(n, items)` calls as `[{lesson, items}]`; `loadDataFiles([{kind, path}])` loads many files in one process (the linter uses it).
+  - They run each file in a **separate Node process** (`spawnSync` of the same Node binary): hard kill after 3 s (+0.5 s per extra file), `--disallow-code-generation-from-strings`, a 256 MB heap cap, an **empty environment**, Node's permission model when available (the child may read only the loader file: no other file reads, no writes, no child processes, no workers; the network is not covered), the file text on stdin, at most 8 MB of JSON back on stdout. Inside the child the file runs in a `node:vm` context created from a null-prototype object whose stubs are built inside the context (no host function is reachable), with `microtaskMode: 'afterEvaluate'` and serialisation under the 1000 ms timeout. Linting the starter template workspace takes about 40 ms more than the old in-process loader.
+  - **This reduces the risk of a hostile file; it does not remove it.** It is still the learner's own machine: run the loaders (and `check.mjs`, the linter, the validator) only on the learner's own workspace and on this repository, never on a workspace you do not trust.
 - **`requireClassic(path)`** loads `store.js` in Node. The repository's `package.json` sets `"type": "module"`, which makes Node treat every `.js` file as ESM, so a plain `require()` would not run the UMD's `module.exports` branch.
 - **Tests.** `tests/store.test.mjs` and `tests/schema.test.mjs`. The fixtures in `tests/fixtures/data/<schema>/` are named `good-*`, `bad-*` (with the expected error in `expectations.json`) and `lint-*`.
 

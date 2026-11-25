@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Headless check for a teaching workspace: run it before telling the learner a lesson is ready.
 //
-//   node "<skill folder>/starter/tools/check.mjs" [workspace] [--only=0001] [--no-axe]
+//   node "<skill folder>/starter/tools/check.mjs" [workspace] [--only=0001] [--no-axe] [--allow-workspace-playwright]
 //
 // <skill folder> is the folder that holds the learn skill's SKILL.md (Claude Code: ${CLAUDE_SKILL_DIR}).
 // The script runs from there and only reads it; everything it writes goes to <workspace>/.check/.
@@ -9,8 +9,15 @@
 // Tools (once per machine, into a folder that survives skill updates; see resolve.mjs):
 //   npm install --prefix ~/.cache/learncraft/tools playwright@1.63.0 axe-core@4.10.2
 //   npx --prefix ~/.cache/learncraft/tools playwright install chromium
-// Playwright is also found in the workspace's node_modules, next to this script, in the global npm
-// root or on NODE_PATH. axe-core is optional: without it the accessibility scan is skipped (and said so).
+// Playwright is also found next to this script (or above it), in the global npm root or on NODE_PATH.
+// The workspace's own node_modules (and its parents) are searched only with --allow-workspace-playwright:
+// a course inside a repository must not decide which code the check runs. The resolved path is printed
+// before it is loaded. axe-core is optional: without it the accessibility scan is skipped (and said so).
+//
+// SECURITY: this RUNS the workspace's JavaScript. Step 1 executes assets/course.js and lessons/*.practice.js
+// in Node (in a separate, killable process with no environment; see load-data.mjs), and step 2 opens every
+// page in Chromium. The isolation reduces the risk of a hostile file; it does not remove it. Run it only on
+// your own workspace, never on one you do not trust.
 //
 // What it does:
 //   1. Lints the workspace data (lint-workspace.mjs): course.js, practice files, citations,
@@ -41,6 +48,7 @@ const args = process.argv.slice(2);
 const ws = resolve(args.find((a) => !a.startsWith('--')) ?? '.');
 const only = args.find((a) => a.startsWith('--only='))?.slice(7);
 const useAxe = !args.includes('--no-axe');
+const allowWorkspace = args.includes('--allow-workspace-playwright');
 if (!existsSync(ws)) { console.error(`No such workspace: ${ws}`); process.exit(1); }
 
 // 1. Data lint ----------------------------------------------------------------------------------
@@ -51,14 +59,14 @@ console.log(formatFindings(lint.findings));
 console.log('');
 
 // 2. Browser ------------------------------------------------------------------------------------
-const { playwright, reason, from } = loadPlaywright(ws);
+const { playwright, reason, from } = loadPlaywright(ws, { allowWorkspace, onResolve: (p, where) => console.log(`(loading playwright from ${where}: ${p})`) });
 if (!playwright) {
   console.log(reason);
   console.log('\nThe browser check did NOT run. Do not report the lesson as verified.');
   process.exit(1);
 }
 const { chromium } = playwright;
-const axePath = useAxe ? resolveTool('axe-core/axe.min.js', ws)?.path : null;
+const axePath = useAxe ? resolveTool('axe-core/axe.min.js', ws, { allowWorkspace })?.path : null;
 const axeSource = axePath ? readFileSync(axePath, 'utf8') : null;
 console.log(`(playwright from ${from}; axe-core ${axeSource ? 'from ' + axePath : useAxe ? 'not found: accessibility scan skipped' : 'disabled'})`);
 

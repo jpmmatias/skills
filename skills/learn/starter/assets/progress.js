@@ -43,7 +43,7 @@
     'ms.of': '{i} of {n}', 'basis': '{right} of {tried} right on the first try', 'basis.none': 'nothing answered yet', 'basis.challenge': 'from your reviewed challenge',
     'basis.recall': { one: '1 recalled from memory', other: '{n} recalled from memory' },
     'review.due': 'due {date}', 'review.now': 'due now', 'review.lapsed': 'missed last time, due {date}',
-    'review.new': 'starts the day after you finish the practice',
+    'review.new': 'starts the day after your first practice answer',
     'next.title': 'Next up', 'next.review': { one: 'Review 1 topic that is due', other: 'Review {n} topics that are due' },
     'next.reviewHint': 'A few questions from memory, about {min} minutes.',
     'next.continue': 'Continue lesson {n}: {title}', 'next.start': 'Start lesson {n}: {title}',
@@ -60,6 +60,10 @@
     'record.help': 'Progress lives in this browser only. Export it to keep a copy or to share it with your teacher; import it in another browser. The export includes what you typed in recall answers, so your teacher can see your reasoning.',
     'record.xp': '{xp} XP from first-try answers',
     'record.imported': 'Imported: {added} new, {skipped} already here.', 'record.importErrors': '{n} could not be read.',
+    'record.notSaved': 'Imported {added} into this page only: they are NOT saved (browser storage is full or blocked). Export now to keep them.',
+    'record.tooBig': '{reason}',
+    'storage.lost': 'Your last answers were not saved: browser storage is full or blocked. Practice still works; use Export on the course page before you close this page.',
+    'storage.newer': 'Progress was saved by a newer version of this course in another tab, so this page stopped saving to avoid overwriting it. Reload the page.',
     'record.exported': 'Saved {file}.', 'record.bad': 'That file is not a Learncraft progress file.',
     'unverified': 'not independently verified', 'unverified.short': 'unverified'
   });
@@ -79,7 +83,7 @@
     'ms.of': '{i} de {n}', 'basis': '{right} de {tried} certas na primeira tentativa', 'basis.none': 'nada respondido ainda', 'basis.challenge': 'pelo seu desafio revisado',
     'basis.recall': { one: '1 lembrada de memória', other: '{n} lembradas de memória' },
     'review.due': 'prevista para {date}', 'review.now': 'para agora', 'review.lapsed': 'errada da última vez, prevista para {date}',
-    'review.new': 'começa no dia seguinte ao fim da prática',
+    'review.new': 'começa no dia seguinte à sua primeira resposta na prática',
     'next.title': 'A seguir', 'next.review': { one: 'Revisar 1 tópico pendente', other: 'Revisar {n} tópicos pendentes' },
     'next.reviewHint': 'Algumas perguntas de memória, cerca de {min} minutos.',
     'next.continue': 'Continuar a lição {n}: {title}', 'next.start': 'Começar a lição {n}: {title}',
@@ -96,6 +100,10 @@
     'record.help': 'O progresso fica só neste navegador. Exporte para guardar uma cópia ou compartilhar com o professor; importe em outro navegador. A exportação inclui o que você digitou nas respostas de memória, para o professor ver o seu raciocínio.',
     'record.xp': '{xp} XP de respostas certas na primeira tentativa',
     'record.imported': 'Importado: {added} novos, {skipped} já existiam.', 'record.importErrors': '{n} não puderam ser lidos.',
+    'record.notSaved': '{added} importados só nesta página: NÃO foram salvos (o armazenamento do navegador está cheio ou bloqueado). Exporte agora para guardá-los.',
+    'record.tooBig': 'Nada foi importado (o arquivo passa do limite): {reason}',
+    'storage.lost': 'Suas últimas respostas não foram salvas: o armazenamento do navegador está cheio ou bloqueado. A prática continua funcionando; use Exportar na página do curso antes de fechar esta página.',
+    'storage.newer': 'O progresso foi salvo por uma versão mais nova deste curso em outra aba, então esta página parou de salvar para não sobrescrevê-lo. Recarregue a página.',
     'record.exported': '{file} salvo.', 'record.bad': 'Esse arquivo não é um arquivo de progresso do Learncraft.',
     'unverified': 'não verificado de forma independente', 'unverified.short': 'não verificado'
   });
@@ -104,26 +112,32 @@
   const st = () => LC.courseStore && LC.courseStore();
   const safe = (fn, dflt) => { try { const v = fn(); return v == null ? dflt : v; } catch (e) { console.error('[learncraft]', e); return dflt; } };
   const fmtDate = (ms) => { try { return new Intl.DateTimeFormat(LC.lang(), { month: 'short', day: 'numeric' }).format(new Date(ms)); } catch (e) { return new Date(ms).toDateString(); } };
-  const href = (rel) => LC.rootURL + String(rel || '').replace(/^\.?\//, '');
+  // Course data picks link targets only inside the workspace (no scheme, "..", "\\" or absolute path).
+  const href = (rel) => (LC.workspaceHref ? LC.workspaceHref(String(rel || '').replace(/^\.?\//, '')) : LC.rootURL + String(rel || '').replace(/^\.?\//, ''));
   const lessonsOf = (c) => (c.lessons || []).slice().sort((a, b) => a.n - b.n);
   const objectivesOf = (l) => (l.objectives && l.objectives.length ? l.objectives.map((o) => o.id) : ['l' + l.n]);
   const msById = (c) => (c.milestones || []).reduce((m, x) => { m[x.id] = x; return m; }, {});
 
   // ---------- derived lesson state (all from the store) ----------
+  // L4 "Applied" is granted per objective, and only to the objectives a mastered milestone's challenge demonstrated:
+  // milestone.objectives (copied from the passing learning record's criteria). A mastered milestone without that
+  // list proves the milestone (shown as such), never an objective-level L4 (SK-01).
+  const provenObjectives = (c) => (c.milestones || []).reduce((set, m) => {
+    if (m && m.status === 'mastered' && Array.isArray(m.objectives)) m.objectives.forEach((o) => { if (typeof o === 'string') set[o] = true; });
+    return set;
+  }, Object.create(null));
   function lessonState(c, l, s, ids, types) {
-    const ms = msById(c);
-    const mastered = (l.milestones || []).length > 0 && (l.milestones || []).every((id) => ms[id] && ms[id].status === 'mastered');
+    const proven = provenObjectives(c);
     const knownIds = ids && ids.length ? ids : null;
     const stats = s ? safe(() => s.lessonStats(l.n, knownIds || undefined), null) : null;
     const total = knownIds ? knownIds.length : (stats && stats.items) || 0;
     let level = 0, review = null, recall = 0;
     objectivesOf(l).forEach((o, i) => {
       if (!s) return;
-      const lv = safe(() => s.level(o, { itemTypes: types || {}, milestoneMastered: mastered }), { level: 0 });
+      const lv = safe(() => s.level(o, { itemTypes: types || {}, milestoneMastered: proven[o] === true }), { level: 0 });
       level = i === 0 ? +lv.level || 0 : Math.min(level, +lv.level || 0);
       if (lv.basis && typeof lv.basis === 'object') recall += +lv.basis.recallCorrect || 0;
-      const objIds = knownIds && (LC.practiceItems ? LC.practiceItems(l.n).filter((it) => it.objective === o).map((it) => it.id) : null);
-      const sc = safe(() => s.schedule(o, { itemIds: objIds && objIds.length ? objIds : knownIds || undefined }), null);
+      const sc = safe(() => s.schedule(o), null); // one entry rule everywhere: the first answer on the objective
       if (sc && sc.due && sc.status !== 'new' && (!review || sc.due < review.due)) review = sc;
     });
     const tried = stats ? stats.attempted || 0 : 0, right = stats ? stats.firstTryCorrect || 0 : 0;
@@ -146,12 +160,29 @@
     const c = C(), s = st(), out = [];
     if (c && c.example === true) out.push(html`<p class="lc-banner">${t('example.banner')}</p>`);
     const r = s && s.loadResult;
-    if (!s || s.persistent === false || (r && r.persistent === false)) out.push(html`<p class="lc-notice" role="note">${t('storage.off')}</p>`);
-    if (!out.length) return;
-    const box = doc.createElement('div');
-    box.className = 'lc-notices';
-    box.innerHTML = html`${out}`;
-    host.insertBefore(box, host.firstChild);
+    const off = !s || s.persistent === false || (r && r.persistent === false);
+    if (off) out.push(html`<p class="lc-notice" role="note" data-lc-storage="${r && r.reason === 'newer-format' ? 'newer' : 'off'}">${t(r && r.reason === 'newer-format' ? 'storage.newer' : 'storage.off')}</p>`);
+    if (out.length) {
+      const box = doc.createElement('div');
+      box.className = 'lc-notices';
+      box.innerHTML = html`${out}`;
+      host.insertBefore(box, host.firstChild);
+    }
+    // Saving can also stop later (quota filled by another course, a newer tab): say so the first time (SR-05).
+    if (s && s.subscribe && !host.__lcStorageWatch) {
+      host.__lcStorageWatch = true;
+      s.subscribe((_, info) => {
+        if (!info || info.type !== 'write' || info.persisted !== false || host.querySelector('[data-lc-storage]')) return;
+        const key = info.reason === 'newer-format' ? 'storage.newer' : 'storage.lost';
+        let box = host.querySelector('.lc-notices');
+        if (!box) { box = doc.createElement('div'); box.className = 'lc-notices'; host.insertBefore(box, host.firstChild); }
+        const p = doc.createElement('p');
+        p.className = 'lc-notice'; p.setAttribute('role', 'note'); p.setAttribute('data-lc-storage', 'lost');
+        p.textContent = t(key);
+        box.appendChild(p);
+        LC.announce(t(key));
+      });
+    }
   }
   function markUnverified() {
     doc.querySelectorAll('.unverified').forEach((el) => {
@@ -180,7 +211,7 @@
     const showGoal = l.canDo && main.textContent.replace(/\s+/g, ' ').indexOf(String(l.canDo).trim()) < 0;
     el.innerHTML = html`${showGoal ? html`<p class="lc-goal">${t('goal', { canDo: l.canDo })}</p>` : ''}
       <dl class="lc-facts">
-        ${mains.length ? html`<div><dt>${t('strip.milestone')}</dt><dd>${mains.map((m, i) => html`${i ? ', ' : ''}<strong>${m.label}</strong> <span class="lc-muted">(${t('ms.of', { i: all.indexOf(m) + 1, n: all.length })})</span>`)}</dd></div>` : ''}
+        ${mains.length ? html`<div><dt>${t('strip.milestone')}</dt><dd>${mains.map((m, i) => html`${i ? ', ' : ''}<strong>${m.label}</strong> <span class="lc-muted">(${t('ms.of', { i: all.indexOf(m) + 1, n: all.length })}${m.status === 'mastered' ? html` · ${t('ms.done')}` : ''})</span>`)}</dd></div>` : ''}
         <div><dt>${t('strip.practice')}</dt><dd><strong class="lc-level">${t('level.' + state.level)}</strong> · ${basis(state)}</dd></div>
         <div><dt>${t('strip.review')}</dt><dd>${reviewText(state.review)}</dd></div>
       </dl>${ladder(state.level)}`;
@@ -248,8 +279,7 @@
     const say = (text) => { msg.textContent = text; LC.announce(text); };
     host.querySelector('.lc-export').addEventListener('click', () => {
       if (!s) return say(t('storage.off'));
-      const d = new Date(), day = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-      const file = 'progress-' + String(c.id || 'course').replace(/[^A-Za-z0-9_-]+/g, '-') + '-' + day + '.json'; // local date
+      const file = s.exportFilename ? s.exportFilename() : 'progress-' + String(c.id || 'course').replace(/[^A-Za-z0-9_-]+/g, '-') + '-' + new Date().toISOString().slice(0, 10) + '.json'; // UTC date, as the store
       const url = URL.createObjectURL(new Blob([s.exportJSON()], { type: 'application/json' }));
       const a = doc.createElement('a'); a.href = url; a.download = file; doc.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -263,7 +293,11 @@
         const r = safe(() => s.importJSON(String(rd.result)), null);
         if (!r) return say(t('record.bad'));
         const errs = (r.errors || []).length;
-        say(!r.added && !r.skipped && errs ? t('record.bad') : t('record.imported', { added: r.added || 0, skipped: r.skipped || 0 }) + (errs ? ' ' + t('record.importErrors', { n: errs }) : ''));
+        const limit = !r.added && !r.skipped && errs === 1 && /limit is/.test(r.errors[0]);
+        say(limit ? t('record.tooBig', { reason: r.errors[0] })
+          : !r.added && !r.skipped && errs ? t('record.bad')
+            : r.added && r.persisted === false ? t('record.notSaved', { added: r.added }) + (errs ? ' ' + t('record.importErrors', { n: errs }) : '')
+              : t('record.imported', { added: r.added || 0, skipped: r.skipped || 0 }) + (errs ? ' ' + t('record.importErrors', { n: errs }) : ''));
         e.target.value = '';
         rerender();
       };
@@ -279,7 +313,7 @@
     const draw = () => {
       const s = st();
       const rows = lessonsOf(c).map((l) => {
-        const its = LC.practiceItems ? LC.practiceItems(l.n) : [];
+        const its = (LC.practiceItems ? LC.practiceItems(l.n) : []).filter((it) => !it.pretest);
         const types = its.reduce((m, it) => { m[it.id] = it.type; return m; }, {});
         return { l, s: lessonState(c, l, s, its.map((it) => it.id), types) };
       });
@@ -289,6 +323,8 @@
     draw();
     if (LC.loadPracticeFiles) LC.loadPracticeFiles(draw); // item counts and types make "Next up" exact
     notices(el);
+    const s0 = st();
+    if (s0 && s0.subscribe) s0.subscribe((_, info) => { if (info && (info.type === 'external' || info.type === 'import')) safe(draw); }); // other tabs (SR-13)
   }
 
   LC.ready(() => {
@@ -304,6 +340,7 @@
         // After practice.js has registered the page's items (it boots in the same tick).
         setTimeout(() => setTimeout(() => LC.mount(el, 'lesson strip', () => strip(el, n)), 0), 0);
         doc.addEventListener('learncraft:attempt', () => LC.mount(el, 'lesson strip', () => strip(el, n)));
+        if (s && s.subscribe) s.subscribe((_, info) => { if (info && info.type === 'external') LC.mount(el, 'lesson strip', () => strip(el, n)); });
       }
       notices(doc.querySelector('main') || doc.body);
     }

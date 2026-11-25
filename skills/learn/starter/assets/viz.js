@@ -30,7 +30,9 @@
 //   is describe(values), and the same text is announced 600 ms after the learner stops moving. render
 //   gets a fresh Learncraft.rng(seed) each time, so equal values and seed give identical markup.
 //   width is the container width (280–760) so 12px SVG text renders at 12px on phones. With target,
-//   a Check button grades the values and records the first attempt (ctx.record, else
+//   Returns { values, update(), set(id, v), reseed(seed?) → seed, destroy() }. reseed() draws a new sample.
+//   a Check button grades the values and records the first attempt (ctx.record(ok) — components mounted through
+//   Learncraft.register get one in their ctx — else
 //   Learncraft.recordPractice(id, ok) when present, else window.Progress.record(id, ok) from practice.js).
 //
 // Learncraft.histogram({ counts, labels, expected?, width, height, xLabel, yLabel, note }) → SVG string
@@ -367,6 +369,8 @@
     return {
       values: values, update: function () { schedule(false); },
       set: function (id, v) { values[id] = v; sliders.forEach(function (s, i) { if (o.params[i].id === id) s.set(v); }); schedule(false); },
+      // New random draw (a fresh sample) with the same values; returns the seed used. Equal seed → identical markup.
+      reseed: function (seed) { o.seed = seed == null ? Math.floor(Math.random() * 4294967296) : seed; schedule(false); return o.seed; },
       destroy: function () { ro.disconnect(); cancelAnimationFrame(frameReq); clearTimeout(sayTimer); },
     };
   }

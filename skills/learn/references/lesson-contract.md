@@ -92,10 +92,13 @@ Learncraft.practice(3, [
 | `prompt` | required; text, with the same limited markup as `why` |
 | `why` | shown after answering; recommended on every item; limited markup only (`b strong em i code br sup sub a`) |
 | `choice` | `options`: 3–5 entries `{ text, correct?, why }`, exactly one `correct: true`; every option has a `why` saying what that choice gets wrong (or right) |
-| `recall` | `accept`: accepted answers; matching ignores case, surrounding spaces and punctuation |
+| `recall` | `accept`: accepted answers; matching ignores case, accents, quotes, spacing and leading/trailing punctuation. An entry may be a number, or `{ answer, tolerance }` with its own numeric tolerance |
 | `order` | `steps`: 3–7 steps in the **correct** order; the runtime shuffles them |
-| `fade` | `template` with `{{name}}` blanks; `blanks`: `{ name: [accepted answers] }`, one key per blank; `labels`: `{ name: 'accessible name' }` for each blank (screen readers announce it) |
-| optional | `code: true` renders answers in monospace; `recall` may set `tolerance` to accept numeric answers within ± that value |
+| `fade` | `template` with `{{name}}` blanks; `blanks`: `{ name: [accepted answers] }`, one key per blank; `labels`: recommended: `{ name: 'accessible name' }` for each blank (screen readers announce it) |
+| `pretest` | optional `true`: asked before teaching (a guess). Recorded with `context: 'diagnostic'`; never counts toward levels, XP or review entry, and not toward the ≥ 3 items per objective |
+| optional | `code: true` renders answers in monospace; `recall` and `fade` may set `tolerance` to accept numeric answers within ± that value |
+
+This contract is stricter than `practice-items.schema.json` on purpose (3–5 options, 3–7 steps); the schema accepts more so older lessons still load.
 
 Quality rules:
 - Each objective has **≥ 3 items**, at least one not of type `choice`.
@@ -134,6 +137,8 @@ Quality rules:
 
 - No literal colours (hex, `rgb()`, `hsl()`, named colours) or font names in lessons, scenes or practice data. Use theme tokens (`var(--signal)`, `var(--muted)`…, see [THEME-FORMAT](../THEME-FORMAT.md)).
 - Course data (`course.js` titles, labels, practice prompts) is plain text: the runtime escapes it. Do not put HTML in it.
+- Links in lesson HTML and in `why`/captions are `https://…`, `mailto:`, `#…` or relative paths inside the workspace. The check rejects `javascript:` in any spelling (`java&#9;script:`, `&#1;javascript:`, `javascript&colon;`), `data:` links, `//host` and `\\host` paths, `srcdoc`, `<object>`/`<embed>`, `<base>` and `<meta http-equiv="refresh">`.
+- Code blocks that scroll sideways get `tabindex="0"` from the runtime (keyboard users can scroll them); you need not add it.
 - Figures follow [visual-design](visual-design.md#building-figures).
 
 ## Legacy markup
@@ -144,7 +149,7 @@ Lessons written before practice data (`.quiz-q` buttons, `.fade` inputs) keep wo
 
 Run it on every lesson in every profile. In Fast it is the whole review.
 
-1. File names, `lang`, CSP, `data-lesson`, `#progress` and the script order match this contract; no inline scripts or handlers.
+1. File names, `lang`, CSP (the template's `<meta>`, in `<head>`: a missing or weakened CSP fails the check), `data-lesson`, `#progress` and the script order match this contract; no inline scripts or handlers.
 2. One idea; every objective in `course.js` is taught and practised; nothing is taught that belongs to a later lesson.
 3. Every term is defined before use, or is in `GLOSSARY.md`; its aliases-to-avoid are absent.
 4. Worked example, then a faded one; one "why does this line exist?" prompt.

@@ -2,12 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/jpmmatias/skills/main/schemas/source-record.schema.json",
   "title": "Learncraft source record",
-  "description": "One source as listed in RESOURCES.md (`- [S3] [Title](url) — Author/Publisher · type · tier · status · version`), in JSON form (raw/04-grounding.md C2, plan §6). Status names follow the plan: verified (needs accessedAt), unverified and unavailable (need reason). versionScope for docs/api/tool is checked by sourceLint().",
+  "description": "One source as listed in RESOURCES.md (`- [S3] [Title](url) — Author/Publisher · type · tier · status · version`), in JSON form (raw/04-grounding.md C2, plan §6). Status names follow the plan: verified (needs accessedAt), unverified and unavailable (need reason). versionScope for docs/api/tool is checked by sourceLint(). 'unavailable' is for the Gaps section only (a source that was sought and could not be reached); listed knowledge sources are verified or unverified.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "id",
-    "url",
     "title",
     "type",
     "tier",
@@ -21,7 +20,8 @@
     "url": {
       "type": "string",
       "pattern": "^https?://\\S+$",
-      "maxLength": 2000
+      "maxLength": 2000,
+      "description": "Optional: a book or a source with no stable URL has none."
     },
     "accessUrl": {
       "type": "string",
