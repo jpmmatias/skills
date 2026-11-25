@@ -203,12 +203,20 @@ The skill says `${CLAUDE_SKILL_DIR}` (substituted by Claude Code), with a fallba
 
 ## Ledger
 
-| WS | Status | Notes |
-|---|---|---|
-| Orchestrator | done | Baseline, data audit, findings, plan, ADRs, CSS split (`figures.css`, visually identical: verified by screenshot diff with seeded randomness) |
-| A | not started | |
-| C1 | not started | |
-| C2 | not started | |
-| D | not started | |
-| E | not started | |
-| F | not started | waits for C1/C2/D |
+| WS | Status | Commit | Notes |
+|---|---|---|---|
+| Orchestrator | done | 4ac10da | Baseline, data audit, findings, plan, ADRs, CSS split (screenshot diff with seeded randomness shows no visual change) |
+| D | done | 68c02c9 | store.js + 7 schemas + subset validator; 133/133 tests. Additive API extras accepted (handoffs/D.md). First try = earliest attempt by time (robust to merged logs); legacy stage → box min(stage+1, 2). |
+| A | done | 3f087cd | Router 80 lines; 12 workflows, 13 references; native agents in `subagents/` (a root `agents/` folder loaded in all five root-sourced plugins — tested); `claude plugin validate --strict` passes; install of one pipeline plugin pulled in `learn`. |
+| Orchestrator | done | 7089b03, a3057d6, 41ae088 | Integration: claim-strength enum aligned with grounding.md; `practice: null` accepted and documented; band tokens removed from style.css (the example defines its own); scene `poster`/`phone` documented. |
+| C1 | done | 4e3ab9b | core/practice/progress/review; 58 browser checks pass; axe 0 violations in 32 runs (Chromium). CSP `'self'` matches `file:` in Chromium; inline scripts are blocked, so lessons have none. |
+| C2 | done | 04df3c3 | viz.js timeline/slider/explorable/histogram; scene and diagram rebuilt; Jev code moved to an example; axe 0 in 12 runs; text at 390px ≥ 11px (was 5.2–7.3px). |
+| E | running | – | |
+| F1–F3 | running | – | Three example courses |
+| F4 | running | – | README, guide, brand, compatibility, gallery |
+
+### Open integration items
+
+- `observeVisibility` reports "hidden" only when fully off-screen; `viz.js` uses its own 25% check. Harmless duplication (P3).
+- A lesson inherits "Applied" from a reviewed milestone before its own practice is done, which is correct per ADR-005 but confusing on the dashboard. To review in Phase 4.
+- Legacy pages without `core.js` are bootstrapped with `document.write` (quiz.js shim). Legacy only. To review in Phase 4.
