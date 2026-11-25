@@ -17,10 +17,10 @@ Learncraft.practice(1, [
       { text: 'The tokenizer counts every space and every punctuation mark twice over', why: 'A space is attached to the following word (<code>␣tudo</code>), and the comma is one token; nothing is counted twice.' },
       { text: 'BPE spends one token per syllable, and Portuguese has more syllables', why: 'BPE knows nothing about syllables. <code>␣be</code> + <code>m</code> is not a syllable split; the pieces come from pair frequencies.' },
     ] },
-  { id: 'l1-recall-merge-rule', type: 'recall', objective: 'l1.o1',
-    prompt: 'Complete the BPE training rule: at each step, merge the most ______ pair of adjacent symbols.',
-    accept: ['frequent', 'common', 'frequently occurring', 'frequent adjacent', 'most frequent'],
-    why: 'BPE merges whichever adjacent pair occurs most often in the training text, counted over every occurrence of every word.' },
+  { id: 'l1-recall-pu-count', type: 'recall', objective: 'l1.o1',
+    prompt: 'In the worked corpus <em>before any merge</em> (<code>h u g</code> ×10, <code>p u g</code> ×5, <code>p u n</code> ×12, <code>b u n</code> ×4, <code>h u g s</code> ×5), what is the weighted count of the pair <code>p u</code>?',
+    accept: ['17'], tolerance: 0,
+    why: '<code>p u g</code> 5 + <code>p u n</code> 12 = 17. It was the runner-up: it loses to <code>u g</code> (20), and after merge 1 it drops to 12 because <code>p ug</code> no longer contains it.' },
   { id: 'l1-choice-lookup', type: 'choice', objective: 'l1.o2',
     prompt: 'GPT-2 receives token id 3797 (<code>␣cat</code>). What does its token-embedding table do with it?',
     options: [
@@ -38,7 +38,7 @@ Learncraft.practice(1, [
     prompt: 'Why does a Transformer need positional information on top of the token embeddings?',
     options: [
       { text: 'Attention compares content only, so word order would be invisible to it', correct: true,
-        why: 'The original paper adds positions because the model has no recurrence and no convolution to supply order.' },
+        why: 'The original paper adds positions because the model has no recurrence and no convolution to supply order. (In a decoder the causal mask leaks a little order information, but models still add or rotate positions explicitly.)' },
       { text: 'Token ids are numbered by position in the prompt, so they need correcting', why: 'Ids come from the vocabulary, not from position: <code>␣the</code> is 262 wherever it appears.' },
       { text: 'The softmax inside attention needs positions to make its weights add to 1', why: 'A softmax always sums to 1, with or without positions.' },
       { text: 'Without positions the token table could not tell two entries apart', why: 'Different ids already select different rows; the table needs no position for that.' },

@@ -42,6 +42,7 @@ Claims L1:
 - L1-C7 · supported · S7, S8 · "The original Transformer adds fixed sinusoidal positional encodings; learned ones gave nearly identical results."
 - L1-C8 · supported · S7, S8 · "The original paper adds positional information because the model has no recurrence or convolution to supply order."
 - L1-C9 · supported · S9, S10 · "Llama-style models instead rotate queries and keys by position inside attention (RoPE)."
+- L1-C10 · supported · S7, S8 · "The authors chose sinusoids hoping the model could attend by relative position: for a fixed offset k, PE(pos + k) is a linear function of PE(pos)."
 
 ### Lesson 2 — Self-attention
 Researched 2026-11-25 · online, proxy-restricted · 2 of 3 fetches · also uses S5, S7, S8
@@ -58,6 +59,7 @@ Claims L2:
 - L2-C4 · consensus · S7, S8, S11 · "Queries, keys and values are the input vectors multiplied by three learned matrices."
 - L2-C5 · consensus · S7, S8, S5 · "Decoder self-attention masks later positions by setting their scores to −∞ (GPT-2's code uses −10¹⁰) before the softmax."
 - L2-C6 · supported · S7, S8, S5 · "The base Transformer uses 8 heads of size 64 (d_model 512); GPT-2's code defaults to 12 heads over 768 dimensions, 64 each."
+- L2-C7 · consensus · S7, S8, S5 · "Head outputs are concatenated and multiplied by a learned output matrix W_O (MultiHead = Concat(head_1 … head_h) W^O; GPT-2: merge_heads then c_proj)."
 
 ### Lesson 3 — Blocks and generation
 Researched 2026-11-25 · online, proxy-restricted · 3 of 4 fetches · also uses S5, S6, S7, S8, S9
@@ -73,12 +75,13 @@ Researched 2026-11-25 · online, proxy-restricted · 3 of 4 fetches · also uses
 
 Claims L3:
 - L3-C1 · supported · S7, S8 · "The original Transformer wraps each sub-layer as LayerNorm(x + Sublayer(x)) (post-LN); its feed-forward network is two linear layers with a ReLU, 512 → 2048 → 512."
-- L3-C2 · supported · S5, S13 · "GPT-2 normalises first: x + Attn(LN(x)), then x + MLP(LN(x)); the MLP widens 4× with a GELU; a final layer norm precedes the output."
+- L3-C2 · supported · S5, S13 · "GPT-2 normalises first: x + Attn(LN(x)), then x + MLP(LN(x)) (four lines in GPT-2's block(), S5; the two-line form quoted in the lesson is nanoGPT's, S13); the MLP widens 4× with a GELU; a final layer norm precedes the output."
 - L3-C3 · single-study · S14 · "Pre-LN can be trained without learning-rate warm-up." (unverified, marked in the lesson)
 - L3-C4 · supported · S9 · "Hugging Face's Llama implementation normalises (RMSNorm) before attention and before the MLP."
 - L3-C5 · supported · S5 · "GPT-2 turns the last position's vector into one score per vocabulary token by multiplying with the token-embedding table."
-- L3-C6 · consensus · S5, S13 · "Generation: take the last position's logits, divide by temperature, softmax, sample one token, append it, repeat."
+- L3-C6 · consensus · S5, S13 · "Generation: take the last position's logits, divide by temperature, softmax, sample one token, append it, repeat (both released loops run for a fixed number of tokens)."
 - L3-C7 · supported · reasoning · "Dividing logits by T < 1 sharpens the distribution; T > 1 flattens it; T → 0 approaches always picking the top token." (follows from the softmax; computed in the explorable)
+- L3-C8 · gap · — · "Serving systems and APIs also stop when the model samples its end-of-text token or a stop sequence." Not in S5 or S13; stated as general practice, attributed to "APIs", never to GPT-2's code.
 
 ## Wisdom (Communities)
 
@@ -89,6 +92,7 @@ None curated for this example: no community page could be opened from the author
 - L1–L3: the three primary papers (S1, S6, S7) could not be fetched; their passages were checked only through verified secondary copies (S8 reproduces S7's text; S5 implements S6's model).
 - L1: no source could be opened on how commercial LLM APIs count tokens; the lessons do not state anything about billing beyond the persona's own words in `MISSION.md`.
 - L2: no strong video could be checked; S12 is index-only.
+- L3-C8: no verified source for end-of-text / stop-sequence stopping in serving systems; provider docs were blocked. Searched: provider API docs (blocked), GPT-2 and nanoGPT loops (no such check).
 - L3: no verified source on how widely pre-LN is used across current models; the lesson names only GPT-2 (S5) and the Llama implementation (S9).
 
 ## Verification debt

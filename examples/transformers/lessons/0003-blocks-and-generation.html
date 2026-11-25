@@ -20,7 +20,7 @@
   <header>
     <p class="kicker">Lesson 3 · Explain a streamed reply</p>
     <h1>Blocks and generation</h1>
-    <p class="lede">One attention head is one step. A model stacks it into blocks, stacks the blocks, and then runs the whole stack once for every token it writes.</p>
+    <p class="lede">Attention is one step. A block pairs it with an MLP, a model stacks the blocks, and then it runs the whole stack once for every token it writes.</p>
     <div id="progress"></div>
   </header>
 
@@ -29,7 +29,7 @@
   <div class="terms">
     <div class="term"><b>residual stream</b>The running vector of each token. Every sub-layer reads it and <em>adds</em> its result back to it.</div>
     <div class="term"><b>layer norm</b>Rescales one vector to mean 0 and spread 1, then applies a learned scale and shift.</div>
-    <div class="term"><b>MLP</b>A small two-layer network applied to each token's vector on its own.</div>
+    <div class="term"><b>MLP</b>A two-layer network applied to each token's vector on its own.</div>
     <div class="term"><b>logits</b>Raw scores, one per vocabulary token, before the softmax turns them into probabilities.</div>
   </div>
 
@@ -83,7 +83,7 @@
     </div>
   </div>
 
-  <p>In GPT-2's code this is two lines, <code>x = x + attn(ln_1(x))</code> and <code>x = x + mlp(ln_2(x))</code>; the MLP width is 4 × 768 = 3,072 with a GELU<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>. Because every sub-layer only <em>adds</em> to <i>x</i>, a token's vector is gradually edited as it rises through the stack rather than replaced.</p>
+  <p>In nanoGPT, which follows GPT-2's code, this is two lines, <code>x = x + self.attn(self.ln_1(x))</code> and <code>x = x + self.mlp(self.ln_2(x))</code><sup class="cite"><a href="../RESOURCES.md#s13" data-src="S13">13</a></sup>; GPT-2's own <code>block()</code> does the same in four<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>. The MLP width is 4 × 768 = 3,072 with a GELU<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>. Because every sub-layer only <em>adds</em> to <i>x</i>, a token's vector is gradually edited as it rises through the stack rather than replaced.</p>
 
   <p class="note"><strong>Which version is this?</strong> This is the <em>pre-LN</em> order (normalise before the sub-layer), used by GPT-2<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup> and, with RMSNorm in place of layer norm, by Hugging Face's Llama implementation<sup class="cite"><a href="../RESOURCES.md#s9" data-src="S9">9</a></sup>. The original 2017 Transformer used <em>post-LN</em>: LayerNorm(<i>x</i> + Sublayer(<i>x</i>)), and a ReLU feed-forward of 512 → 2,048 → 512<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>. <span class="unverified" title="Not independently verified">A 2020 analysis reports that pre-LN can be trained without the learning-rate warm-up post-LN needs</span><sup class="cite"><a href="../RESOURCES.md#s14" data-src="S14">14</a></sup>.</p>
 
@@ -96,8 +96,9 @@ final layer norm (ln_f)            5 × 768
 × wteᵀ  (the token table again)    5 × 50,257  one score per vocabulary token, per position
 keep the last row                  50,257      the logits for the next token</code></pre>
   <p>Only the last row is used to pick the next token: thanks to the causal mask, it is the only position that has seen the whole prompt<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>. GPT-2 reuses its token-embedding table to turn that vector into scores.</p>
-  <h3>Your turn</h3>
-  <div data-practice-item="l3-fade-preln"></div>
+  <p class="note"><strong>Why does the <code>x +</code> exist?</strong> Without it, each block would have to rebuild the whole vector, including everything it does not change. With it, a block only has to produce the change, and a block with nothing to add can output almost zero and let the vector pass through.</p>
+  <h3>Your turn: a longer prompt</h3>
+  <div data-practice-item="l3-fade-shapes"></div>
 
   <h2>Writing a reply, one token at a time</h2>
   <p>GPT-2's sampling loop does the same five things for every new token: take the last position's logits, divide them by the temperature, turn them into probabilities, draw one token, append it, and run again<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup><sup class="cite"><a href="../RESOURCES.md#s13" data-src="S13">13</a></sup>. Press ▶ or use the chapter buttons; the probabilities and the reply are illustrative.</p>
@@ -108,7 +109,7 @@ keep the last row                  50,257      the logits for the next token</co
   <p>Temperature <i>T</i> divides every logit before the softmax<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup><sup class="cite"><a href="../RESOURCES.md#s13" data-src="S13">13</a></sup>. The ranking of tokens never changes; only how far apart their probabilities are.</p>
 
   <h3>Worked example: T = 2</h3>
-  <p>Illustrative logits for the token after “The cat sat on the”: <code>␣mat</code> 3.0, <code>␣floor</code> 2.2, <code>␣sofa</code> 1.8, <code>␣bed</code> 1.5, <code>␣roof</code> 0.5.</p>
+  <p>Illustrative logits for the token after “The cat sat on the”: <code>␣mat</code> 3.0, <code>␣floor</code> 2.2, <code>␣sofa</code> 1.8, <code>␣bed</code> 1.5, <code>␣roof</code> 0.5. To keep the arithmetic small, pretend these five are the only tokens in the vocabulary (a real model spreads a little probability over all 50,257).</p>
   <figure>
     <div class="table-wrap">
       <table class="num">
@@ -124,6 +125,8 @@ keep the last row                  50,257      the logits for the next token</co
     </div>
     <figcaption>Halving every logit shrinks the gaps between them, so the softmax spreads out: <code>␣mat</code> drops from 0.49 to 0.34 and <code>␣roof</code> more than doubles. Computed from the illustrative logits.</figcaption>
   </figure>
+  <h3>Your turn: T = 0.5</h3>
+  <div data-practice-item="l3-fade-temp"></div>
   <p>Now drag the temperature yourself. Below 1 the top token takes more of the probability; near 0 the choice becomes greedy (always the top token); above 1 the tail gets more chances.</p>
   <figure>
     <div data-lc="temp-explorer" id="temp-explorer" data-t="1"></div>
@@ -135,8 +138,7 @@ keep the last row                  50,257      the logits for the next token</co
     <p class="lc-muted">The last question goes back to lesson 2.</p>
     <div data-practice-item="l3-order-block"></div>
     <div data-practice-item="l3-choice-residual"></div>
-    <div data-practice-item="l3-choice-temperature"></div>
-    <div data-practice-item="l3-order-generate"></div>
+    <div data-practice-item="l3-order-generate-v2"></div>
     <div data-practice-item="l3-recall-last-position"></div>
     <div data-practice-item="l3-choice-mask-training"></div>
   </section>
@@ -144,15 +146,15 @@ keep the last row                  50,257      the logits for the next token</co
   <section class="challenge" id="challenge" data-kind="milestone" data-milestone="m3" aria-labelledby="challenge-h">
     <p class="kicker">Milestone challenge</p>
     <h2 id="challenge-h">Predict, then measure, a temperature change</h2>
-    <p>Pick one prompt from your own work that has more than one reasonable short answer (a product name, a one-word label, a first word). Write down what you expect at temperature 0 and at a high temperature (for example 1.5, or the highest your API allows). Then call your API 10 times at each setting with a short length limit, and compare.</p>
+    <p>Pick one prompt from your own work that has more than one reasonable short answer (a product name, a one-word label, a first word). Tokenize it as in lesson 1. Write down what you expect at temperature 0 and at a high temperature (for example 1.5, or the highest your API allows). Then call your API 10 times at each setting with a short length limit, and compare. Finally, explain what happened inside the model for one output token: its path through one block, and the step that chose it.</p>
     <h3>What to send back</h3>
-    <p>Your prediction (written before the runs), the 20 outputs grouped by setting, the model and settings you used, and a short explanation of the difference in terms of logits, temperature and sampling.</p>
+    <p>Your prediction (written before the runs), the 20 outputs grouped by setting, the model and settings you used, and a short explanation in terms of blocks, logits, temperature and sampling.</p>
     <h3>Pass criteria</h3>
     <ol class="criteria">
-      <li>The prediction is dated or placed before the results and names an expected number of distinct outputs at each setting.</li>
+      <li>The prediction sits before the results and names an expected number of distinct outputs at each setting; any mismatch with the results is named with one possible cause (for example ties near the top, temperature 0 not being guaranteed deterministic on hosted APIs, or a model that ignores or rejects <code>temperature</code>).</li>
       <li>The 20 outputs are listed with the model name, the temperature and the length limit for each group, and the number of distinct outputs per group is counted.</li>
-      <li>The explanation traces one output token through the loop: last-position logits, divided by temperature, softmax, one sampled token, appended.</li>
-      <li>Any mismatch between prediction and result is named, with one possible cause (for example ties near the top, or a provider applying other sampling settings).</li>
+      <li>The explanation names, in order, the six stages one position passes through in each block (norm, attention, add, norm, MLP, add) and the shape of the logits for your prompt (tokens × vocabulary size of the model you used, or of GPT-2 if it is not published).</li>
+      <li>The explanation traces one output token through the sampling step: last-position logits, divided by temperature, softmax, one sampled token, appended.</li>
     </ol>
     <p>When you are done, send your work to your teacher in the terminal.</p>
   </section>
@@ -165,7 +167,7 @@ keep the last row                  50,257      the logits for the next token</co
     <li><a href="https://github.com/karpathy/nanoGPT/blob/master/model.py">nanoGPT, <code>model.py</code></a> <span>Code, about 20 minutes. A readable GPT-2 in about 330 lines; <code>Block.forward</code> and <code>generate()</code> are this lesson, line for line.</span></li>
     <li><a href="https://www.youtube.com/watch?v=kCc8FmEb1nY">Let's build GPT: from scratch, in code, spelled out</a> <span>Video, long (length not checked by the course author). Andrej Karpathy builds a small GPT live, including the causal mask and the generation loop.</span></li>
     <li><a href="https://poloclub.github.io/transformer-explainer/">Transformer Explainer</a> <span>Interactive. Runs GPT-2 in your browser on your own text and shows each step up to the predicted next token: the full-size version of this lesson's figures (described from its README; not opened by the course author).</span></li>
-    <li><a href="https://arxiv.org/abs/2002.04745">On Layer Normalization in the Transformer Architecture</a> <span>Paper (not checked by the course author). Why the norm moved before the sub-layer.</span></li>
+    <li><a href="https://arxiv.org/abs/2002.04745">On Layer Normalization in the Transformer Architecture</a> <span>Paper (not checked by the course author). An analysis of why putting the norm first makes training easier.</span></li>
   </ul>
 
   <p>Want to know what the MLP layers store, or how top-k and top-p change the loop? Ask your agent in the terminal.</p>

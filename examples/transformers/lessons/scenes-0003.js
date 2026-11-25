@@ -2,7 +2,8 @@
 // Embed with <div class="scene" data-scene="one-token-at-a-time"></div> after core.js, viz.js and scene.js.
 // The mechanism (prompt → blocks → last position → logits → softmax → sample → append → repeat) follows the
 // released GPT-2 sampling loop and nanoGPT's generate() (S5, S13). The 12 blocks and the end-of-text id 50256
-// are GPT-2 facts (S5, S4). Every PROBABILITY and every streamed word is ILLUSTRATIVE and labelled so on screen;
+// are GPT-2 facts (S5, S4). The STOP RULE in chapter 5 is not in S5 or S13: both loops simply run for a fixed
+// number of tokens. Stopping at an end-of-text token or stop sequence is general serving practice (RESOURCES L3-C8, gap). Every PROBABILITY and every streamed word is ILLUSTRATIVE and labelled so on screen;
 // the first distribution is softmax([3.0, 2.2, 1.8, 1.5, 0.5]), the same toy logits as the temperature explorable.
 // Layout: the mechanism sits in x 20–500 so the phone crop (focus) keeps it readable; the terminal moves below.
 Scene.register('one-token-at-a-time', {
@@ -44,7 +45,7 @@ Scene.register('one-token-at-a-time', {
       const val = S.svg('text', { x: 440, y: y + 19, class: 'sc-mono' }, barsG, '');
       return { lab, bar, val, y };
     });
-    S.svg('text', { x: 40, y: 462, class: 'sc-muted' }, barsG, 'softmax → probabilities (top 5 shown, illustrative)');
+    S.svg('text', { x: 40, y: 462, class: 'sc-muted' }, barsG, 'softmax → probabilities (toy: only 5 candidate tokens, illustrative)');
     const pick = S.svg('rect', { x: 34, y: 242, width: 462, height: 34, rx: 6, fill: 'none', style: 'stroke: var(--sc-gold); stroke-width: 2.5' }, root);
     const pickLab = S.svg('text', { x: 40, y: 500, class: 'sc-mono sc-gold' }, root, '');
     const flights = [5, 6].map((k) => S.svg('path', { d: `M 120 259 C 10 230, 10 120, ${chips[k].cx} 104`, fill: 'none', stroke: 'none' }, root));
@@ -99,7 +100,7 @@ Scene.register('one-token-at-a-time', {
       // 5 · when it stops
       { t: 15000, d: 500, f: (r, p) => { if (p > 0) { focusOn(r, 6, 1); pickRow(r, '', 0); setDist(r, D3, 0); } } },
       { t: 15500, d: 1000, f: (r, p) => { if (p > 0) setDist(r, D3, p); } },
-      { t: 16700, d: 400, f: (r, p) => { if (p > 0) pickRow(r, 'sampled: <|endoftext|> (id 50256) → stop', p); } },
+      { t: 16700, d: 400, f: (r, p) => { if (p > 0) pickRow(r, 'sampled: <|endoftext|> (50256): stop', p); } },
       { t: 17100, d: 500, f: (r, p) => r.term.set(2, 'out', [{ t: '[done: end-of-text token]', c: 'muted' }], p) },
     ];
   })(),
@@ -107,13 +108,13 @@ Scene.register('one-token-at-a-time', {
   chapters: [
     { t: 0, title: 'Read the whole prompt', caption: 'All prompt tokens go through every block together. The causal mask means the vector at the <b>last position</b> has seen everything so far, so it is the one used to predict what comes next.',
       say: 'All the prompt tokens go through every block together. Because of the causal mask, the vector at the last position has seen everything so far, so that is the one used to predict what comes next.' },
-    { t: 4000, title: 'Scores become probabilities', caption: 'That vector becomes one score per vocabulary token, 50,257 for GPT-2. A softmax turns the scores into probabilities. Five are shown; the numbers are illustrative.',
-      say: 'That vector becomes one score for every token in the vocabulary, fifty thousand two hundred and fifty seven for GPT-2. A softmax turns the scores into probabilities. The numbers shown are illustrative.' },
+    { t: 4000, title: 'Scores become probabilities', caption: 'That vector becomes one score per vocabulary token, 50,257 for GPT-2. A softmax turns the scores into probabilities. Here we pretend only five tokens exist, so their probabilities add up to 1; in GPT-2 the other 50,252 would share a little of it. The numbers are illustrative.',
+      say: 'That vector becomes one score for every token in the vocabulary, fifty thousand two hundred and fifty seven for GPT-2. A softmax turns the scores into probabilities. Here we pretend only five tokens exist, so they add up to one; in GPT-2 the rest of the vocabulary would share a little of it. The numbers are illustrative.' },
     { t: 7500, title: 'Sample one token', caption: 'One token is drawn at random, in proportion to its probability. This time <code>␣mat</code> (0.49) is drawn; another run could draw <code>␣floor</code>.',
       say: 'One token is drawn at random, in proportion to its probability. This time, mat is drawn. Another run could draw floor.' },
-    { t: 11000, title: 'Append and repeat', caption: 'The new token is appended and the same step runs again on a sequence one token longer. A 200-token reply is 200 of these steps, which is why an API can stream it token by token.',
-      say: 'The new token is appended, and the same step runs again on a sequence one token longer. A two hundred token reply is two hundred of these steps, which is why an API can stream it token by token.' },
-    { t: 15000, title: 'When it stops', caption: 'The loop ends when the model samples its end-of-text token (id 50256 in GPT-2) or reaches the length limit you set.',
-      say: 'The loop ends when the model samples its end of text token, or reaches the length limit you set.' },
+    { t: 11000, title: 'Append and repeat', caption: 'The new token is appended and the same step runs again on a sequence one token longer. In plain decoding, a 200-token reply is 200 of these steps, which is why an API can stream it token by token.',
+      say: 'The new token is appended, and the same step runs again on a sequence one token longer. In plain decoding, a two hundred token reply is two hundred of these steps, which is why an API can stream it token by token.' },
+    { t: 15000, title: 'When it stops', caption: 'GPT-2\'s released sampler just stops after the number of tokens you ask for. Serving systems and APIs also stop as soon as the model samples its end-of-text token (id 50256 in GPT-2\'s vocabulary) or a stop sequence.',
+      say: 'GPT-2\'s released sampler just stops after the number of tokens you ask for. Serving systems and APIs also stop as soon as the model samples its end of text token, or a stop sequence.' },
   ],
 });

@@ -78,3 +78,37 @@ The proxy blocked arxiv.org, aclanthology.org, doi.org, huggingface.co, the GPT-
 4. **check.mjs element screenshots are taken only in the first pass (light, 900 px)**; the 390 px and dark passes produce a dark full-page shot only. Reviewing figures at 390 px / dark needed a separate script.
 5. **Transient lint failure**: one check run ended with "All pages clean. Lint: 4 error(s)." while other workstreams were editing `scripts/lib/schema.mjs`; re-runs were clean and it did not reproduce. Possibly the check re-reads shared schema code mid-run; worth a look if it recurs.
 6. `axe-core` is not resolvable from the repo's tooling by default in this environment (accessibility scan silently skipped unless `NODE_PATH` points at an install).
+
+## Revision 1 (review response)
+
+Response to `docs/audit/reviews/course-transformers.md`. Only files in `examples/transformers/` changed (`assets/` untouched, including `course.js`). After the edits: `node scripts/validate.mjs --strict` → 0 errors, 0 warnings; `check.mjs examples/transformers` → lint clean, 6/6 pages ✓, axe 0 violations (axe from `~/.cache/learncraft/tools`); I looked at screenshots of the changed scene frames (35 %, 100 %, phone/dark), the new faded items and the explorables at 1280 and 390 px; `.check/` deleted; keyboard pass 19/19 correct on the first try, including all six new items. js-tiktoken 1.0.21 re-run: `strawberry` → `st`(301) `raw`(1831) `berry`(8396); `␣strawberry` → 41236.
+
+| ID | Result |
+|---|---|
+| CT-01 | fixed: the L2 mission tie-in now says the mask lets the model be *trained* on the same left-to-right setting it is in when it writes one token at a time |
+| CT-02 | fixed: the scene's chapter 5 caption/narration, the practice `why`, and the cheat sheet now say GPT-2's released sampler runs for a fixed number of tokens and that *APIs/serving systems* also stop at an end-of-text token or stop sequence; the scene header says the stop rule is not in S5/S13; new ledger claim L3-C8 (gap) and a Gaps entry |
+| CT-03 | fixed in L1 ("`␣strawberry` (one token) and `strawberry` (three: st, raw, berry) are tokenized differently") and in the cheat sheet, after re-running the tokenizer |
+| CT-04 | fixed: W_O added in L2 (cited S8, S5) and in the cheat sheet; new ledger claim L2-C7 |
+| CT-05 | fixed: replaced with new ids `l2-order-head-v2` (scale and mask merged into one step; `why` says the two can happen in either order) and `l3-order-generate-v2` ("Turn the vectors into logits and keep the last position's row") |
+| CT-06 | fixed: the scene label now reads "toy: only 5 candidate tokens, illustrative"; the chapter 2 caption and narration explain that the five add up to 1 only because they are pretended to be the whole vocabulary |
+| CT-07 | fixed in the cheat sheet (generation *uses* only the last row; every position predicts its own next token in training) |
+| CT-08 | fixed: "Read it from the inside out … (Q·Kᵀ) … (· V)" |
+| CT-09 | fixed: τ = 0.5 is the unscaled case ("cat" 0.58 → 0.86, recomputed: 0.862); 0.25 is twice that |
+| CT-10 | fixed: L3 now quotes nanoGPT's two lines with S13 and says GPT-2's `block()` does the same in four (S5); the item `l3-fade-preln` was retired (see CT-13), so no GPT-2 attribution of the two-line form remains; L3-C2 ledger updated |
+| CT-11 | fixed: "…in the decoder-only model this course uses as its reference." |
+| CT-12 | fixed: the L3 challenge now asks for the block path, and a criterion checks the six stages in order and the logits shape for the learner's prompt; the mismatch criterion was folded into criterion 1, so there are still 4 |
+| CT-13 | fixed: added the "Why does the `x +` exist?" note; the faded item is now `l3-fade-shapes`, a 9-token shape trace that mirrors the worked example (replaces `l3-fade-preln`, whose second blank was answerable by copying) |
+| CT-14 | fixed: `l3-choice-temperature` was converted into the faded item `l3-fade-temp` (logits ÷ 0.5 → 6, 4.4; p(mat) ≈ 0.74, tolerance 0.01), placed right after the T = 2 worked example |
+| CT-15 | fixed: "pretend these five are the only tokens in the vocabulary (a real model spreads a little probability over all 50,257)" |
+| CT-16 | fixed: `l1-recall-merge-rule` replaced by `l1-recall-pu-count` (`p u` before any merge = 17, the runner-up) |
+| CT-17 | fixed (first option): the explorable is now an "Optional aside: how the 2017 model did it", stated as unassessed; the caption adds the authors' relative-position rationale (S8; ledger L1-C10). No item added, to keep L1 at 6 items |
+| CT-18 | fixed: the `why` now carries the decoder caveat |
+| CT-19 | fixed: "brought to neural machine translation" |
+| CT-20 | fixed: "replaces the blocked scores with −10¹⁰" |
+| CT-21 | fixed: L2 lede (only earlier tokens in a decoder), L3 lede (a block pairs attention with an MLP), "A two-layer network", Xiong blurb, "in plain decoding" in the scene and cheat sheet |
+| CT-22 | fixed: L2 "counting from 0, i.e. the third and fourth tokens"; L2 task asks for the no-scaling prediction; L3 criterion 1 lists "temperature 0 not guaranteed deterministic on hosted APIs" and models that ignore or reject `temperature` |
+| CT-23 | fixed: `l2-fade-was-v2` lists all six visible keys and asks for the key (`{{key}}`) before the chain; the lesson text asks the learner to find it |
+
+Retired ids (never to be reused): `l1-recall-merge-rule`, `l2-fade-was`, `l2-order-head`, `l3-fade-preln`, `l3-choice-temperature`, `l3-order-generate`. Practice counts stay 6 / 6 / 7; every objective still has ≥ 3 items with at least one non-choice; L3 still interleaves l2.o2. Recorded in `NOTES.md`.
+
+Runtime note: the duplicated "Right. Right, that is the order." reported above no longer occurs with the re-synced runtime (feedback now reads "Right. That is the order.").

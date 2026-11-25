@@ -72,10 +72,10 @@
     <figcaption>Real output of the <code>gpt2</code> and <code>o200k_base</code> rank files, run with js-tiktoken 1.0.21 on 2026-11-25<sup class="cite"><a href="../RESOURCES.md#s4" data-src="S4">4</a></sup>. Three Portuguese words cost GPT-2 eight tokens; the newer encoding needs five.</figcaption>
   </figure>
 
-  <p>Three things to notice. The space before a word belongs to the word: GPT-2's tokenizer first splits text with a pattern that keeps a leading space attached to the following letters<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>, so <code>␣strawberry</code> and <code>strawberry</code> are different tokens. Numbers are cut into chunks, not digits. And the same text can cost a different number of tokens under a different tokenizer, so a count is only meaningful together with the tokenizer that produced it. As a rough scale, OpenAI's tokenizer docs say a token is about 4 bytes of text on average<sup class="cite"><a href="../RESOURCES.md#s3" data-src="S3">3</a></sup>.</p>
+  <p>Three things to notice. The space before a word belongs to the word: GPT-2's tokenizer first splits text with a pattern that keeps a leading space attached to the following letters<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>, so <code>␣strawberry</code> (one token) and <code>strawberry</code> (three: <code>st</code>, <code>raw</code>, <code>berry</code>) are tokenized differently. Numbers are cut into chunks, not digits. And the same text can cost a different number of tokens under a different tokenizer, so a count is only meaningful together with the tokenizer that produced it. As a rough scale, OpenAI's tokenizer docs say a token is about 4 bytes of text on average<sup class="cite"><a href="../RESOURCES.md#s3" data-src="S3">3</a></sup>.</p>
 
   <h2>How BPE learns its pieces</h2>
-  <p>Both encodings above use <strong>byte pair encoding</strong> (BPE), <span class="unverified" title="Not independently verified">brought to neural language models by Sennrich, Haddow and Birch in 2016</span><sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. It learns its vocabulary from a training text: start from single symbols, count every pair of neighbours, merge the most frequent pair into a new symbol, and repeat<sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>. Each merge adds one token to the vocabulary.</p>
+  <p>Both encodings above use <strong>byte pair encoding</strong> (BPE), <span class="unverified" title="Not independently verified">brought to neural machine translation by Sennrich, Haddow and Birch in 2016</span><sup class="cite"><a href="../RESOURCES.md#s1" data-src="S1">1</a></sup>. It learns its vocabulary from a training text: start from single symbols, count every pair of neighbours, merge the most frequent pair into a new symbol, and repeat<sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>. Each merge adds one token to the vocabulary.</p>
 
   <h3>Worked example</h3>
   <p>A tiny training corpus: five words and how often each appears (the corpus from the Hugging Face docs<sup class="cite"><a href="../RESOURCES.md#s2" data-src="S2">2</a></sup>). Spaces between symbols show the current split.</p>
@@ -154,17 +154,18 @@
     <li><strong>Rotary positions</strong> (RoPE; for example the Llama implementation in Hugging Face Transformers): nothing is added to the input; instead the queries and keys inside attention are rotated by an angle that depends on position<sup class="cite"><a href="../RESOURCES.md#s9" data-src="S9">9</a></sup><sup class="cite"><a href="../RESOURCES.md#s10" data-src="S10">10</a></sup>.</li>
   </ul>
 
-  <p>Try the sinusoidal version. The values below are computed from the formula with a toy width of 16 dimensions (the original model used 512). Move the position and compare it with the next one.</p>
+  <h3>Optional aside: how the 2017 model did it</h3>
+  <p>Not assessed in this lesson; skip it if you are short on time. The values below are computed from the sinusoid formula with a toy width of 16 dimensions (the original model used 512). Move the position and compare it with the next one.</p>
   <figure>
     <div data-lc="pe-explorer" id="pe-explorer" data-dims="16" data-max="60" data-pos="3"></div>
-    <figcaption>Sinusoidal positional encoding, toy width 16, computed live from the formula. Filled bars: the chosen position. Outlines: the next position. Low dimensions change quickly from one position to the next; high dimensions barely move, so together they give every position a distinct pattern.</figcaption>
+    <figcaption>Sinusoidal positional encoding, toy width 16, computed live from the formula. Filled bars: the chosen position. Outlines: the next position. Low dimensions change quickly from one position to the next; high dimensions barely move, so together they give every position a distinct pattern. The authors chose sinusoids hoping the model could easily attend by relative position, since for any fixed offset <i>k</i> the encoding of position <i>pos</i> + <i>k</i> is a linear function of the encoding of <i>pos</i><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>.</figcaption>
   </figure>
 
   <section class="practice" aria-labelledby="practice-h">
     <h2 id="practice-h">Check yourself</h2>
     <p class="lc-muted">Answer from memory first, then read the feedback under each option.</p>
     <div data-practice-item="l1-choice-portuguese"></div>
-    <div data-practice-item="l1-recall-merge-rule"></div>
+    <div data-practice-item="l1-recall-pu-count"></div>
     <div data-practice-item="l1-choice-lookup"></div>
     <div data-practice-item="l1-order-input"></div>
     <div data-practice-item="l1-choice-why-position"></div>
@@ -193,7 +194,7 @@
   <ul class="deeper">
     <li><a href="https://github.com/huggingface/transformers/blob/main/docs/source/en/tokenizer_summary.md">Tokenization algorithms</a> <span>Docs, about 8 minutes. BPE, byte-level BPE, Unigram, SentencePiece and WordPiece side by side, on the same tiny corpus as above.</span></li>
     <li><a href="https://github.com/openai/tiktoken">tiktoken README</a> <span>Docs, about 4 minutes. OpenAI's tokenizer: install it and count your own prompts for the challenge; includes an educational module that visualises merges.</span></li>
-    <li><a href="https://github.com/openai/gpt-2">openai/gpt-2, <code>src/encoder.py</code> and <code>src/model.py</code></a> <span>Code, 15 minutes of reading. The real byte-level BPE (about 120 lines) and the two embedding tables, in the model that defined the decoder-only recipe.</span></li>
+    <li><a href="https://github.com/openai/gpt-2">openai/gpt-2, <code>src/encoder.py</code> and <code>src/model.py</code></a> <span>Code, 15 minutes of reading. The real byte-level BPE (about 120 lines) and the two embedding tables, in the decoder-only model this course uses as its reference.</span></li>
     <li><a href="https://arxiv.org/abs/2104.09864">RoFormer: Enhanced Transformer with Rotary Position Embedding</a> <span>Paper (not checked by the course author). Read it once you have done lesson 2: rotary positions act on queries and keys.</span></li>
   </ul>
 

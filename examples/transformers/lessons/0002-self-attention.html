@@ -20,11 +20,11 @@
   <header>
     <p class="kicker">Lesson 2 · Compute one attention head</p>
     <h1>Self-attention</h1>
-    <p class="lede">After lesson 1, every token is a vector that knows only itself and its position. Attention is the step where each token's vector takes in information from the other tokens.</p>
+    <p class="lede">After lesson 1, every token is a vector that knows only itself and its position. Attention is the step where each token's vector takes in information from other tokens (in a decoder, only earlier ones).</p>
     <div id="progress"></div>
   </header>
 
-  <p><strong>Why this matters for your mission:</strong> attention is where a word like “it” in your prompt gets connected to what it refers to, and its causal mask is the reason a model can only write left to right, one token at a time, which is what you see when a reply streams.</p>
+  <p><strong>Why this matters for your mission:</strong> attention is where a word like “it” in your prompt gets connected to what it refers to, and its causal mask is what lets a model be trained to predict every next token using only the tokens before it, the same left-to-right setting it is in when it writes your reply one token at a time.</p>
 
   <div class="terms">
     <div class="term"><b>query (q)</b>What this token is looking for, as a vector.</div>
@@ -36,7 +36,7 @@
   <h2>One query, many keys</h2>
   <p>The Transformer paper describes attention as mapping a query and a set of key–value pairs to an output: the output is a weighted sum of the values, and each value's weight comes from how well the query matches that value's key<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>. In <em>self</em>-attention all three come from the same sequence: every token's input vector is multiplied by three learned matrices, W<sub>Q</sub>, W<sub>K</sub> and W<sub>V</sub>, to give its own q, k and v<sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>. For all queries at once, stacked as rows of matrices<sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>:</p>
   <p class="formula">Attention(Q, K, V) = softmax( Q·Kᵀ / √d<sub>k</sub> ) · V</p>
-  <p>Here d<sub>k</sub> is the length of each key vector. Read it right to left for one query: dot the query with every key, divide by √d<sub>k</sub>, softmax, then use the weights to average the values.</p>
+  <p>Here d<sub>k</sub> is the length of each key vector. Read it from the inside out for one query: dot the query with every key (Q·Kᵀ), divide by √d<sub>k</sub>, softmax, then use the weights to average the values (· V).</p>
 
   <h3>The toy sentence</h3>
   <p>To compute this by hand we need small vectors. The ones below are <strong>toy numbers, chosen by hand</strong> so the pattern is easy to read: d<sub>k</sub> = 4 and values have 2 dimensions. You can read the four key dimensions loosely as “a thing”, “an action”, “a small word”, “a pronoun”. That reading is our design; a trained head learns its own numbers, and nobody writes them down like this.</p>
@@ -83,11 +83,11 @@
   <p class="note"><strong>Why does the ÷ √d<sub>k</sub> line exist?</strong> If the components of q and k are independent with mean 0 and variance 1, their dot product has variance d<sub>k</sub>, so scores grow with the vector size. The authors suspected that large scores push the softmax into regions where its gradients are extremely small, and scale by 1/√d<sub>k</sub> to counteract it<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>. With the original model's d<sub>k</sub> = 64, that means dividing by 8<sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>.</p>
 
   <h3>Your turn: the query “was”</h3>
-  <p>q(was) = [0, 0, 0, 2]. It may see positions 0–5. Every key except one gives a raw score of 0 (check the table). Fill in the one that doesn't.</p>
-  <div data-practice-item="l2-fade-was"></div>
+  <p>q(was) = [0, 0, 0, 2]. It may see positions 0–5. Find the one visible key that gives a non-zero score (use the table), then fill in the chain.</p>
+  <div data-practice-item="l2-fade-was-v2"></div>
 
   <h2>Change the query, watch the weights</h2>
-  <p>The same computation, live. Pick a query token; the bars are its weights, and on the right (below, on a phone) each value is a point and the output is the diamond: a weighted average, so it always lands inside the cloud of visible values, pulled toward the heavy ones. The τ slider divides the scores once more; it is <strong>not part of real attention</strong> (τ = 1 there). Push it to 0.25 to see what unscaled, large scores would do: the softmax puts nearly all the weight on one token.</p>
+  <p>The same computation, live. Pick a query token; the bars are its weights, and on the right (below, on a phone) each value is a point and the output is the diamond: a weighted average, so it always lands inside the cloud of visible values, pulled toward the heavy ones. The τ slider divides the scores once more; it is <strong>not part of real attention</strong> (τ = 1 there). Set it to 0.5 and you get exactly the unscaled scores (÷ 1 instead of ÷ 2): for the query “it”, the weight on “cat” jumps from 0.58 to 0.86. At 0.25 the scores are twice that large, as they would be with a bigger d<sub>k</sub>, and the softmax puts nearly all the weight on one token.</p>
   <figure>
     <div data-lc="attention-explorer" id="attention-explorer" data-query="4"></div>
     <figcaption>Scaled dot-product attention on the toy sentence, computed live from the table above. Keyboard: Tab to a slider, then the arrow keys.</figcaption>
@@ -95,21 +95,21 @@
   <p>Things to try: “The” with the mask on (it can only attend to itself, so its weight is 1); “The” with the mask off (it reaches forward to “cat”, a token a decoder would not have yet); “was” (it finds “it”).</p>
 
   <h2>The causal mask</h2>
-  <p>A decoder-only model such as GPT-2 is trained to predict each next token from the ones before it, at every position of a training text at once. If position 4 could read position 5, it could copy the answer. So decoder self-attention masks every later position: their scores are set to −∞ before the softmax, which makes their weights exactly 0<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup><sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>. GPT-2's code builds a lower-triangular mask and subtracts 10<sup>10</sup> from the blocked scores, which has the same effect<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>.</p>
+  <p>A decoder-only model such as GPT-2 is trained to predict each next token from the ones before it, at every position of a training text at once. If position 4 could read position 5, it could copy the answer. So decoder self-attention masks every later position: their scores are set to −∞ before the softmax, which makes their weights exactly 0<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup><sup class="cite"><a href="../RESOURCES.md#s11" data-src="S11">11</a></sup>. GPT-2's code builds a lower-triangular mask and replaces the blocked scores with −10<sup>10</sup>, which has the same effect<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>.</p>
   <figure>
     <div data-lc="mask-grid" data-highlight="4"></div>
     <figcaption>The causal mask for the toy sentence. The highlighted row is the worked example: “it” sees “The” through “it”.</figcaption>
   </figure>
 
   <h2>Many heads at once</h2>
-  <p>A real layer runs several attention heads side by side, each with its own W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>, and concatenates their outputs. The original base model used 8 heads with d<sub>k</sub> = 64 each, over 512-wide vectors<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>; GPT-2's code defaults to 12 heads over 768 dimensions, again 64 per head<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>. Each head does exactly what you computed above.</p>
+  <p>A real layer runs several attention heads side by side, each with its own W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>; their outputs are concatenated and multiplied by one more learned matrix, W<sub>O</sub>, which mixes the heads back into a single 512-wide (GPT-2: 768-wide) vector<sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup><sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>. The original base model used 8 heads with d<sub>k</sub> = 64 each, over 512-wide vectors<sup class="cite"><a href="../RESOURCES.md#s7" data-src="S7">7</a></sup><sup class="cite"><a href="../RESOURCES.md#s8" data-src="S8">8</a></sup>; GPT-2's code defaults to 12 heads over 768 dimensions, again 64 per head<sup class="cite"><a href="../RESOURCES.md#s5" data-src="S5">5</a></sup>. Each head does exactly what you computed above.</p>
 
   <section class="practice" aria-labelledby="practice-h">
     <h2 id="practice-h">Check yourself</h2>
     <p class="lc-muted">Use pen and paper for the numbers; a calculator for e<sup>x</sup> is fine.</p>
     <div data-practice-item="l2-recall-two-keys"></div>
     <div data-practice-item="l2-choice-scale"></div>
-    <div data-practice-item="l2-order-head"></div>
+    <div data-practice-item="l2-order-head-v2"></div>
     <div data-practice-item="l2-choice-output"></div>
     <div data-practice-item="l2-recall-mask-count"></div>
   </section>
@@ -117,13 +117,13 @@
   <section class="challenge" id="challenge" data-kind="milestone" data-milestone="m2" aria-labelledby="challenge-h">
     <p class="kicker">Milestone challenge</p>
     <h2 id="challenge-h">One head, by hand, on your own phrase</h2>
-    <p>Take a 4-token phrase from one of your own prompts (tokenize it as in lesson 1). Give each token toy vectors: q and k with d<sub>k</sub> = 2 or 4, and a 2-D v. Choose them so that one token should clearly attend to another, and say which before you compute. Then compute one causal attention head for two queries, the last token and the second token, in a spreadsheet or in plain code without a library attention function. Finally, run the last token once more without the ÷ √d<sub>k</sub>.</p>
+    <p>Take a 4-token phrase from one of your own prompts (tokenize it as in lesson 1). Give each token toy vectors: q and k with d<sub>k</sub> = 2 or 4, and a 2-D v. Choose them so that one token should clearly attend to another, and say which before you compute. Before the no-scaling run below, also write down what you expect its largest weight to become. Then compute one causal attention head for two queries, the last token and the second token, in a spreadsheet or in plain code without a library attention function. Finally, run the last token once more without the ÷ √d<sub>k</sub>.</p>
     <h3>What to send back</h3>
     <p>Your vectors, your prediction, a table per query (q·k, scaled score, weight, output), the spreadsheet or code, and the no-scaling run.</p>
     <h3>Pass criteria</h3>
     <ol class="criteria">
       <li>For both queries the table shows q·k, the score divided by √d<sub>k</sub> and the softmax weights, and each query's weights add up to 1.00 (± 0.01).</li>
-      <li>The second token's row gives weight 0 to positions 2 and 3 (masked); the last token's row uses all four positions.</li>
+      <li>The second token's row gives weight 0 to positions 2 and 3 (counting from 0, i.e. the third and fourth tokens: masked); the last token's row uses all four positions.</li>
       <li>Each output vector equals the sum of weight × value, with the arithmetic written out for at least one component.</li>
       <li>The no-scaling run reports the largest weight with and without ÷ √d<sub>k</sub>, next to your written prediction from before the run.</li>
     </ol>

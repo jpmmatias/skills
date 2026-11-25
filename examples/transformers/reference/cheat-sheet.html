@@ -25,7 +25,8 @@ ids → wte rows + wpe rows               5 tokens → 5 × 768
                                         x = x + mlp(ln_2(x))
 ln_f, then × wteᵀ                       5 × 50,257 logits
 last row ÷ T → softmax → sample         one new token
-append, repeat                          until end-of-text (50256) or the length limit</div>
+append, repeat                          until the length limit
+                                        (APIs also stop at an end-of-text token, 50256 in GPT-2)</div>
 
   <h2>Vocabulary</h2>
   <div class="table-wrap">
@@ -39,7 +40,7 @@ append, repeat                          until end-of-text (50256) or the length 
         <tr><td><code>q, k, v</code></td><td>Query, key, value: each input vector times learned W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>.</td><td><a href="../lessons/0002-self-attention.html">2</a></td></tr>
         <tr><td><code>d_k</code></td><td>Length of a key (and query) vector per head. 64 in the 2017 base model and in GPT-2 small.</td><td><a href="../lessons/0002-self-attention.html">2</a></td></tr>
         <tr><td><code>causal mask</code></td><td>Scores of later positions set to −∞ before the softmax, so a token sees only itself and earlier tokens.</td><td><a href="../lessons/0002-self-attention.html">2</a></td></tr>
-        <tr><td><code>head</code></td><td>One attention computation. A layer runs several (8 in the 2017 base model, 12 in GPT-2 small) and concatenates them.</td><td><a href="../lessons/0002-self-attention.html">2</a></td></tr>
+        <tr><td><code>head</code></td><td>One attention computation. A layer runs several (8 in the 2017 base model, 12 in GPT-2 small), concatenates them, then multiplies by a learned output matrix W<sub>O</sub>.</td><td><a href="../lessons/0002-self-attention.html">2</a></td></tr>
         <tr><td><code>residual stream</code></td><td>Each token's running vector; every sub-layer adds its output back onto it.</td><td><a href="../lessons/0003-blocks-and-generation.html">3</a></td></tr>
         <tr><td><code>pre-LN / post-LN</code></td><td>Norm before each sub-layer (GPT-2, Llama with RMSNorm) or after the residual add (2017 original).</td><td><a href="../lessons/0003-blocks-and-generation.html">3</a></td></tr>
         <tr><td><code>logits</code></td><td>One raw score per vocabulary token, from the last position's vector.</td><td><a href="../lessons/0003-blocks-and-generation.html">3</a></td></tr>
@@ -58,10 +59,10 @@ p_i at temperature = softmax(logit / T)_i</div>
   <ol>
     <li>A token count only means something together with its tokenizer: the same text can give different counts under different encodings (lesson 1 shows 8 vs 5).</li>
     <li>For OpenAI's encodings a token is about 4 bytes of text on average (tiktoken README). It is an average: lesson 1's Portuguese greeting costs GPT-2 far more tokens per word than English.</li>
-    <li>A leading space is part of the next token, so <code>␣word</code> and <code>word</code> are different tokens.</li>
+    <li>A leading space belongs to the word that follows it, so <code>␣word</code> and <code>word</code> are different strings to the tokenizer and can split differently (lesson 1: <code>␣strawberry</code> is 1 token, <code>strawberry</code> is 3).</li>
     <li>Each query's attention weights add up to 1; the output is a weighted average of values, so it stays inside the range of the values it mixes.</li>
-    <li>In a decoder, position <i>i</i> attends to positions 0…<i>i</i>. Only the last position predicts the next token.</li>
-    <li>A reply of N tokens is N runs of the loop, one sampled token each.</li>
+    <li>In a decoder, position <i>i</i> attends to positions 0…<i>i</i>. When generating, only the last position's logits are used to pick the next token (every position predicts its own next token, which is how training works).</li>
+    <li>In plain decoding, a reply of N tokens is N runs of the loop, one sampled token each.</li>
     <li>Temperature changes how spread out the probabilities are, never their order.</li>
   </ol>
   <footer>Sources: <a href="../RESOURCES.md">RESOURCES.md</a> (GPT-2 sizes: S5; BPE: S1, S2; attention and positions: S7, S8; RoPE: S9; tokens per byte: S3).</footer>

@@ -26,6 +26,8 @@ This is a **shipped example course**, hand-authored to show what Learncraft prod
 
 - 19 items: 6 in L1, 6 in L2, 7 in L3. Two objectives per lesson with 3 items each (at least one non-choice per objective); L3's seventh item interleaves L2 (`l2.o2`, the causal mask during training). The brief asked for 4–6 per lesson; the contract's "≥ 3 per objective" plus "interleave from lesson 3" makes 7 the minimum for L3 with two objectives.
 - Items are placed individually (`data-practice-item`) so each faded example sits next to its worked example.
+- Revision 1 (review CT-05, CT-10/13, CT-14, CT-16, CT-23): retired ids `l1-recall-merge-rule`, `l2-fade-was`, `l2-order-head`, `l3-fade-preln`, `l3-choice-temperature`, `l3-order-generate`; added `l1-recall-pu-count`, `l2-fade-was-v2`, `l2-order-head-v2`, `l3-fade-shapes`, `l3-fade-temp`, `l3-order-generate-v2`. Retired ids are never reused. No learner history exists for this example, so nothing is lost.
+- L1's sinusoidal explorable is now an optional, unassessed aside (review CT-17).
 
 ## Upstream
 
