@@ -20,7 +20,7 @@ What every lesson must contain so the runtime, the check tool, the validator and
 <html lang="en">                                       <!-- the course lang from NOTES.md / course.js -->
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Lesson 3 · Attention weights</title>
   <link rel="stylesheet" href="../assets/style.css">   <!-- imports figures.css -->
   <link rel="stylesheet" href="../assets/theme.css">

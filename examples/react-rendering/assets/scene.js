@@ -31,6 +31,7 @@
   var clamp = V.clamp, lerp = V.lerp, ease = V.ease;
   var seg = function (p, a, b) { return clamp((p - a) / (b - a)); };
   var esc = L.esc, sanitize = L.sanitize || L.esc;
+  var OUT_CLASS = { plain: 1, gold: 1, ok: 1, muted: 1 }; // the .sc-o-* classes figures.css defines
   var PHONE = 480;
 
   function svg(tag, attrs, parent, text) {
@@ -69,6 +70,7 @@
 
   // Terminal panel. Lines are set per beat: term.set(i, kind, content, p)
   //   kind 'cmd' (prompt + highlighted), 'code' (highlighted), 'out' (content = [{ t, c }] with c '' | 'gold' | 'ok' | 'muted')
+  //   (any other c renders as plain: the class never comes from data unchecked)
   function terminal(stage, box) {
     var el = document.createElement('div');
     el.className = 'sc-term';
@@ -86,7 +88,7 @@
           var row;
           if (Ln.kind === 'out') {
             var total = Ln.content.reduce(function (n, s) { return n + s.t.length; }, 0), left = Math.ceil(total * Ln.p);
-            row = Ln.content.map(function (s) { var x = s.t.slice(0, Math.max(0, left)); left -= s.t.length; return x ? '<span class="sc-o-' + (s.c || 'plain') + '">' + esc(x) + '</span>' : ''; }).join('');
+            row = Ln.content.map(function (s) { var x = s.t.slice(0, Math.max(0, left)); left -= s.t.length; return x ? '<span class="sc-o-' + (OUT_CLASS[s.c] ? s.c : 'plain') + '">' + esc(x) + '</span>' : ''; }).join(''); // allow-list (SR-10)
           } else {
             var x = Ln.content.slice(0, Math.ceil(Ln.content.length * Ln.p));
             row = (Ln.kind === 'cmd' ? '<span class="sc-prompt">$</span> ' : '') + highlight(x);

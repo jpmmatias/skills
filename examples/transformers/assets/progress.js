@@ -43,7 +43,7 @@
     'ms.of': '{i} of {n}', 'basis': '{right} of {tried} right on the first try', 'basis.none': 'nothing answered yet', 'basis.challenge': 'from your reviewed challenge',
     'basis.recall': { one: '1 recalled from memory', other: '{n} recalled from memory' },
     'review.due': 'due {date}', 'review.now': 'due now', 'review.lapsed': 'missed last time, due {date}',
-    'review.new': 'starts the day after you finish the practice',
+    'review.new': 'starts the day after your first practice answer',
     'next.title': 'Next up', 'next.review': { one: 'Review 1 topic that is due', other: 'Review {n} topics that are due' },
     'next.reviewHint': 'A few questions from memory, about {min} minutes.',
     'next.continue': 'Continue lesson {n}: {title}', 'next.start': 'Start lesson {n}: {title}',
@@ -61,7 +61,7 @@
     'record.xp': '{xp} XP from first-try answers',
     'record.imported': 'Imported: {added} new, {skipped} already here.', 'record.importErrors': '{n} could not be read.',
     'record.notSaved': 'Imported {added} into this page only: they are NOT saved (browser storage is full or blocked). Export now to keep them.',
-    'record.tooBig': 'Nothing was imported: {reason}',
+    'record.tooBig': '{reason}',
     'storage.lost': 'Your last answers were not saved: browser storage is full or blocked. Practice still works; use Export on the course page before you close this page.',
     'storage.newer': 'Progress was saved by a newer version of this course in another tab, so this page stopped saving to avoid overwriting it. Reload the page.',
     'record.exported': 'Saved {file}.', 'record.bad': 'That file is not a Learncraft progress file.',
@@ -83,7 +83,7 @@
     'ms.of': '{i} de {n}', 'basis': '{right} de {tried} certas na primeira tentativa', 'basis.none': 'nada respondido ainda', 'basis.challenge': 'pelo seu desafio revisado',
     'basis.recall': { one: '1 lembrada de memória', other: '{n} lembradas de memória' },
     'review.due': 'prevista para {date}', 'review.now': 'para agora', 'review.lapsed': 'errada da última vez, prevista para {date}',
-    'review.new': 'começa no dia seguinte ao fim da prática',
+    'review.new': 'começa no dia seguinte à sua primeira resposta na prática',
     'next.title': 'A seguir', 'next.review': { one: 'Revisar 1 tópico pendente', other: 'Revisar {n} tópicos pendentes' },
     'next.reviewHint': 'Algumas perguntas de memória, cerca de {min} minutos.',
     'next.continue': 'Continuar a lição {n}: {title}', 'next.start': 'Começar a lição {n}: {title}',
@@ -101,7 +101,7 @@
     'record.xp': '{xp} XP de respostas certas na primeira tentativa',
     'record.imported': 'Importado: {added} novos, {skipped} já existiam.', 'record.importErrors': '{n} não puderam ser lidos.',
     'record.notSaved': '{added} importados só nesta página: NÃO foram salvos (o armazenamento do navegador está cheio ou bloqueado). Exporte agora para guardá-los.',
-    'record.tooBig': 'Nada foi importado: {reason}',
+    'record.tooBig': 'Nada foi importado (o arquivo passa do limite): {reason}',
     'storage.lost': 'Suas últimas respostas não foram salvas: o armazenamento do navegador está cheio ou bloqueado. A prática continua funcionando; use Exportar na página do curso antes de fechar esta página.',
     'storage.newer': 'O progresso foi salvo por uma versão mais nova deste curso em outra aba, então esta página parou de salvar para não sobrescrevê-lo. Recarregue a página.',
     'record.exported': '{file} salvo.', 'record.bad': 'Esse arquivo não é um arquivo de progresso do Learncraft.',
@@ -137,8 +137,7 @@
       const lv = safe(() => s.level(o, { itemTypes: types || {}, milestoneMastered: proven[o] === true }), { level: 0 });
       level = i === 0 ? +lv.level || 0 : Math.min(level, +lv.level || 0);
       if (lv.basis && typeof lv.basis === 'object') recall += +lv.basis.recallCorrect || 0;
-      const objIds = knownIds && (LC.practiceItems ? LC.practiceItems(l.n).filter((it) => it.objective === o && !it.pretest).map((it) => it.id) : null);
-      const sc = safe(() => s.schedule(o, { itemIds: objIds && objIds.length ? objIds : knownIds || undefined }), null);
+      const sc = safe(() => s.schedule(o), null); // one entry rule everywhere: the first answer on the objective
       if (sc && sc.due && sc.status !== 'new' && (!review || sc.due < review.due)) review = sc;
     });
     const tried = stats ? stats.attempted || 0 : 0, right = stats ? stats.firstTryCorrect || 0 : 0;
@@ -280,8 +279,7 @@
     const say = (text) => { msg.textContent = text; LC.announce(text); };
     host.querySelector('.lc-export').addEventListener('click', () => {
       if (!s) return say(t('storage.off'));
-      const d = new Date(), day = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-      const file = 'progress-' + String(c.id || 'course').replace(/[^A-Za-z0-9_-]+/g, '-') + '-' + day + '.json'; // local date
+      const file = s.exportFilename ? s.exportFilename() : 'progress-' + String(c.id || 'course').replace(/[^A-Za-z0-9_-]+/g, '-') + '-' + new Date().toISOString().slice(0, 10) + '.json'; // UTC date, as the store
       const url = URL.createObjectURL(new Blob([s.exportJSON()], { type: 'application/json' }));
       const a = doc.createElement('a'); a.href = url; a.download = file; doc.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);

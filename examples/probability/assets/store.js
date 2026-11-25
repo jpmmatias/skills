@@ -13,6 +13,9 @@
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
   var FORMAT = 'learncraft-progress', SCHEMA = 2, DAY = 864e5, COMPACT_AFTER = 90 * DAY;
+  // Bounds (SR-06, SR-09): imports are capped so one file cannot freeze the page or fill the shared quota;
+  // events this runtime cannot validate are kept verbatim up to a cap; corrupt values keep a few backups.
+  var MAX_IMPORT_CHARS = 5e6, MAX_IMPORT_EVENTS = 20000, MAX_QUARANTINE = 500, MAX_QUARANTINE_CHARS = 5e5, MAX_BACKUPS = 3;
   var INTERVALS = [0, 1, 3, 7, 14, 30]; // days, indexed by box 1..5 (a design choice, not a research constant)
   var KINDS = ['exposure', 'attempt', 'review_session', 'migration'], SOURCES = ['browser', 'migration', 'import'];
   var CONTEXTS = ['lesson', 'practice', 'review', 'diagnostic'], OUTCOMES = ['correct', 'incorrect', 'n/a'];
@@ -28,7 +31,18 @@
   function isInt(n) { return typeof n === 'number' && isFinite(n) && Math.floor(n) === n; }
   function iso(ms) { return new Date(ms).toISOString(); }
   function ms(at) { return Date.parse(at); }
-  function isDate(s) { return typeof s === 'string' && s.length <= 40 && isFinite(Date.parse(s)); }
+  // Strict ISO 8601 (the progress schema's pattern), a real calendar date and a sane year (SR-13). Date.parse alone
+  // accepts "1", "Feb 30" and year 275760.
+  var ISO = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d{1,9})?(Z|[+-](\d{2}):(\d{2}))$/;
+  function isDate(s) {
+    var m = typeof s === 'string' && s.length <= 40 ? ISO.exec(s) : null;
+    if (!m) return false;
+    var y = +m[1], mo = +m[2], d = +m[3];
+    if (y < 2000 || y > 2199 || mo < 1 || mo > 12 || d < 1 || d > new Date(Date.UTC(y, mo, 0)).getUTCDate()) return false;
+    if (+m[4] > 23 || +m[5] > 59 || +m[6] > 59 || (m[9] && (+m[9] > 23 || +m[10] > 59))) return false;
+    return isFinite(Date.parse(s));
+  }
+  function safeIso(t) { try { var s = iso(t); return isDate(s) ? s : null; } catch (e) { return null; } }
   function safeParse(text) { // drops __proto__/constructor/prototype keys at every depth
     try { return typeof text === 'string' ? JSON.parse(text, function (k, v) { return BAD_KEYS.indexOf(k) >= 0 ? undefined : v; }) : null; } catch (e) { return null; }
   }
@@ -136,7 +150,7 @@
     Object.keys(answers).forEach(function (k) {
       var m = /^L(\d+):(.+)$/.exec(k), a = answers[k];
       if (!m || !a || typeof a.ok !== 'boolean') return;
-      var at = isInt(a.at) && a.at > 0 ? iso(a.at) : iso(nowMs);
+      var at = (isInt(a.at) && a.at > 0 && safeIso(a.at)) || iso(nowMs);
       push('a|' + k, at, { kind: 'attempt', lesson: +m[1], objective: 'l' + m[1], item: m[2], itemVersion: 'legacy',
         firstEver: null, attemptInSession: null, outcome: a.ok ? 'correct' : 'incorrect', note: 'v0 answer: last result only; first try unknown' });
     });
@@ -145,7 +159,7 @@
       var L = lessons[n];
       if (!/^\d+$/.test(n) || !L || !isInt(L.stage) || L.stage < 0 || !isInt(L.last) || L.last <= 0) return;
       var box = Math.min(L.stage + 1, 2); // v0 stage 0 ≈ box 1 (1 day); capped at 2 because v0 advanced on failures
-      push('s|' + n, iso(nowMs), { lesson: +n, objective: 'l' + n, box: box, due: iso(L.last + INTERVALS[box] * DAY),
+      push('s|' + n, iso(nowMs), { lesson: +n, objective: 'l' + n, box: box, due: safeIso(L.last + INTERVALS[box] * DAY),
         note: 'legacy stage ' + L.stage + ' capped at box 2: v0 advanced on failures' });
     });
     if (typeof v0.xp === 'number' && v0.xp > 0 && isFinite(v0.xp)) push('xp', iso(nowMs), { legacyXp: v0.xp, note: 'v0 XP' });
@@ -154,12 +168,15 @@
 
   // ---------- derivations (pure) ----------
   function isLegacy(e) { return e.itemVersion === 'legacy'; }
+  // context 'diagnostic' marks a pretest guess (an item with pretest: true, asked before teaching). It is evidence
+  // of prior knowledge only: never a first try, never part of a level, XP or review entry (SK-03).
+  function isDiagnostic(e) { return e.context === 'diagnostic'; }
   function correct(e) { return e.outcome === 'correct' && !e.assisted; }
   // First try per item+version (earliest by time), and per item the current version's first try (legacy only if
   // nothing newer exists). Stored firstEver flags are informational; merged logs are re-derived by time.
   function firstTries(sorted, pred) {
     var byKey = map(), byItem = map();
-    sorted.forEach(function (e) { var k = e.item + '\u0000' + e.itemVersion; if (e.kind === 'attempt' && pred(e) && !byKey[k]) byKey[k] = e; });
+    sorted.forEach(function (e) { var k = e.item + '\u0000' + e.itemVersion; if (e.kind === 'attempt' && !isDiagnostic(e) && pred(e) && !byKey[k]) byKey[k] = e; });
     vals(byKey).forEach(function (e) {
       var cur = byItem[e.item];
       if (!cur || (isLegacy(cur) && !isLegacy(e)) || (isLegacy(cur) === isLegacy(e) && ms(e.at) >= ms(cur.at))) byItem[e.item] = e;
@@ -176,7 +193,7 @@
     var typeOf = function (e) { return e.itemType || (has(types, e.item) ? types[e.item] : null); };
     var nItemsOk = items.filter(correct).length, nFreshOk = fresh.filter(correct).length;
     var recallOk = fresh.filter(function (e) { return correct(e) && RECALL_TYPES.indexOf(typeOf(e)) >= 0; }).length;
-    var attempts = mine.filter(function (e) { return e.kind === 'attempt'; }), reviews = mine.filter(function (e) { return e.kind === 'review_session'; });
+    var attempts = mine.filter(function (e) { return e.kind === 'attempt' && !isDiagnostic(e); }), reviews = mine.filter(function (e) { return e.kind === 'review_session'; });
     var lastSuccess = null, retained = false, lastPassed = null;
     mine.forEach(function (e) {
       var t = ms(e.at);
@@ -198,7 +215,8 @@
   }
 
   var SAY = {
-    'new': 'Not in review yet: answer every practice item once to schedule the first review.',
+    'new': 'Not in review yet: your first practice answer on it schedules the first review.',
+    first: '{date}: first practice answer → box 1, first review {due}',
     enter: '{date}: every practice item tried → box 1, first review {due}',
     migrated: '{date}: carried over from the old progress format → box {box}, due {due} (capped at box 2: the old schedule advanced on failures)',
     pass: '{date}: {correct}/{total} correct → box {box}, due {due}',
@@ -225,9 +243,12 @@
       var at = ms(e.at);
       if (e.kind === 'migration' && e.box && lessonN !== null && e.lesson === lessonN) {
         set(e.box, ms(e.due), 'scheduled', 'migrated', at);
-      } else if (e.kind === 'attempt' && e.objective === objective && box === 0) {
+      } else if (e.kind === 'attempt' && !isDiagnostic(e) && e.objective === objective && box === 0) {
         if (need.indexOf(e.item) >= 0 && !seen[e.item]) { seen[e.item] = 1; nSeen++; }
-        if (!need.length || nSeen === need.length) set(1, at + DAY, 'scheduled', 'enter', at);
+        // The runtime's one entry rule: the first (non-diagnostic) attempt on the objective enters box 1. The pure
+        // function still honours opts.itemIds ("every listed item tried") for callers that want the stricter rule.
+        if (!need.length) set(1, at + DAY, 'scheduled', 'first', at);
+        else if (nSeen === need.length) set(1, at + DAY, 'scheduled', 'enter', at);
       } else if (e.kind === 'review_session' && e.objective === objective) {
         var c = { correct: e.results.filter(function (r) { return r.outcome === 'correct'; }).length, total: e.results.length };
         if (!e.passed) set(1, at + DAY, 'lapsed', 'fail', at, c);
@@ -247,45 +268,93 @@
     o = o || {};
     var courseId = o.courseId;
     if (!str(courseId)) throw new TypeError('createStore: courseId is required');
-    var storage = has(o, 'storage') ? o.storage : defaultStorage();
+    var usingDefault = !has(o, 'storage');
+    var storage = usingDefault ? defaultStorage() : o.storage;
     var now = o.now || Date.now, random = o.random || Math.random;
     var KEY = 'learn:' + courseId + ':v2', V0 = 'learn:' + courseId;
     var rand4 = function () { return ('000' + Math.floor(random() * 1679616).toString(36)).slice(-4); };
     var session = 's_' + now().toString(36) + rand4();
-    var persistent = !!storage, loaded = false, listeners = [], lastLoad = null;
-    var doc = emptyDoc();
+    var persistent = !!storage, loaded = false, listeners = [], lastLoad = null, lastWrite = null;
+    var doc = emptyDoc(), ids = map(), quarantine = [], lastWritten = null, refusedNewer = false;
 
     function emptyDoc() { var t = iso(now()); return { format: FORMAT, schemaVersion: SCHEMA, course: courseId, createdAt: t, updatedAt: t, events: [] }; }
     function read(key) { try { return { value: storage.getItem(key) }; } catch (e) { return { error: e }; } }
+    function put(key, value) { try { storage.setItem(key, value); return true; } catch (e) { return false; } }
+    function drop(key) { try { if (typeof storage.removeItem === 'function') storage.removeItem(key); else storage.setItem(key, ''); } catch (e) { /* best effort */ } }
+    function qKey(e) { return e && typeof e.id === 'string' ? 'id:' + e.id : 'json:' + JSON.stringify(e); }
+    // Events that fail sanitizeEvent but are objects (a newer kind, a longer field) are quarantined: kept verbatim,
+    // never rendered or derived from, written back and exported unchanged, re-validated on every load (SR-06).
     function checkDoc(p) {
       if (!p || typeof p !== 'object' || Array.isArray(p) || p.format !== FORMAT) return { error: 'not a progress document' };
       if (typeof p.schemaVersion === 'number' && p.schemaVersion > SCHEMA) return { error: 'newer format', newer: true };
       if (p.schemaVersion !== SCHEMA || p.course !== courseId || !Array.isArray(p.events)) return { error: 'invalid document' };
-      var d = emptyDoc(), ids = map(), rejected = 0;
+      var d = emptyDoc(), seen = map(), rejected = 0, q = [], qSeen = map();
       if (isDate(p.createdAt)) d.createdAt = p.createdAt;
       if (isDate(p.updatedAt)) d.updatedAt = p.updatedAt;
-      p.events.forEach(function (e) { var c = sanitizeEvent(e); if (c.error) rejected++; else if (!ids[c.event.id]) { ids[c.event.id] = 1; d.events.push(c.event); } });
-      return { doc: d, rejected: rejected };
+      p.events.forEach(function (e) {
+        var c = sanitizeEvent(e);
+        if (!c.error) { if (!seen[c.event.id]) { seen[c.event.id] = 1; d.events.push(c.event); } return; }
+        rejected++;
+        if (e && typeof e === 'object' && !Array.isArray(e) && !qSeen[qKey(e)]) { qSeen[qKey(e)] = 1; q.push(e); }
+      });
+      return { doc: d, rejected: rejected, quarantine: q };
+    }
+    function reindex() { ids = map(); doc.events.forEach(function (e) { ids[e.id] = 1; }); }
+    function addQuarantine(list) { // bounded; the overflow goes to a corrupt backup instead of being lost
+      var have = map(), size = 0, over = [];
+      quarantine.forEach(function (e) { have[qKey(e)] = 1; size += JSON.stringify(e).length; });
+      (list || []).forEach(function (e) {
+        var k = qKey(e);
+        if (have[k] || (e && typeof e.id === 'string' && ids[e.id])) return;
+        var n = JSON.stringify(e).length;
+        if (quarantine.length >= MAX_QUARANTINE || size + n > MAX_QUARANTINE_CHARS) { over.push(e); return; }
+        have[k] = 1; size += n; quarantine.push(e);
+      });
+      if (over.length && storage) backupCorrupt(JSON.stringify({ format: FORMAT, quarantineOverflow: true, events: over }));
+    }
+    // Corrupt values are backed up, never lost: `<key>:corrupt` holds the newest; older ones move to
+    // `<key>:corrupt:<ISO time>`; `<key>:corrupt:index` lists them and only the newest MAX_BACKUPS are kept.
+    function backupCorrupt(raw) {
+      var IDX = KEY + ':corrupt:index', LATEST = KEY + ':corrupt';
+      var idx = safeParse(read(IDX).value || '');
+      idx = Array.isArray(idx) ? idx.filter(function (x) { return x && typeof x.key === 'string' && x.key.indexOf(KEY + ':corrupt') === 0 && typeof x.at === 'string'; }) : [];
+      var prev = read(LATEST).value;
+      if (prev != null && prev !== '' && !idx.some(function (x) { return x.key === LATEST; })) idx.push({ key: LATEST, at: 'before-' + iso(now()) });
+      var last = idx[idx.length - 1];
+      if (last && last.key === LATEST && prev != null) {
+        var moved = KEY + ':corrupt:' + last.at.replace(/^before-/, '');
+        while (idx.some(function (x) { return x.key === moved; })) moved += '+';
+        if (put(moved, prev)) last.key = moved; else idx.pop();
+      }
+      if (!put(LATEST, raw)) return false;
+      idx.push({ key: LATEST, at: iso(now()) });
+      while (idx.length > MAX_BACKUPS) drop(idx.shift().key);
+      put(IDX, JSON.stringify(idx));
+      return true;
     }
     function load() {
-      var res = { ok: true, persistent: true, migrated: false, rejected: 0, templateId: courseId === 'topic-slug' };
-      loaded = true; doc = emptyDoc();
-      if (!storage) { persistent = false; res.persistent = false; return (lastLoad = res); }
+      var res = { ok: true, persistent: true, migrated: false, rejected: 0, quarantined: 0, templateId: courseId === 'topic-slug' };
+      loaded = true; doc = emptyDoc(); quarantine = []; ids = map(); refusedNewer = false; lastWritten = null;
+      if (!storage) { persistent = false; res.persistent = false; res.reason = 'unavailable'; return (lastLoad = res); }
       var raw = read(KEY);
-      if (raw.error) { persistent = false; res.persistent = false; return (lastLoad = res); }
+      if (raw.error) { persistent = false; res.persistent = false; res.reason = 'blocked'; return (lastLoad = res); }
       persistent = true;
       if (raw.value != null) {
         var c = checkDoc(safeParse(raw.value));
-        if (c.doc) { doc = c.doc; res.rejected = c.rejected; return (lastLoad = res); }
+        if (c.doc) {
+          doc = c.doc; reindex(); addQuarantine(c.quarantine); lastWritten = raw.value;
+          res.rejected = c.rejected; res.quarantined = quarantine.length; return (lastLoad = res);
+        }
         res.ok = false;
-        if (c.newer) { persistent = false; res.persistent = false; res.reason = 'newer-format'; return (lastLoad = res); } // never overwrite
+        if (c.newer) { persistent = false; refusedNewer = true; res.persistent = false; res.reason = 'newer-format'; return (lastLoad = res); } // never overwrite
         res.reason = 'corrupt';
-        try { storage.setItem(KEY + ':corrupt', raw.value); } catch (e) { /* best effort */ }
+        backupCorrupt(raw.value);
+        lastWritten = raw.value; // backed up: the write below may replace it without backing it up twice
       }
       var old = read(V0);
       if (old.value != null) {
         var v0 = safeParse(old.value);
-        if (v0 && typeof v0 === 'object' && !Array.isArray(v0)) { doc.events = migrateV0(v0, { courseId: courseId, now: now }); res.migrated = true; }
+        if (v0 && typeof v0 === 'object' && !Array.isArray(v0)) { doc.events = migrateV0(v0, { courseId: courseId, now: now }); reindex(); res.migrated = true; }
         else res.rejected++;
       }
       if (res.migrated || res.reason) write();
@@ -293,10 +362,10 @@
       return (lastLoad = res);
     }
     function ensure() { if (!loaded) load(); } // every method loads lazily if load() was not called
-    function idSet() { var ids = map(); doc.events.forEach(function (e) { ids[e.id] = 1; }); return ids; }
-    function merge(incoming) { // union by id, then time order
-      var ids = idSet(), added = incoming.filter(function (e) { return !ids[e.id] && (ids[e.id] = 1); });
+    function merge(incoming) { // union by id, then time order; returns how many were new
+      var added = incoming.filter(function (e) { return !ids[e.id] && (ids[e.id] = 1); });
       if (added.length) doc.events = sortEvents(doc.events.concat(added));
+      return added.length;
     }
     function compact(cutoff) { // exposure events older than 90 days → one count event per lesson; never attempts
       var groups = map(), keep = [], changed = false;
@@ -310,28 +379,63 @@
           note: count + ' lesson views up to ' + last.at.slice(0, 10) + ' compacted' }).event);
         changed = true;
       });
-      if (changed) doc.events = sortEvents(keep);
+      if (changed) { doc.events = sortEvents(keep); reindex(); }
       return changed;
     }
-    function write() {
-      if (!persistent) return false;
-      doc.updatedAt = iso(now());
-      var cur = read(KEY); // another tab may have appended since we loaded: merge, never clobber
-      if (cur.value) { var c = checkDoc(safeParse(cur.value)); if (c.doc) merge(c.doc.events); }
-      for (var i = 0; i < 2; i++) {
-        try { storage.setItem(KEY, JSON.stringify(doc)); return true; }
-        catch (e) { if (!(i === 0 && isQuota(e) && compact(now() - COMPACT_AFTER))) break; }
-      }
-      return (persistent = false);
+    function serialize() {
+      return JSON.stringify(quarantine.length ? Object.assign({}, doc, { events: doc.events.concat(quarantine) }) : doc);
     }
-    function notify() { listeners.slice().forEach(function (fn) { try { fn(api); } catch (e) { /* a listener never breaks the store */ } }); }
-    function append(e) { doc.events.push(e); write(); notify(); return e; }
+    // Writes the document and returns { ok, persisted, reason }. It never clobbers: another tab's events are merged
+    // first; a newer-format document is left alone (persistence stops); a corrupt value is backed up first.
+    // Listeners hear about every failed write (SR-05), with (api, { type: 'write', persisted: false, reason }).
+    function write() {
+      var st;
+      if (!persistent) st = { ok: false, persisted: false, reason: refusedNewer ? 'newer-format' : storage ? 'not-saving' : 'unavailable' };
+      else {
+        doc.updatedAt = iso(now());
+        var cur = read(KEY);
+        if (cur.error) st = { ok: false, persisted: false, reason: 'blocked' };
+        else if (cur.value != null && cur.value !== lastWritten) { // another tab or store wrote since: merge, never clobber
+          var c = checkDoc(safeParse(cur.value));
+          if (c.doc) { merge(c.doc.events); addQuarantine(c.quarantine); }
+          else if (c.newer) { refusedNewer = true; st = { ok: false, persisted: false, reason: 'newer-format' }; }
+          else backupCorrupt(cur.value);
+        }
+        if (!st) {
+          for (var i = 0; i < 2 && !st; i++) {
+            var text = serialize();
+            try { storage.setItem(KEY, text); lastWritten = text; st = { ok: true, persisted: true }; }
+            catch (e) { if (!(i === 0 && isQuota(e) && compact(now() - COMPACT_AFTER))) st = { ok: false, persisted: false, reason: isQuota(e) ? 'quota' : 'blocked' }; }
+          }
+        }
+      }
+      lastWrite = Object.assign({ at: iso(now()) }, st);
+      if (!st.persisted) { persistent = false; notify({ type: 'write', persisted: false, reason: st.reason }); }
+      return st;
+    }
+    function notify(info) { listeners.slice().forEach(function (fn) { try { fn(api, info || { type: 'change' }); } catch (e) { /* a listener never breaks the store */ } }); }
+    function append(e) { doc.events.push(e); ids[e.id] = 1; write(); notify({ type: 'change', persisted: persistent }); return e; }
     function base(extra) {
       var id;
-      do { id = 'e_' + now().toString(36) + '_' + rand4(); } while (doc.events.some(function (e) { return e.id === id; }));
+      do { id = 'e_' + now().toString(36) + '_' + rand4(); } while (ids[id]);
       return Object.assign({ v: 1, id: id, at: iso(now()), course: courseId, source: 'browser', assisted: false }, NULLS, { session: session }, extra);
     }
     function add(e, what) { var c = sanitizeEvent(e); if (c.error) throw new TypeError(what + ': ' + c.error); return append(c.event); }
+    // Re-reads storage after another tab wrote (the browser's `storage` event), merges, and tells listeners (SR-13).
+    function refresh() {
+      if (!loaded) { load(); notify({ type: 'external' }); return { changed: true }; }
+      if (!storage) return { changed: false };
+      var cur = read(KEY), changed = 0;
+      if (cur.error || cur.value == null || cur.value === lastWritten) return { changed: false };
+      var c = checkDoc(safeParse(cur.value));
+      if (c.doc) { changed = merge(c.doc.events); addQuarantine(c.quarantine); lastWritten = cur.value; } // we now hold all of it
+      else if (c.newer) { refusedNewer = true; persistent = false; notify({ type: 'write', persisted: false, reason: 'newer-format' }); return { changed: false }; }
+      notify({ type: 'external' });
+      return { changed: changed > 0 };
+    }
+    if (usingDefault && storage && typeof window !== 'undefined' && window.addEventListener && o.listen !== false) {
+      window.addEventListener('storage', function (e) { if (e.key === KEY || e.key === null) { try { refresh(); } catch (err) { /* never break the page */ } } });
+    }
 
     function recordExposure(lesson) { // at most one per page session and lesson
       ensure();
@@ -343,11 +447,12 @@
       ensure(); a = a || {};
       if (!str(a.item)) throw new TypeError('recordAttempt: item is required');
       var lesson = a.lesson == null ? null : a.lesson, ver = a.itemVersion || null, sess = a.session || session;
-      var prior = doc.events.filter(function (e) { return e.kind === 'attempt' && e.item === a.item; });
-      var e = base({ kind: 'attempt', context: a.context || 'lesson', lesson: lesson, objective: a.objective || (lesson != null ? 'l' + lesson : null),
+      var ctx = a.context || 'lesson';
+      var prior = doc.events.filter(function (e) { return e.kind === 'attempt' && e.item === a.item && !isDiagnostic(e); });
+      var e = base({ kind: 'attempt', context: ctx, lesson: lesson, objective: a.objective || (lesson != null ? 'l' + lesson : null),
         item: a.item, itemType: a.itemType || null, itemVersion: ver, session: sess,
         attemptInSession: prior.filter(function (p) { return p.session === sess; }).length + 1,
-        firstEver: !prior.some(function (p) { return p.itemVersion === ver; }),
+        firstEver: ctx === 'diagnostic' ? false : !prior.some(function (p) { return p.itemVersion === ver; }),
         outcome: typeof a.correct === 'boolean' ? (a.correct ? 'correct' : 'incorrect') : a.outcome, assisted: !!a.assisted });
       if (a.score != null) e.score = a.score;
       if (a.note != null) e.note = String(a.note);
@@ -408,27 +513,47 @@
     function exportJSON() {
       ensure();
       return JSON.stringify({ format: FORMAT, schemaVersion: SCHEMA, course: courseId, createdAt: doc.createdAt,
-        updatedAt: doc.updatedAt, exportedAt: iso(now()), events: doc.events }, null, 2);
+        updatedAt: doc.updatedAt, exportedAt: iso(now()), events: doc.events.concat(quarantine) }, null, 2); // quarantined events travel too
     }
     function exportFilename() { return 'progress-' + courseId.replace(/[^A-Za-z0-9_-]+/g, '-') + '-' + iso(now()).slice(0, 10) + '.json'; }
+    // → { added, skipped, errors, persisted, reason? }. Capped (MAX_IMPORT_CHARS, MAX_IMPORT_EVENTS) with a clear
+    // message; `persisted: false` means the events are in this page only (storage full or blocked): say so (SR-05).
     function importJSON(text, opts) {
       ensure(); opts = opts || {};
       var res = { added: 0, skipped: 0, errors: [] };
-      var p = safeParse(typeof text === 'string' ? text : JSON.stringify(text));
+      // persisted / reason are non-enumerable: additive to the plan §3 result without changing its JSON or deep-equality.
+      var flag = function (k, v) { Object.defineProperty(res, k, { value: v, enumerable: false, writable: true, configurable: true }); };
+      flag('persisted', persistent);
+      var raw = typeof text === 'string' ? text : JSON.stringify(text);
+      if (typeof raw === 'string' && raw.length > MAX_IMPORT_CHARS) {
+        res.errors.push('The file is too large (' + (raw.length / 1e6).toFixed(1) + ' MB; the limit is ' + MAX_IMPORT_CHARS / 1e6 + ' MB). Nothing was imported.');
+        return res;
+      }
+      var p = safeParse(raw);
       if (!p || typeof p !== 'object' || Array.isArray(p)) { res.errors.push('The file is not JSON.'); return res; }
       if (p.format !== FORMAT) { res.errors.push('This is not a Learncraft progress file.'); return res; }
       if (p.schemaVersion !== SCHEMA) { res.errors.push('Unsupported schemaVersion ' + String(p.schemaVersion).slice(0, 20) + '.'); return res; }
       if (p.course !== courseId && !opts.force) { res.errors.push('This file is for course "' + String(p.course).slice(0, 80) + '", not "' + courseId + '".'); return res; }
       if (!Array.isArray(p.events)) { res.errors.push('The file has no events list.'); return res; }
-      var ids = idSet(), incoming = [];
+      if (p.events.length > MAX_IMPORT_EVENTS) {
+        res.errors.push('The file has ' + p.events.length + ' events; the limit is ' + MAX_IMPORT_EVENTS + '. Nothing was imported.');
+        return res;
+      }
+      var seen = map(), incoming = [], latest = now() + DAY;
       p.events.forEach(function (e, i) {
         if (e && typeof e === 'object' && e.source == null) e = Object.assign({}, e, { source: 'import' });
         var c = sanitizeEvent(e);
+        if (!c.error && ms(c.event.at) > latest) c = { error: 'bad at (in the future)' };
         if (c.error) { if (res.errors.length < 50) res.errors.push('events[' + i + ']: ' + c.error); return; }
-        if (ids[c.event.id]) { res.skipped++; return; }
-        ids[c.event.id] = 1; incoming.push(c.event); res.added++;
+        if (ids[c.event.id] || seen[c.event.id]) { res.skipped++; return; }
+        seen[c.event.id] = 1; incoming.push(c.event); res.added++;
       });
-      if (incoming.length) { merge(incoming); write(); notify(); }
+      if (incoming.length) {
+        merge(incoming);
+        var w = write();
+        flag('persisted', w.persisted); if (!w.persisted) flag('reason', w.reason);
+        notify({ type: 'import', persisted: w.persisted });
+      }
       return res;
     }
     function subscribe(fn) { listeners.push(fn); return function () { listeners = listeners.filter(function (f) { return f !== fn; }); }; }
@@ -439,8 +564,11 @@
       lessonStats: lessonStats, level: level, schedule: schedule, due: due, recordReviewSession: recordReviewSession,
       xp: xp, exportJSON: exportJSON, exportFilename: exportFilename, importJSON: importJSON, subscribe: subscribe,
       events: function () { ensure(); return doc.events.slice(); },
+      // Additive (security review): refresh() after another tab wrote; quarantined() counts kept-but-unread events.
+      refresh: refresh, quarantined: function () { ensure(); return quarantine.length; },
       get persistent() { return persistent; },
-      get lastLoad() { return lastLoad; }
+      get lastLoad() { return lastLoad; },
+      get lastWrite() { return lastWrite; }
     };
     return api;
   }
@@ -448,6 +576,7 @@
   return {
     createStore: createStore, migrateV0: migrateV0, deriveSchedule: deriveSchedule, deriveLevel: deriveLevel,
     normalizeAnswer: normalizeAnswer, matchAnswer: matchAnswer, itemVersion: itemVersion, sanitizeEvent: sanitizeEvent,
-    lessonOf: lessonOf, FORMAT: FORMAT, SCHEMA_VERSION: SCHEMA, INTERVALS: INTERVALS.slice(1), LEVEL_NAMES: LEVEL_NAMES.slice(), RECALL_TYPES: RECALL_TYPES.slice()
+    lessonOf: lessonOf, isDate: isDate, FORMAT: FORMAT, SCHEMA_VERSION: SCHEMA,
+    LIMITS: { importChars: MAX_IMPORT_CHARS, importEvents: MAX_IMPORT_EVENTS, quarantine: MAX_QUARANTINE, backups: MAX_BACKUPS }, INTERVALS: INTERVALS.slice(1), LEVEL_NAMES: LEVEL_NAMES.slice(), RECALL_TYPES: RECALL_TYPES.slice()
   };
 });

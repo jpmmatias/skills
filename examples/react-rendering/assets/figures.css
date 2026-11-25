@@ -58,6 +58,8 @@ svg.dg { width: 100%; height: auto; display: block; font-family: var(--font-ui);
 .stepper, .dg-flow-wrap { margin: 1.25rem 0; }
 .stepper .captions p, .dg-flow-cap { margin: .75rem 0 0; min-height: 3.2em; }
 .dg-scroll { overflow-x: auto; }
+/* Hand-drawn stepper SVGs scale with the column; cap them so a 900px viewBox does not blow up on wide screens. */
+.stepper .dg-scroll > svg, .stepper > svg { display: block; width: 100%; max-width: min(100%, 760px); height: auto; margin-inline: auto; }
 .stepper:focus-visible, .dg-flow-wrap:focus-visible, .lc-explorable:focus-visible { outline: 2px solid var(--signal, var(--accent)); outline-offset: 4px; }
 
 /* ---------- timeline controls (viz.js), light pages ---------- */

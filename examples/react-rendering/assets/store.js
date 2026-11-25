@@ -215,7 +215,8 @@
   }
 
   var SAY = {
-    'new': 'Not in review yet: answer every practice item once to schedule the first review.',
+    'new': 'Not in review yet: your first practice answer on it schedules the first review.',
+    first: '{date}: first practice answer → box 1, first review {due}',
     enter: '{date}: every practice item tried → box 1, first review {due}',
     migrated: '{date}: carried over from the old progress format → box {box}, due {due} (capped at box 2: the old schedule advanced on failures)',
     pass: '{date}: {correct}/{total} correct → box {box}, due {due}',
@@ -244,7 +245,10 @@
         set(e.box, ms(e.due), 'scheduled', 'migrated', at);
       } else if (e.kind === 'attempt' && !isDiagnostic(e) && e.objective === objective && box === 0) {
         if (need.indexOf(e.item) >= 0 && !seen[e.item]) { seen[e.item] = 1; nSeen++; }
-        if (!need.length || nSeen === need.length) set(1, at + DAY, 'scheduled', 'enter', at);
+        // The runtime's one entry rule: the first (non-diagnostic) attempt on the objective enters box 1. The pure
+        // function still honours opts.itemIds ("every listed item tried") for callers that want the stricter rule.
+        if (!need.length) set(1, at + DAY, 'scheduled', 'first', at);
+        else if (nSeen === need.length) set(1, at + DAY, 'scheduled', 'enter', at);
       } else if (e.kind === 'review_session' && e.objective === objective) {
         var c = { correct: e.results.filter(function (r) { return r.outcome === 'correct'; }).length, total: e.results.length };
         if (!e.passed) set(1, at + DAY, 'lapsed', 'fail', at, c);
@@ -345,6 +349,7 @@
         if (c.newer) { persistent = false; refusedNewer = true; res.persistent = false; res.reason = 'newer-format'; return (lastLoad = res); } // never overwrite
         res.reason = 'corrupt';
         backupCorrupt(raw.value);
+        lastWritten = raw.value; // backed up: the write below may replace it without backing it up twice
       }
       var old = read(V0);
       if (old.value != null) {
@@ -515,7 +520,10 @@
     // message; `persisted: false` means the events are in this page only (storage full or blocked): say so (SR-05).
     function importJSON(text, opts) {
       ensure(); opts = opts || {};
-      var res = { added: 0, skipped: 0, errors: [], persisted: persistent };
+      var res = { added: 0, skipped: 0, errors: [] };
+      // persisted / reason are non-enumerable: additive to the plan §3 result without changing its JSON or deep-equality.
+      var flag = function (k, v) { Object.defineProperty(res, k, { value: v, enumerable: false, writable: true, configurable: true }); };
+      flag('persisted', persistent);
       var raw = typeof text === 'string' ? text : JSON.stringify(text);
       if (typeof raw === 'string' && raw.length > MAX_IMPORT_CHARS) {
         res.errors.push('The file is too large (' + (raw.length / 1e6).toFixed(1) + ' MB; the limit is ' + MAX_IMPORT_CHARS / 1e6 + ' MB). Nothing was imported.');
@@ -543,7 +551,7 @@
       if (incoming.length) {
         merge(incoming);
         var w = write();
-        res.persisted = w.persisted; if (!w.persisted) res.reason = w.reason;
+        flag('persisted', w.persisted); if (!w.persisted) flag('reason', w.reason);
         notify({ type: 'import', persisted: w.persisted });
       }
       return res;

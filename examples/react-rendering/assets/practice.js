@@ -4,13 +4,16 @@
 // Data (lessons/NNNN.practice.js):
 //   Learncraft.practice(3, [ { id, type: 'choice'|'recall'|'order'|'fade', objective?, prompt, … } ]);
 //     choice  options: [{ text, correct?, why? }]   every option's `why` is shown when it is picked; code: true → mono
-//     recall  accept: ['softmax', …], tolerance?: 0.01 (numeric answers), why?   The typed answer (first 200
+//     recall  accept: ['softmax', 42, { answer: 3.14, tolerance: 0.01 }, …], tolerance?: 0.01 (numeric answers;
+//             an { answer, tolerance } entry has its own), why?   Text matching: Learncraft.store.matchAnswer. The typed answer (first 200
 //             characters) is kept in the attempt's note, so the teacher can see misconceptions in an export.
 //             Graded after normalising: trim, case-fold, collapse spaces, strip trailing . , ; : ! ? and quotes.
 //             After 2 misses the expected answer is shown; later attempts are recorded with assisted: true.
 //     order   steps: ['first', 'second', …] in the right order (shown shuffled; ↑/↓ buttons, keyboard-operable)
 //     fade    template: 'scores = Q · {{K}}ᵀ', blanks: { K: ['K'] }, labels?: { K: 'the key matrix' }, code?: false
 //   `prompt` and `why` may hold light markup (b, i, em, strong, code, sup, sub, br, a href); everything else is text.
+//   pretest: true   asked before teaching (a guess). Recorded with context 'diagnostic': never a first try, never
+//                   counted in levels, the lesson counter or review entry, and never drawn into review sessions.
 // Placement: <div data-practice-set></div> renders the lesson's items in order (one "Check yourself" list);
 //            <div data-practice-item="id"></div> renders one item anywhere.
 // Option order: shuffled with Learncraft.rng(item id + page session), so it is stable while the page is open and
@@ -33,15 +36,16 @@
     'recall.label': 'Your answer', 'recall.empty': 'Type an answer first.', 'recall.again': 'Try again: check the spelling and the units.',
     'recall.reveal': 'The expected answer: {answer}.',
     'order.up': 'Move up: {step}', 'order.down': 'Move down: {step}', 'order.moved': '{step}: position {pos} of {n}',
-    'order.check': 'Check order', 'order.right': 'Right, that is the order.',
+    'order.check': 'Check order', 'order.right': 'That is the order.',
     'order.partial': '{k} of {n} in the right place. Move the ones marked ✗.', 'order.reveal': 'The right order: {list}.',
-    'fade.blank': 'Blank {i} of {m}: {name}', 'fade.all': 'All blanks right.',
+    'fade.blank': 'Blank {i} of {m}: {name}', 'fade.all': 'Every blank is correct.',
     'fade.partial': '{k} of {m} blanks right. Look again at {list}.', 'fade.reveal': 'Expected: {list}.',
     'prior.right': 'Your first try ({date}): right.',
     'prior.wrong': 'Your first try ({date}): not right. Answering again is practice and does not change that record.',
     'set.count': '{answered} of {total} answered · {right} right on the first try',
     'set.done': 'Practice done: {right} of {total} right on the first try.',
     'set.good': 'You look ready for the challenge.', 'set.low': 'Look again at the ones you missed; they come back in review.',
+    'set.recall': 'Before the challenge, get one recall, fill-in or ordering question right from memory.',
     'set.proof': 'Practice is not proof: the challenge is what shows you can {canDo}.', 'set.proofPlain': 'Practice is not proof: the challenge is.',
     'set.link': 'Go to the challenge', dismiss: 'Dismiss',
     'review.loading': 'Loading practice…', 'review.count': '{cards} topics · {items} questions',
@@ -62,15 +66,16 @@
     'recall.label': 'Sua resposta', 'recall.empty': 'Digite uma resposta primeiro.', 'recall.again': 'Tente de novo: confira a grafia e as unidades.',
     'recall.reveal': 'A resposta esperada: {answer}.',
     'order.up': 'Mover para cima: {step}', 'order.down': 'Mover para baixo: {step}', 'order.moved': '{step}: posição {pos} de {n}',
-    'order.check': 'Verificar ordem', 'order.right': 'Certo, essa é a ordem.',
+    'order.check': 'Verificar ordem', 'order.right': 'Essa é a ordem.',
     'order.partial': '{k} de {n} no lugar certo. Mova os marcados com ✗.', 'order.reveal': 'A ordem certa: {list}.',
-    'fade.blank': 'Lacuna {i} de {m}: {name}', 'fade.all': 'Todas as lacunas certas.',
+    'fade.blank': 'Lacuna {i} de {m}: {name}', 'fade.all': 'Todas as lacunas estão certas.',
     'fade.partial': '{k} de {m} lacunas certas. Revise {list}.', 'fade.reveal': 'Esperado: {list}.',
     'prior.right': 'Sua primeira tentativa ({date}): certa.',
     'prior.wrong': 'Sua primeira tentativa ({date}): errada. Responder de novo é prática e não muda esse registro.',
     'set.count': '{answered} de {total} respondidas · {right} certas na primeira tentativa',
     'set.done': 'Prática concluída: {right} de {total} certas na primeira tentativa.',
     'set.good': 'Você parece pronto para o desafio.', 'set.low': 'Revise as que você errou; elas voltam na revisão.',
+    'set.recall': 'Antes do desafio, acerte de memória uma pergunta de lembrar, completar ou ordenar.',
     'set.proof': 'Prática não é prova: o desafio é o que mostra que você consegue {canDo}.', 'set.proofPlain': 'Prática não é prova: o desafio é.',
     'set.link': 'Ir para o desafio', dismiss: 'Fechar',
     'review.loading': 'Carregando a prática…', 'review.count': '{cards} tópicos · {items} perguntas',
@@ -116,7 +121,7 @@
   function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
   function version(it) { // what the learner answers; editing it starts a new history (store.itemVersion when present)
     const x = { type: it.type, prompt: it.prompt, accept: it.accept, steps: it.steps, template: it.template, blanks: it.blanks,
-      options: it.options && it.options.map((o) => ({ text: o.text, correct: !!o.correct })) };
+      options: Array.isArray(it.options) ? it.options.map((o) => ({ text: o && o.text, correct: !!(o && o.correct) })) : undefined };
     const S = LC.store;
     return S && typeof S.itemVersion === 'function' ? S.itemVersion(x) : hash(JSON.stringify(x));
   }
@@ -139,16 +144,22 @@
     const n = parseFloat(v);
     return isFinite(n) ? n : null;
   }
+  // An accepted answer is a string, a number, or { answer, tolerance } (its own numeric tolerance; otherwise the
+  // item's). Text is compared with Learncraft.store.matchAnswer when the store is loaded (case, accents, quotes,
+  // dashes, spacing, leading/trailing punctuation), so the browser and the Node tools grade alike.
   function accepts(given, list, tol) {
     const g = norm(given);
     if (!g) return false;
+    const S = LC.store;
     return (list || []).some((a) => {
-      const n = norm(a);
-      if (g === n) return true;
-      const gn = num(g), an = num(n);
-      return gn != null && an != null && Math.abs(gn - an) <= (+tol || 0) + 1e-9;
+      const ans = a && typeof a === 'object' ? a.answer : a, t = a && typeof a === 'object' && a.tolerance != null ? a.tolerance : tol;
+      if (ans == null) return false;
+      if (S && typeof S.matchAnswer === 'function' ? S.matchAnswer(given, [String(ans)]) : g === norm(ans)) return true;
+      const gn = num(g), an = num(norm(ans));
+      return gn != null && an != null && Math.abs(gn - an) <= (+t || 0) + 1e-9;
     });
   }
+  const answerText = (a) => String(a && typeof a === 'object' ? a.answer : a);
   LC.normalizeAnswer = norm;
   LC.acceptsAnswer = accepts;
 
@@ -158,7 +169,8 @@
     if (st) {
       try {
         ev = st.recordAttempt(Object.assign({ lesson: it.lesson, objective: it.objective, item: it.id, itemType: it.type,
-          itemVersion: it.version, context: 'lesson', outcome: ok ? 'correct' : 'incorrect', assisted: false }, extra));
+          itemVersion: it.version, context: 'lesson', outcome: ok ? 'correct' : 'incorrect', assisted: false }, extra,
+          it.pretest === true ? { context: 'diagnostic' } : null)); // a pretest guess is never a first try (SK-03)
       } catch (e) { console.error('[learncraft] could not record attempt', e); }
     }
     doc.dispatchEvent(new CustomEvent('learncraft:attempt', { detail: { item: it.id, lesson: it.lesson, ok: ok, event: ev } }));
@@ -209,7 +221,7 @@
   const revisit = (it, opts) => {
     if (opts.context !== 'review') return '';
     const l = (course().lessons || []).find((x) => x.n === it.lesson);
-    return l ? html` <a href="${LC.rootURL + l.file}">${t('review.revisit', { n: l.n, title: l.title })}</a>` : '';
+    return l ? html` <a href="${LC.workspaceHref ? LC.workspaceHref(l.file) : LC.rootURL + l.file}">${t('review.revisit', { n: l.n, title: l.title })}</a>` : '';
   };
 
   // ---------- choice ----------
@@ -252,7 +264,7 @@
       input.setAttribute('aria-invalid', ok ? 'false' : 'true');
       if (ok) { done = true; input.readOnly = true; host.classList.add('done'); f.say(true, html.raw(sanitize(it.why || ''))); return; }
       misses++;
-      if (misses >= 2) { f.assist(); f.say(false, html`${t('recall.reveal', { answer: accept[0] })} ${html.raw(sanitize(it.why || ''))}${revisit(it, opts)}`); }
+      if (misses >= 2) { f.assist(); f.say(false, html`${t('recall.reveal', { answer: answerText(accept[0]) })} ${html.raw(sanitize(it.why || ''))}${revisit(it, opts)}`); }
       else f.say(false, html`${t('recall.again')}${revisit(it, opts)}`);
       input.focus();
     });
@@ -354,9 +366,11 @@
   }
 
   const RENDER = { choice, recall, order, fade };
-  function renderItem(host, it, opts) {
-    it.version = it.version || version(it);
-    return LC.mount(host, 'practice item ' + it.id, () => RENDER[it.type](host, it, opts || {}));
+  function renderItem(host, it, opts) { // everything item-specific runs inside mount: one bad item → one error box (SR-08)
+    return LC.mount(host, 'practice item ' + (it && it.id), () => {
+      it.version = it.version || version(it);
+      return RENDER[it.type](host, it, opts || {});
+    });
   }
   LC.renderPracticeItem = renderItem;
 
@@ -417,6 +431,14 @@
     return it;
   }
 
+  // Custom widgets (and Learncraft.register components through ctx.record) record a first attempt by id.
+  LC.recordPractice = function (id, ok, opts) {
+    const n = lessonN();
+    if (!n || !id) return null;
+    opts = opts || {};
+    const itemId = ID.test(String(id)) ? String(id) : 'legacy:l' + n + '-' + id;
+    return record({ id: itemId, type: opts.type || 'custom', lesson: n, objective: opts.objective || 'l' + n, version: version({ type: 'custom', prompt: String(id) }) }, !!ok, { assisted: false });
+  };
   // Custom widgets and older figure components report through the v0 API.
   root.Progress = root.Progress || {
     record(id, ok) {
@@ -438,13 +460,13 @@
       if (!list.length) { console.warn(`[learncraft] no practice items registered for lesson ${ln} (is lessons/${String(ln).padStart(4, '0')}.practice.js loaded?)`); return; }
       set.innerHTML = html`<p class="lc-count" tabindex="-1"></p><ol class="lc-set">${list.map(() => html`<li></li>`)}</ol>`;
       const lis = set.querySelectorAll('.lc-set > li');
-      list.forEach((it, i) => { renderItem(lis[i], it, { context: 'lesson', onFirst: update }); tracked.push(it); });
+      list.forEach((it, i) => { renderItem(lis[i], it, { context: 'lesson', onFirst: update }); if (!it.pretest) tracked.push(it); });
     });
     doc.querySelectorAll('[data-practice-item]').forEach((el) => {
       const it = items[el.getAttribute('data-practice-item')];
       if (!it) { LC.mount(el, 'practice item', () => { throw new Error('unknown practice id ' + el.getAttribute('data-practice-item')); }); return; }
       renderItem(el, it, { context: 'lesson', onFirst: update });
-      tracked.push(it);
+      if (!it.pretest) tracked.push(it);
     });
     if (n) {
       doc.querySelectorAll('.quiz-q').forEach((el, i) => {
@@ -465,26 +487,29 @@
     let wasDone = null;
     function update(_it, _ok, initial) {
       if (!tracked.length) return;
-      let answered = 0, right = 0;
-      tracked.forEach((it) => { const p = firstOf(it); if (p) { answered++; if (p.outcome === 'correct') right++; } });
+      let answered = 0, right = 0, recallRight = 0;
+      tracked.forEach((it) => { const p = firstOf(it); if (p) { answered++; if (p.outcome === 'correct') { right++; if (RECALLISH[it.type] && !p.assisted) recallRight++; } } });
       if (countEl) countEl.textContent = t('set.count', { answered: answered, total: tracked.length, right: right });
       const done = answered === tracked.length;
       if (initial || wasDone === null) { wasDone = done; return; }
-      if (done && !wasDone) { wasDone = true; complete(right, tracked.length, countEl); }
+      if (done && !wasDone) { wasDone = true; complete(right, tracked.length, countEl, recallRight > 0 || !tracked.some((it) => RECALLISH[it.type])); }
     }
     LC.lessonPracticeIds = () => tracked.map((it) => it.id);
     LC.lessonPracticeTypes = () => tracked.reduce((m, it) => { m[it.id] = it.type; return m; }, {});
   }
 
   // Inline, dismissible completion message inside the practice section (no fixed overlay).
-  function complete(right, total, anchor) {
+  // "Ready for the challenge" needs ≥ 80% right on the first try AND one recall, fade or order item right from
+  // memory (the L3 bar). A lesson with no such item at all keeps the old ≥ 80% rule.
+  const RECALLISH = { recall: 1, fade: 1, order: 1 };
+  function complete(right, total, anchor, recallOk) {
     const C = course(), l = (C.lessons || []).find((x) => x.n === lessonN()) || {};
     const box = doc.createElement('div');
     box.className = 'lc-status';
     box.setAttribute('role', 'status');
     box.setAttribute('aria-live', 'off');
-    const good = right / total >= 0.8;
-    box.innerHTML = html`<p><strong>${t('set.done', { right: right, total: total })}</strong> ${t(good ? 'set.good' : 'set.low')}
+    const good = right / total >= 0.8 && recallOk !== false;
+    box.innerHTML = html`<p><strong>${t('set.done', { right: right, total: total })}</strong> ${t(good ? 'set.good' : right / total >= 0.8 ? 'set.recall' : 'set.low')}
       ${l.canDo ? t('set.proof', { canDo: l.canDo }) : t('set.proofPlain')}
       ${doc.getElementById('challenge') ? html`<a href="#challenge">${t('set.link')}</a>` : ''}</p>
       <button type="button" class="lc-dismiss lc-btn" aria-label="${t('dismiss')}"><span aria-hidden="true">×</span></button>`;
@@ -501,6 +526,8 @@
 
   // ---------- review.html ----------
   const pad4 = (n) => String(n).padStart(4, '0');
+  const PRACTICE_FILE = /^lessons\/\d{4}\.practice\.js$/;
+  LC.PRACTICE_FILE = PRACTICE_FILE;
   function loadPracticeFiles(done) {
     const ls = (course().lessons || []);
     let left = ls.length;
@@ -509,7 +536,9 @@
     // practice: null (or false) marks a lesson with no practice file, e.g. an older lesson with inline quizzes.
     const v2 = (course().schemaVersion || 1) >= 2;
     ls.forEach((l) => {
-      const file = typeof l.practice === 'string' ? l.practice : l.practice === undefined && v2 ? 'lessons/' + pad4(l.n) + '.practice.js' : null;
+      let file = typeof l.practice === 'string' ? l.practice : l.practice === undefined && v2 ? 'lessons/' + pad4(l.n) + '.practice.js' : null;
+      // A data field must never choose which local script runs: on file:// a CSP 'self' matches every file (SR-04).
+      if (file && !PRACTICE_FILE.test(file)) { console.warn(`[learncraft] lesson ${l.n}: practice "${String(file).slice(0, 80)}" ignored: it must match ${PRACTICE_FILE}`); file = null; }
       if (!file || (byLesson[l.n] && byLesson[l.n].length)) { if (!--left) done(); return; }
       const s = doc.createElement('script');
       s.src = LC.rootURL + file;
@@ -535,7 +564,7 @@
   }
   function buildReview(el) {
     const st = store();
-    const all = LC.practiceItems();
+    const all = LC.practiceItems().filter((it) => it && !it.pretest); // pretest guesses never enter a review
     if (!all.length) { el.innerHTML = html`<p>${t('review.noItems')}</p>`; return; }
     if (!st) { el.innerHTML = html`<p>${t('review.noStore')}</p>`; return; }
     const now = Date.now();

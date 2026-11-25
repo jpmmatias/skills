@@ -4,8 +4,12 @@
 //   esc(s)                 HTML-escape & < > " '
 //   html`<p>${x}</p>`      tagged template: escapes every interpolation; html.raw(s) marks trusted markup.
 //                          Returns a value whose toString() is the markup, so el.innerHTML = html`…` works.
-//   sanitize(s)            keeps only <b> <strong> <em> <i> <code> <br> <sup> <sub> <a href> (href: http(s),
-//                          relative or #). Use for author text that may carry light markup (prompts, why, captions).
+//   sanitize(s)            keeps only <b> <strong> <em> <i> <code> <br> <sup> <sub> <a href> (href: http(s)://host,
+//                          mailto:, relative or #, checked after the URL parser's own normalisation: see safeHref).
+//                          Use for author text that may carry light markup (prompts, why, captions).
+//   safeHref(h)            the allow-listed, normalised href, or null. html`` escapes text but does NOT vet URLs:
+//                          any data-derived href="${…}" goes through safeHref() or workspaceHref().
+//   workspaceHref(rel)     rootURL + rel for a workspace-relative path (no scheme, "..", "\\" or leading "/"), else "#".
 //   ready(fn)              run after DOMContentLoaded (in registration order)
 //   mount(el, name, fn)    run fn(el) in try/catch; on error show an inline .lc-error box and log it
 //   register(type, def)    component for [data-lc="type"]; def.mount(el, ctx) may return {destroy}
@@ -44,10 +48,54 @@
 
   var ALLOWED = { B: 1, STRONG: 1, EM: 1, I: 1, CODE: 1, BR: 1, SUP: 1, SUB: 1, A: 1 };
   var DROP = { SCRIPT: 1, STYLE: 1, IFRAME: 1, OBJECT: 1, EMBED: 1, TEMPLATE: 1, NOSCRIPT: 1, SVG: 1, MATH: 1 };
-  function safeHref(h) {
-    h = String(h || '').trim();
-    if (/^https?:\/\//i.test(h) || h.charAt(0) === '#') return h;
-    return /^[a-z][a-z0-9+.-]*:/i.test(h) || h.indexOf('//') === 0 ? null : h; // relative only
+
+  // ---------- URL allow-list (SR-01, SR-12) ----------
+  // The check runs on what the browser's URL parser will see, not on the raw string: the parser deletes ASCII
+  // tab/LF/CR anywhere and C0 controls + space at both ends, and the HTML parser decodes character references
+  // first ("java&#9;script:" and "&#1;javascript:" are javascript: URLs). So: decode references, strip what the
+  // parser strips, then allow only http(s)://host, mailto:, #fragment and plain relative paths. Backslashes are
+  // refused (the parser turns "\\host\x" and "/\host" into file://host/…, a UNC path on Windows), and so is a
+  // leading "//" (a network path on file://). Every check also runs on the undecoded value, so a caller that
+  // passes raw attribute text and one that passes a decoded DOM value get the same answer.
+  var NAMED = { tab: '\t', newline: '\n', excl: '!', quot: '"', num: '#', dollar: '$', percnt: '%', amp: '&', apos: "'",
+    lpar: '(', rpar: ')', ast: '*', midast: '*', plus: '+', comma: ',', period: '.', sol: '/', colon: ':', semi: ';',
+    lt: '<', equals: '=', gt: '>', quest: '?', commat: '@', lsqb: '[', lbrack: '[', bsol: '\\', rsqb: ']', rbrack: ']',
+    hat: '^', lowbar: '_', underbar: '_', grave: '`', diacriticalgrave: '`', lcub: '{', lbrace: '{', verbar: '|', vert: '|',
+    verticalline: '|', rcub: '}', rbrace: '}', nbsp: '\u00a0', fjlig: 'fj' };
+  // Every named reference that decodes to ASCII is in NAMED (the scheme check only cares about ASCII); others stay.
+  function decodeRefs(s) {
+    return String(s).replace(/&(?:#[xX]([0-9a-fA-F]{1,8})|#(\d{1,10})|([A-Za-z][A-Za-z0-9]{1,31}));?/g, function (m, hx, dec, name) {
+      if (name) { var v = NAMED[name.toLowerCase()]; return v === undefined ? m : v; }
+      var cp = hx ? parseInt(hx, 16) : parseInt(dec, 10);
+      return cp > 0 && cp <= 0x10ffff && !(cp >= 0xd800 && cp <= 0xdfff) ? String.fromCodePoint(cp) : '\ufffd';
+    });
+  }
+  function urlProbe(s) { // what the WHATWG URL parser keeps
+    return String(s).replace(/[\t\n\r]/g, '').replace(/^[\u0000-\u0020]+|[\u0000-\u0020]+$/g, '');
+  }
+  function hrefOk(p) {
+    if (/[\u0000-\u001f\u007f\\]/.test(p)) return false; // inner controls, backslashes (UNC / file://host)
+    if (p.charAt(0) === '#') return true;
+    var m = /^([A-Za-z][A-Za-z0-9+.-]*):/.exec(p);
+    if (m) {
+      var scheme = m[1].toLowerCase();
+      if (scheme === 'http' || scheme === 'https') return /^https?:\/\/[^\/?#@\s]/i.test(p);
+      return scheme === 'mailto';
+    }
+    return p.slice(0, 2) !== '//'; // a plain relative path or query
+  }
+  function safeHref(h) { // → the normalised href, or null when it is not allowed
+    if (h == null) return null;
+    var raw = urlProbe(h), dec = urlProbe(decodeRefs(h));
+    if (raw === '' || !hrefOk(raw) || !hrefOk(dec)) return null;
+    return raw;
+  }
+  // A link to a file inside the workspace, built from course data (lesson files, evidence records): relative,
+  // no "..", no scheme, no backslash. Anything else becomes "#" so a data field can never pick the target.
+  function workspaceHref(rel) {
+    var p = urlProbe(String(rel == null ? '' : rel)).replace(/^\.\//, '');
+    if (!p || !hrefOk(p) || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(p) || p.charAt(0) === '/' || /(^|\/)\.\.(\/|$)/.test(decodeRefs(p))) return '#';
+    return rootURL + p;
   }
   function clean(node) {
     Array.prototype.slice.call(node.childNodes).forEach(function (n) {
@@ -83,6 +131,19 @@
     booted = true;
     while (queue.length) mount(null, 'ready', queue.shift());
     mountAll(doc);
+    focusableOverflow();
+    if (root.addEventListener) root.addEventListener('load', focusableOverflow);
+  }
+  // A <pre> that scrolls sideways must be reachable by keyboard (WCAG 2.1.1): give it tabindex="0" and a name.
+  function focusableOverflow() {
+    Array.prototype.forEach.call(doc.querySelectorAll('pre'), function (p) {
+      if (p.hasAttribute('tabindex') || p.closest('.sc-player, .lc-item')) return;
+      if (p.scrollWidth > p.clientWidth + 1) {
+        p.tabIndex = 0;
+        if (!p.getAttribute('role')) p.setAttribute('role', 'region');
+        if (!p.getAttribute('aria-label')) p.setAttribute('aria-label', t('code.scroll'));
+      }
+    });
   }
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot);
   else setTimeout(boot, 0);
@@ -100,8 +161,11 @@
     try { return fn(el); } catch (e) { errorBox(el, name, e); return null; }
   }
   function ctxFor(el) {
-    return { id: el.getAttribute('data-id') || el.id || null, t: t, announce: announce, rng: rng, esc: esc, html: html,
-      sanitize: sanitize, reducedMotion: reducedMotion, onVisible: onVisible, observeVisibility: observeVisibility };
+    var id = el.getAttribute('data-id') || el.id || null;
+    return { id: id, t: t, announce: announce, rng: rng, esc: esc, html: html,
+      sanitize: sanitize, reducedMotion: reducedMotion, onVisible: onVisible, observeVisibility: observeVisibility,
+      // record(ok, { objective }) → the component's first attempt goes to the evidence log (practice.js); id = data-id
+      record: function (ok, opts) { return typeof LC.recordPractice === 'function' && id ? LC.recordPractice(id, ok, opts) : null; } };
   }
   function mountType(rootEl, type) {
     var def = registry[type];
@@ -137,12 +201,14 @@
   var EN = {
     'error.component': 'This part of the page could not load ({name}). The rest of the page still works.',
     'storage.off': 'This browser is not saving your progress here (storage is blocked or full). Practice still works; use Export before you close the page to keep a record.',
-    'example.banner': 'Example course — no learner progress is included.'
+    'example.banner': 'Example course — no learner progress is included.',
+    'code.scroll': 'Code (scrolls sideways)'
   };
   var PT = {
     'error.component': 'Esta parte da página não carregou ({name}). O resto da página continua funcionando.',
     'storage.off': 'Este navegador não está salvando seu progresso aqui (armazenamento bloqueado ou cheio). A prática continua funcionando; use Exportar antes de fechar a página para guardar um registro.',
-    'example.banner': 'Curso de exemplo — nenhum progresso de aluno está incluído.'
+    'example.banner': 'Curso de exemplo — nenhum progresso de aluno está incluído.',
+    'code.scroll': 'Código (role para o lado)'
   };
   LC.i18n = LC.i18n || {};
   LC.i18n.en = Object.assign(LC.i18n.en || {}, EN);
@@ -215,6 +281,7 @@
     version: '2.0.0', session: 's_' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36),
     esc: esc, html: html, sanitize: sanitize, ready: ready, mount: mount, register: register, mountAll: mountAll,
     announce: announce, t: t, lang: lang, rng: rng, reducedMotion: reducedMotion, onVisible: onVisible,
-    observeVisibility: observeVisibility, rootURL: rootURL, courseStore: courseStore
+    observeVisibility: observeVisibility, rootURL: rootURL, courseStore: courseStore,
+    safeHref: safeHref, workspaceHref: workspaceHref
   });
 })(window);

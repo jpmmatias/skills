@@ -215,7 +215,8 @@
   }
 
   var SAY = {
-    'new': 'Not in review yet: answer every practice item once to schedule the first review.',
+    'new': 'Not in review yet: your first practice answer on it schedules the first review.',
+    first: '{date}: first practice answer → box 1, first review {due}',
     enter: '{date}: every practice item tried → box 1, first review {due}',
     migrated: '{date}: carried over from the old progress format → box {box}, due {due} (capped at box 2: the old schedule advanced on failures)',
     pass: '{date}: {correct}/{total} correct → box {box}, due {due}',
@@ -244,7 +245,10 @@
         set(e.box, ms(e.due), 'scheduled', 'migrated', at);
       } else if (e.kind === 'attempt' && !isDiagnostic(e) && e.objective === objective && box === 0) {
         if (need.indexOf(e.item) >= 0 && !seen[e.item]) { seen[e.item] = 1; nSeen++; }
-        if (!need.length || nSeen === need.length) set(1, at + DAY, 'scheduled', 'enter', at);
+        // The runtime's one entry rule: the first (non-diagnostic) attempt on the objective enters box 1. The pure
+        // function still honours opts.itemIds ("every listed item tried") for callers that want the stricter rule.
+        if (!need.length) set(1, at + DAY, 'scheduled', 'first', at);
+        else if (nSeen === need.length) set(1, at + DAY, 'scheduled', 'enter', at);
       } else if (e.kind === 'review_session' && e.objective === objective) {
         var c = { correct: e.results.filter(function (r) { return r.outcome === 'correct'; }).length, total: e.results.length };
         if (!e.passed) set(1, at + DAY, 'lapsed', 'fail', at, c);
@@ -345,6 +349,7 @@
         if (c.newer) { persistent = false; refusedNewer = true; res.persistent = false; res.reason = 'newer-format'; return (lastLoad = res); } // never overwrite
         res.reason = 'corrupt';
         backupCorrupt(raw.value);
+        lastWritten = raw.value; // backed up: the write below may replace it without backing it up twice
       }
       var old = read(V0);
       if (old.value != null) {

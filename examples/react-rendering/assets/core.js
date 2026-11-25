@@ -131,6 +131,19 @@
     booted = true;
     while (queue.length) mount(null, 'ready', queue.shift());
     mountAll(doc);
+    focusableOverflow();
+    if (root.addEventListener) root.addEventListener('load', focusableOverflow);
+  }
+  // A <pre> that scrolls sideways must be reachable by keyboard (WCAG 2.1.1): give it tabindex="0" and a name.
+  function focusableOverflow() {
+    Array.prototype.forEach.call(doc.querySelectorAll('pre'), function (p) {
+      if (p.hasAttribute('tabindex') || p.closest('.sc-player, .lc-item')) return;
+      if (p.scrollWidth > p.clientWidth + 1) {
+        p.tabIndex = 0;
+        if (!p.getAttribute('role')) p.setAttribute('role', 'region');
+        if (!p.getAttribute('aria-label')) p.setAttribute('aria-label', t('code.scroll'));
+      }
+    });
   }
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot);
   else setTimeout(boot, 0);
@@ -148,8 +161,11 @@
     try { return fn(el); } catch (e) { errorBox(el, name, e); return null; }
   }
   function ctxFor(el) {
-    return { id: el.getAttribute('data-id') || el.id || null, t: t, announce: announce, rng: rng, esc: esc, html: html,
-      sanitize: sanitize, reducedMotion: reducedMotion, onVisible: onVisible, observeVisibility: observeVisibility };
+    var id = el.getAttribute('data-id') || el.id || null;
+    return { id: id, t: t, announce: announce, rng: rng, esc: esc, html: html,
+      sanitize: sanitize, reducedMotion: reducedMotion, onVisible: onVisible, observeVisibility: observeVisibility,
+      // record(ok, { objective }) → the component's first attempt goes to the evidence log (practice.js); id = data-id
+      record: function (ok, opts) { return typeof LC.recordPractice === 'function' && id ? LC.recordPractice(id, ok, opts) : null; } };
   }
   function mountType(rootEl, type) {
     var def = registry[type];
@@ -185,12 +201,14 @@
   var EN = {
     'error.component': 'This part of the page could not load ({name}). The rest of the page still works.',
     'storage.off': 'This browser is not saving your progress here (storage is blocked or full). Practice still works; use Export before you close the page to keep a record.',
-    'example.banner': 'Example course — no learner progress is included.'
+    'example.banner': 'Example course — no learner progress is included.',
+    'code.scroll': 'Code (scrolls sideways)'
   };
   var PT = {
     'error.component': 'Esta parte da página não carregou ({name}). O resto da página continua funcionando.',
     'storage.off': 'Este navegador não está salvando seu progresso aqui (armazenamento bloqueado ou cheio). A prática continua funcionando; use Exportar antes de fechar a página para guardar um registro.',
-    'example.banner': 'Curso de exemplo — nenhum progresso de aluno está incluído.'
+    'example.banner': 'Curso de exemplo — nenhum progresso de aluno está incluído.',
+    'code.scroll': 'Código (role para o lado)'
   };
   LC.i18n = LC.i18n || {};
   LC.i18n.en = Object.assign(LC.i18n.en || {}, EN);
