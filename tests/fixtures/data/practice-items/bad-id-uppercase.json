@@ -1,0 +1,12 @@
+[
+  {
+    "id": "L3-Recall",
+    "type": "recall",
+    "objective": "l3.o1",
+    "prompt": "Which function turns scores into weights?",
+    "accept": [
+      "softmax"
+    ],
+    "why": "Softmax makes them positive and sum to 1."
+  }
+]

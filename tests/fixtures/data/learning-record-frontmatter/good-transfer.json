@@ -1,0 +1,15 @@
+{
+  "id": "LR-0007",
+  "kind": "demonstrated",
+  "milestone": "m3",
+  "result": "pass",
+  "criteria": [
+    {
+      "text": "Builds the head on new data",
+      "status": "met"
+    }
+  ],
+  "transfer": true,
+  "transfer_reason": "Different dataset (protein sequences instead of text)",
+  "date": "2026-11-25"
+}

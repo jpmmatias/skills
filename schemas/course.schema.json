@@ -1,0 +1,364 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/jpmmatias/skills/main/schemas/course.schema.json",
+  "title": "Learncraft course manifest (window.COURSE)",
+  "description": "The object assigned to window.COURSE in assets/course.js. schemaVersion 2 is the current shape; a manifest without schemaVersion is v1 and stays valid. Validate after evaluating the file with scripts/lib/schema.mjs loadCourseJs(). Cross-field rules (template id, duplicate ids, dangling references, objective prefixes) live in courseLint().",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/v2"
+    },
+    {
+      "$ref": "#/$defs/v1"
+    }
+  ],
+  "$defs": {
+    "v2": {
+      "title": "course v2",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "id",
+        "topic",
+        "mission",
+        "milestones",
+        "lessons"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 2
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,79}$",
+          "description": "Storage key part; must be unique per course. The template value \"topic-slug\" is flagged by courseLint()."
+        },
+        "topic": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "lang": {
+          "type": "string",
+          "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+          "description": "BCP 47 language tag of the course (UI strings: en, pt built in)."
+        },
+        "example": {
+          "type": "boolean",
+          "description": "true for shipped example courses (no learner progress)."
+        },
+        "mission": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "milestones": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/milestone"
+          }
+        },
+        "lessons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/lesson"
+          }
+        },
+        "strings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "UI string overrides keyed like the built-in table."
+        }
+      }
+    },
+    "milestone": {
+      "title": "milestone",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "canDo",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{0,39}$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "canDo": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "status": {
+          "enum": [
+            "mastered",
+            "in-progress",
+            "locked"
+          ]
+        },
+        "evidence": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^LR-\\d{4}$",
+          "description": "Learning record that demonstrates the milestone."
+        }
+      },
+      "anyOf": [
+        {
+          "title": "not mastered",
+          "properties": {
+            "status": {
+              "enum": [
+                "in-progress",
+                "locked"
+              ]
+            }
+          }
+        },
+        {
+          "title": "mastered with evidence",
+          "required": [
+            "evidence"
+          ],
+          "properties": {
+            "status": {
+              "const": "mastered"
+            },
+            "evidence": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "lesson": {
+      "title": "lesson",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "n",
+        "file",
+        "title",
+        "milestones",
+        "canDo"
+      ],
+      "properties": {
+        "n": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "file": {
+          "type": "string",
+          "pattern": "^lessons/[A-Za-z0-9._-]+\\.html$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "milestones": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "canDo": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "objectives": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/objective"
+          }
+        },
+        "practice": {
+          "type": "string",
+          "pattern": "^lessons/\\d{4}\\.practice\\.js$"
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "description": "Prerequisite lesson numbers."
+        }
+      }
+    },
+    "objective": {
+      "title": "objective",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "text"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^l\\d+\\.[a-z0-9][a-z0-9.-]{0,39}$"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        }
+      }
+    },
+    "v1": {
+      "title": "course v1 (no schemaVersion)",
+      "type": "object",
+      "required": [
+        "id",
+        "topic",
+        "mission",
+        "milestones",
+        "lessons"
+      ],
+      "description": "Legacy shape, accepted unchanged. Extra properties are tolerated.",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "topic": {
+          "type": "string"
+        },
+        "mission": {
+          "type": "string"
+        },
+        "milestones": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "label",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "label": {
+                "type": "string"
+              },
+              "canDo": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "mastered",
+                  "in-progress",
+                  "locked"
+                ]
+              },
+              "evidence": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "lessons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "n",
+              "file",
+              "title"
+            ],
+            "properties": {
+              "n": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "file": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "title": {
+                "type": "string"
+              },
+              "milestones": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "canDo": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "schemaVersion": 2,
+      "id": "transformers-from-scratch",
+      "topic": "How transformers work",
+      "lang": "en",
+      "example": false,
+      "mission": "Read a transformer forward pass and explain every tensor shape.",
+      "milestones": [
+        {
+          "id": "m1",
+          "label": "Attention",
+          "canDo": "Compute one attention head by hand",
+          "status": "in-progress",
+          "evidence": null
+        }
+      ],
+      "lessons": [
+        {
+          "n": 1,
+          "file": "lessons/0001-tokens.html",
+          "title": "Tokens",
+          "milestones": [
+            "m1"
+          ],
+          "canDo": "Split text into tokens",
+          "objectives": [
+            {
+              "id": "l1.o1",
+              "text": "Explain why text is split into tokens before embedding"
+            }
+          ],
+          "practice": "lessons/0001.practice.js"
+        }
+      ],
+      "strings": {}
+    }
+  ]
+}

@@ -1,0 +1,361 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/jpmmatias/skills/main/schemas/practice-items.schema.json",
+  "title": "Learncraft practice items",
+  "description": "The items array passed to Learncraft.practice(n, items) in lessons/NNNN.practice.js (one call per file). Rules a schema cannot express (exactly one correct option, template blanks ↔ blanks keys, course-wide unique ids) live in practiceLint().",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/item"
+  },
+  "$defs": {
+    "item": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/choice"
+        },
+        {
+          "$ref": "#/$defs/recall"
+        },
+        {
+          "$ref": "#/$defs/order"
+        },
+        {
+          "$ref": "#/$defs/fade"
+        }
+      ]
+    },
+    "call": {
+      "title": "Learncraft.practice call",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lesson",
+        "items"
+      ],
+      "properties": {
+        "lesson": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "items": {
+          "$ref": "#"
+        }
+      }
+    },
+    "choice": {
+      "title": "choice item",
+      "description": "Recognition. Exactly one option has correct: true (practiceLint).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "prompt",
+        "options"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,79}$",
+          "description": "Unique course-wide; evidence attaches to it."
+        },
+        "objective": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{0,39}$",
+          "description": "Defaults to \"l<n>\"."
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "description": "Light markup allowed (sanitized)."
+        },
+        "why": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Explanation shown after answering."
+        },
+        "code": {
+          "type": "boolean",
+          "description": "Render answers in monospace."
+        },
+        "type": {
+          "const": "choice"
+        },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "text"
+            ],
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "correct": {
+                "type": "boolean"
+              },
+              "why": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Why this option is right or wrong."
+              },
+              "code": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "recall": {
+      "title": "recall item",
+      "description": "Free recall; answers are compared after normalizeAnswer() (case, accents, quotes, spacing, end punctuation).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "prompt",
+        "accept"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,79}$",
+          "description": "Unique course-wide; evidence attaches to it."
+        },
+        "objective": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{0,39}$",
+          "description": "Defaults to \"l<n>\"."
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "description": "Light markup allowed (sanitized)."
+        },
+        "why": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Explanation shown after answering."
+        },
+        "code": {
+          "type": "boolean",
+          "description": "Render answers in monospace."
+        },
+        "type": {
+          "const": "recall"
+        },
+        "accept": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "tolerance": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Numeric answers within ± tolerance are accepted."
+        }
+      }
+    },
+    "order": {
+      "title": "order item",
+      "description": "Steps in the correct order; the runtime shuffles them.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "prompt",
+        "steps"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,79}$",
+          "description": "Unique course-wide; evidence attaches to it."
+        },
+        "objective": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{0,39}$",
+          "description": "Defaults to \"l<n>\"."
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "description": "Light markup allowed (sanitized)."
+        },
+        "why": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Explanation shown after answering."
+        },
+        "code": {
+          "type": "boolean",
+          "description": "Render answers in monospace."
+        },
+        "type": {
+          "const": "order"
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 12,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      }
+    },
+    "fade": {
+      "title": "fade item",
+      "description": "Faded worked example.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "prompt",
+        "template",
+        "blanks"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,79}$",
+          "description": "Unique course-wide; evidence attaches to it."
+        },
+        "objective": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{0,39}$",
+          "description": "Defaults to \"l<n>\"."
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "description": "Light markup allowed (sanitized)."
+        },
+        "why": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Explanation shown after answering."
+        },
+        "code": {
+          "type": "boolean",
+          "description": "Render answers in monospace."
+        },
+        "type": {
+          "const": "fade"
+        },
+        "template": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 4000,
+          "pattern": "\\{\\{\\s*[^}\\s]+\\s*\\}\\}",
+          "description": "Text with {{key}} blanks."
+        },
+        "blanks": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          "description": "Accepted answers per blank key; every key must appear in the template (practiceLint)."
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "description": "Accessible names for blanks."
+        },
+        "tolerance": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "examples": [
+    [
+      {
+        "id": "l3-attn-weights",
+        "type": "choice",
+        "objective": "l3.o1",
+        "prompt": "What do the attention weights of one query sum to?",
+        "options": [
+          {
+            "text": "1",
+            "correct": true,
+            "why": "They come out of a softmax."
+          },
+          {
+            "text": "The sequence length",
+            "why": "That is the number of weights, not their sum."
+          }
+        ]
+      },
+      {
+        "id": "l3-recall-softmax",
+        "type": "recall",
+        "objective": "l3.o1",
+        "prompt": "Which function turns scores into weights?",
+        "accept": [
+          "softmax"
+        ],
+        "why": "Softmax makes them positive and sum to 1."
+      },
+      {
+        "id": "l3-order-steps",
+        "type": "order",
+        "objective": "l3.o2",
+        "prompt": "Put the steps of one attention head in order.",
+        "steps": [
+          "Project to Q, K, V",
+          "Score Q against K",
+          "Softmax the scores",
+          "Weight V by the scores"
+        ]
+      },
+      {
+        "id": "l3-fade-qkv",
+        "type": "fade",
+        "objective": "l3.o2",
+        "prompt": "Complete the scaled dot product.",
+        "template": "scores = Q · {{K}}ᵀ / √{{d_k}}",
+        "blanks": {
+          "K": [
+            "K"
+          ],
+          "d_k": [
+            "d_k",
+            "dk"
+          ]
+        }
+      }
+    ]
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "v": 1,
+  "id": "m_xp",
+  "at": "2026-11-24T08:00:00.000Z",
+  "course": "transformers-from-scratch",
+  "kind": "migration",
+  "source": "migration",
+  "context": "lesson",
+  "lesson": null,
+  "objective": null,
+  "item": null,
+  "itemType": null,
+  "itemVersion": null,
+  "session": "legacy",
+  "attemptInSession": null,
+  "firstEver": null,
+  "outcome": "n/a",
+  "assisted": false,
+  "note": "v0 XP",
+  "legacyXp": 120
+}

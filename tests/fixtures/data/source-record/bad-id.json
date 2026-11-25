@@ -1,0 +1,21 @@
+{
+  "id": "R3",
+  "url": "https://doi.org/10.1037/0033-2909.125.6.627",
+  "title": "A meta-analytic review of experiments examining the effects of extrinsic rewards on intrinsic motivation",
+  "author": "Deci, E. L.; Koestner, R.; Ryan, R. M.",
+  "publisher": "Psychological Bulletin 125(6)",
+  "year": 1999,
+  "type": "paper",
+  "tier": "T1",
+  "status": "verified",
+  "accessedAt": "2026-11-24",
+  "versionScope": null,
+  "claims": [
+    {
+      "cid": "L3-C2",
+      "text": "Expected tangible rewards reduce free-choice intrinsic motivation",
+      "locator": "Abstract",
+      "strength": "supported"
+    }
+  ]
+}

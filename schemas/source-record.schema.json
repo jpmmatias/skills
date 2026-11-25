@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/jpmmatias/skills/main/schemas/source-record.schema.json",
+  "title": "Learncraft source record",
+  "description": "One source as listed in RESOURCES.md (`- [S3] [Title](url) — Author/Publisher · type · tier · status · version`), in JSON form (raw/04-grounding.md C2, plan §6). Status names follow the plan: verified (needs accessedAt), unverified and unavailable (need reason). versionScope for docs/api/tool is checked by sourceLint().",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "url",
+    "title",
+    "type",
+    "tier",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^S\\d{1,4}$"
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^https?://\\S+$",
+      "maxLength": 2000
+    },
+    "accessUrl": {
+      "type": "string",
+      "pattern": "^https?://\\S+$",
+      "maxLength": 2000,
+      "description": "Open copy when url is paywalled."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "publisher": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "year": {
+      "type": "integer",
+      "minimum": 1400,
+      "maximum": 2100
+    },
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z-]{1,23}$",
+      "description": "paper, book, chapter, docs, api, spec, tool, video, talk, course, article, blog, dataset, repo …"
+    },
+    "medium": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "length": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "tier": {
+      "enum": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5"
+      ],
+      "description": "T1 primary … T4 community; T5 is excluded and never cited."
+    },
+    "status": {
+      "enum": [
+        "verified",
+        "unverified",
+        "unavailable"
+      ]
+    },
+    "accessedAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Date the page was opened and the quote seen."
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "Why it is unverified/unavailable (offline, paywall, 404 …)."
+    },
+    "statusNote": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "versionScope": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80,
+      "description": "e.g. \"react@19.x\"; required for docs, api, tool."
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cid",
+          "text"
+        ],
+        "properties": {
+          "cid": {
+            "type": "string",
+            "pattern": "^L\\d+-C\\d+$"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "locator": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "quote": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "strength": {
+            "enum": [
+              "supported",
+              "partial",
+              "disputed"
+            ]
+          }
+        }
+      }
+    },
+    "usedIn": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "primaryFor": {
+      "type": "string",
+      "pattern": "^L\\d+$"
+    }
+  },
+  "oneOf": [
+    {
+      "title": "verified",
+      "required": [
+        "accessedAt"
+      ],
+      "properties": {
+        "status": {
+          "const": "verified"
+        }
+      }
+    },
+    {
+      "title": "unverified or unavailable",
+      "required": [
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "unverified",
+            "unavailable"
+          ]
+        }
+      }
+    }
+  ],
+  "examples": [
+    {
+      "id": "S3",
+      "url": "https://doi.org/10.1037/0033-2909.125.6.627",
+      "title": "A meta-analytic review of experiments examining the effects of extrinsic rewards on intrinsic motivation",
+      "author": "Deci, E. L.; Koestner, R.; Ryan, R. M.",
+      "publisher": "Psychological Bulletin 125(6)",
+      "year": 1999,
+      "type": "paper",
+      "tier": "T1",
+      "status": "verified",
+      "accessedAt": "2026-11-24",
+      "versionScope": null,
+      "claims": [
+        {
+          "cid": "L3-C2",
+          "text": "Expected tangible rewards reduce free-choice intrinsic motivation",
+          "locator": "Abstract",
+          "strength": "supported"
+        }
+      ]
+    },
+    {
+      "id": "S7",
+      "url": "https://react.dev/reference/react/useEffect",
+      "title": "useEffect",
+      "publisher": "react.dev",
+      "type": "docs",
+      "tier": "T1",
+      "status": "unverified",
+      "reason": "offline session",
+      "versionScope": "react@19.x"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "LR-0004",
+  "kind": "demonstrated",
+  "milestone": "m2",
+  "result": "pass",
+  "criteria": [
+    {
+      "text": "x",
+      "status": "partly"
+    }
+  ],
+  "transfer": false,
+  "date": "2026-11-24"
+}
