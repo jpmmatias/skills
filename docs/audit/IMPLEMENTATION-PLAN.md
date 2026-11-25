@@ -220,3 +220,9 @@ The skill says `${CLAUDE_SKILL_DIR}` (substituted by Claude Code), with a fallba
 - `observeVisibility` reports "hidden" only when fully off-screen; `viz.js` uses its own 25% check. Harmless duplication (P3).
 - A lesson inherits "Applied" from a reviewed milestone before its own practice is done, which is correct per ADR-005 but confusing on the dashboard. To review in Phase 4.
 - Legacy pages without `core.js` are bootstrapped with `document.write` (quiz.js shim). Legacy only. To review in Phase 4.
+- Runtime bugs reported by the course authors (F3), to fix after the security-fix pass releases its files:
+  - `diagram.js` bars: object input reorders integer-like labels ("1"…"5" drawn before "0 sign-ups"), because JS objects order integer keys first. Accept an ordered array form.
+  - `viz.js` explorable: no API to reseed after mount; each figure adds its own button.
+  - `viz.js` explorable: a graded check falls back to the legacy `Progress.record` because `ctxFor()` has no `record`.
+  - `practice.js` recall: one `tolerance` for all accepted answers (cannot accept 0.16 and 16 %).
+- After the runtime fixes, re-sync `examples/*/assets/` (they are exact copies of the starter, except `course.js`).
