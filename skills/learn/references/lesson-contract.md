@@ -10,6 +10,8 @@ What every lesson must contain so the runtime, the check tool, the validator and
 | practice items | `lessons/NNNN.practice.js` |
 | motion scenes | `lessons/scenes-NNNN.js` |
 | other lesson code (explorables, custom figures) | `lessons/NNNN.figures.js` |
+
+Script sources are plain `.js` files in `../assets/` or the page's own folder, with no query string or fragment. Lessons never link to an `.html` page inside `labs/`: link to the lab's `README.md` or folder (the check covers every page in the course except `labs/`).
 | reference documents | `reference/<slug>.html` |
 | lab | `labs/NN-<name>/` with a `README.md` |
 

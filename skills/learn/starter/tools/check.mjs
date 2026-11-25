@@ -42,7 +42,7 @@ import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { loadPlaywright, resolveTool, workspacePlaywright } from './resolve.mjs';
-import { inspectWorkspace, formatFindings, checkWorkspaceFile, domSecurityAudit as securityAudit } from './lint-workspace.mjs';
+import { inspectWorkspace, formatFindings, checkWorkspaceFile, findCoursePages, domSecurityAudit as securityAudit } from './lint-workspace.mjs';
 
 const args = process.argv.slice(2);
 const ws = resolve(args.find((a) => !a.startsWith('--')) ?? '.');
@@ -74,9 +74,9 @@ console.log(`(playwright from ${from}; axe-core ${axeSource ? 'from ' + axePath 
 
 const out = join(ws, '.check');
 mkdirSync(out, { recursive: true });
-const list = (dir) => (existsSync(join(ws, dir)) ? readdirSync(join(ws, dir)).filter((f) => f.endsWith('.html')).sort().map((f) => `${dir}/${f}`) : []);
 // Only regular files inside the workspace are opened (the lint already reported anything else: NEW-02).
-const pages = ['index.html', 'review.html', ...list('lessons'), ...list('reference')].filter((p) => existsSync(join(ws, p)) && (!only || p.includes(only)) && checkWorkspaceFile(join(ws, p), { root: ws }).ok);
+// Every page the learner can open (NEW-14), not only index/review/lessons/reference.
+const pages = findCoursePages(ws).filter((p) => (!only || p.includes(only)) && checkWorkspaceFile(join(ws, p), { root: ws }).ok);
 const practiceCount = new Map([...lint.practice].map(([n, items]) => [n, items.length]));
 
 async function launch() {
@@ -231,6 +231,15 @@ for (const rel of pages) {
     // removed itself or forged the page's globals; or an inline handler that fired) is an error.
     const inline = compiled.filter((c) => c.url === pageUrl);
     if (inline.length) problems.push(`${tag} security: ${inline.length} inline script(s) or handler(s) compiled in the page (first at line ${inline[0].line + 1}); courses may only run script files`);
+    // Every script the page compiled from a URL must be a plain .js file inside the workspace (NEW-13): no query or
+    // fragment, nothing outside the course, no page loading itself (or any other non-.js file) as a script.
+    const wsPrefix = wsUrl.endsWith('/') ? wsUrl : wsUrl + '/';
+    for (const c of compiled) {
+      if (!c.url || c.url === pageUrl) continue;
+      let u; try { u = new URL(c.url); } catch { u = null; }
+      const fine = u && u.protocol === 'file:' && c.url.startsWith(wsPrefix) && !u.search && !u.hash && /\.js$/i.test(u.pathname);
+      if (!fine) problems.push(`${tag} security: script compiled from ${c.url.replace(wsPrefix, '')}; only .js files in the course folder may run`);
+    }
     if (pass.key === 'light-900') for (const f of await page.evaluate(securityAudit, wsUrl + '/').catch((e) => [`security audit failed: ${e.message.split('\n')[0]}`])) problems.push(`security: ${f}`);
     if (info.scrollWidth > pass.width + 1) problems.push(`${tag} horizontal scroll: page is ${info.scrollWidth}px wide`);
     for (const e of info.errors) problems.push(`${tag} component failed to mount: ${e}`);

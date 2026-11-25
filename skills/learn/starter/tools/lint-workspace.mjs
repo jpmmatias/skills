@@ -393,7 +393,9 @@ export const domSecurityAudit = (rootUrl) => {
     if (tag === 'script') {
       const src = el.getAttribute('src');
       if (src == null) { if (el.textContent.trim()) out.push(`inline <script>${el.namespaceURI !== 'http://www.w3.org/1999/xhtml' ? ' (in ' + el.namespaceURI.split('/').pop() + ')' : ''}: ${short(el)}`); continue; }
-      let u; try { u = new URL(src, document.baseURI).href.split(/[?#]/)[0]; } catch { out.push(`script with a bad src: ${src}`); continue; }
+      let u; try { u = new URL(src, document.baseURI); } catch { out.push(`script with a bad src: ${src}`); continue; }
+      if (u.search || u.hash || !/\.js$/i.test(u.pathname)) { out.push(`script source is not a plain .js file: ${src}`); continue; }
+      u = u.href;
       const ok = u.startsWith(rootUrl + 'assets/') || (u.startsWith(pageDir) && !u.slice(pageDir.length).includes('/')) || /^lessons\/\d{4}\.practice\.js$/.test(u.slice(rootUrl.length));
       if (!u.startsWith(rootUrl) || !ok) out.push(`script from outside assets/, the page's folder or lessons/NNNN.practice.js: ${src}`);
     }
@@ -402,6 +404,28 @@ export const domSecurityAudit = (rootUrl) => {
 };
 
 const listHtml = (ws, d) => (existsSync(join(ws, d)) ? readdirSync(join(ws, d)).filter((f) => f.endsWith('.html')).sort().map((f) => `${d}/${f}`) : []);
+
+/**
+ * Every page of a course workspace that the learner can open (NEW-14): all .html and .htm files, in any folder,
+ * except labs/ (the learner's own runnable projects, usually served by their own tooling), node_modules and
+ * dot-folders. Symbolic links are not followed. Paths are workspace-relative, POSIX style, sorted.
+ */
+export function findCoursePages(ws) {
+  const out = [];
+  const walk = (rel) => {
+    let entries; try { entries = readdirSync(join(ws, rel), { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      const r = rel ? `${rel}/${e.name}` : e.name;
+      if (e.isDirectory()) { if (!e.name.startsWith('.') && e.name !== 'node_modules' && r !== 'labs') walk(r); }
+      // Any non-directory entry with a page name is listed, including FIFOs and links: the safe-read layer then
+      // refuses it with a reason instead of skipping it silently. Linked directories are never followed.
+      else if (/\.html?$/i.test(e.name)) out.push(r);
+    }
+  };
+  walk('');
+  const first = ['index.html', 'review.html'];
+  return out.sort((a, b) => (first.indexOf(a) + 1 || 9) - (first.indexOf(b) + 1 || 9) || a.localeCompare(b));
+}
 const toPosix = (p) => p.split(sep).join('/');
 
 /**
@@ -557,7 +581,7 @@ export async function inspectWorkspace(wsDir) {
   // pages ---------------------------------------------------------------------------------------
   const resourceIds = new Set(resources?.entries.map((e) => e.id));
   const pages = [];
-  const htmlFiles = ['index.html', 'review.html', ...listHtml(ws, 'lessons'), ...listHtml(ws, 'reference')].filter((p) => existsSync(join(ws, p)));
+  const htmlFiles = findCoursePages(ws);
   const listedFiles = new Set(lessonsByFile.keys());
   const legacyIds = new Map();
   for (const rel of htmlFiles) {
@@ -566,7 +590,7 @@ export async function inspectWorkspace(wsDir) {
     const raw = rd.text;
     const html = stripHtml(raw);
     const all = tags(html);
-    const isLesson = rel.startsWith('lessons/');
+    const isLesson = /^lessons\/[^/]+\.html$/.test(rel);
     const page = { file: rel, raw, html, tags: all, isLesson };
     pages.push(page);
 
@@ -592,6 +616,14 @@ export async function inspectWorkspace(wsDir) {
       }
       if (EMBEDS.has(t.name)) add('error', 'embed-element', rel, `<${t.name}> is not allowed in a course page (plugins and nested documents); use <img>, <video> or a link`);
       if (t.name === 'base') add('error', 'base-element', rel, '<base> redirects every relative link and citation on the page');
+      // Pages in labs/ are the learner's own projects and are not checked; opened from a lesson over file:// they would
+      // share the course's storage origin (NEW-14). Link to the lab folder or its README instead.
+      for (const a of ['href', 'src', 'action', 'formaction', 'data']) {
+        const v = t.attrs[a];
+        if (!v || /^[a-z][a-z0-9+.-]*:/i.test(v) || v.startsWith('//') || v.startsWith('#')) continue;
+        const target = toPosix(relative(ws, resolve(dirname(join(ws, rel)), percentDecodeAll(v.split(/[?#]/)[0]))));
+        if (/^labs\/.+\.html?$/i.test(target)) add('error', 'link-unchecked-page', rel, `${a}="${v}" opens a page in labs/, which the check does not cover; link to the lab's README.md or folder instead`);
+      }
       if (/^(animate|set|animatetransform|animatemotion)$/.test(t.name) && /^(xlink:)?href$/i.test((t.attrs.attributename || '').trim())) add('error', 'svg-animate-href', rel, `<${t.name} attributeName="${t.attrs.attributename}"> rewrites a link target at run time (it can become javascript:)`);
       if (t.name === 'meta' && /^refresh$/i.test(t.attrs['http-equiv'] || '')) add('error', 'meta-refresh', rel, '<meta http-equiv="refresh"> navigates the learner away without a click');
       if (t.name !== 'script') continue;
@@ -608,6 +640,10 @@ export async function inspectWorkspace(wsDir) {
       const target = toPosix(relative(ws, resolve(dirname(join(ws, rel)), percentDecodeAll(src.split(/[?#]/)[0]))));
       const pageDir = toPosix(dirname(rel));
       const ok = target.startsWith('assets/') || posix.dirname(target) === pageDir;
+      // Only real .js files, with no query or fragment (NEW-13): an HTML page can be valid JavaScript and load itself
+      // as a script, and 'self' on file:// allows any local file.
+      if (/[?#]/.test(src)) add('error', 'script-path', rel, `<script src="${src}">: no query string or fragment in script sources`);
+      else if (!/\.js$/i.test(target)) add('error', 'script-path', rel, `<script src="${src}">: scripts must be .js files`);
       if (target.startsWith('..')) add('error', 'script-path', rel, `<script src="${src}"> points outside the workspace`);
       else if (!ok) add('error', 'script-path', rel, `<script src="${src}">: scripts load only from assets/ or the page's own folder`);
       else if (!existsSync(join(ws, target))) add('error', 'script-missing', rel, `<script src="${src}"> does not exist`);

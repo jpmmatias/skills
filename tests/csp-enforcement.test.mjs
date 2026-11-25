@@ -126,3 +126,40 @@ test('the enforcement probe covers inline handlers, not only inline scripts', { 
     assert.match(out, /NOT enforced/);
   } finally { w.cleanup(); }
 });
+
+// NEW-13: a lesson that is also valid JavaScript loads itself as a script ('self' on file:// allows any local file).
+test('lint and check reject a page that loads itself (or any non-.js file) as a script (NEW-13)', { skip: missingStarter() || noBrowser }, async () => {
+  for (const src of ['0001-first.html?v=2', '0001-first.html']) {
+    const w = buildWorkspace();
+    const p = join(w.ws, LESSON);
+    let h = readFileSync(p, 'utf8');
+    h = '<!--\nvoid document.title;/*\n-->\n' + h.trimEnd().replace('</body>', `<script src="${src}"></script>\n</body>`) + '\n<!-- */ -->\n';
+    writeFileSync(p, h);
+    try {
+      const lint = (await lintWorkspace(w.ws)).filter((f) => f.rule === 'script-path' && f.level === 'error');
+      assert.ok(lint.length > 0, `expected a script-path lint error for ${src}`);
+      const { code, out } = runCheck(w.ws);
+      assert.equal(code, 1, out);
+      assert.match(out, /script compiled from|compiled in the page/);
+    } finally { w.cleanup(); }
+  }
+});
+
+// NEW-14: pages outside index/review/lessons/reference were never linted or checked.
+test('lint covers pages in subfolders and .htm files, and rejects links into labs/ (NEW-14)', { skip: missingStarter() || false }, async () => {
+  const w = buildWorkspace();
+  const page = '<!doctype html><html lang="en"><head><meta charset="utf-8"></head><body><script>void 0</script></body></html>';
+  try {
+    mkdirSync(join(w.ws, 'lessons', 'extra'), { recursive: true });
+    mkdirSync(join(w.ws, 'labs', '01-demo'), { recursive: true });
+    writeFileSync(join(w.ws, 'lessons', 'extra', 'notes.html'), page);
+    writeFileSync(join(w.ws, 'lessons', '0002-bonus.htm'), page);
+    writeFileSync(join(w.ws, 'labs', '01-demo', 'index.html'), page);
+    const p = join(w.ws, LESSON);
+    writeFileSync(p, readFileSync(p, 'utf8').replace('</main>', '<a href="../labs/01-demo/index.html">lab</a></main>'));
+    const errs = (await lintWorkspace(w.ws)).filter((f) => f.level === 'error');
+    for (const f of ['lessons/extra/notes.html', 'lessons/0002-bonus.htm']) assert.ok(errs.some((e) => e.file === f && /^csp-/.test(e.rule)), `expected ${f} to be linted`);
+    assert.ok(errs.some((e) => e.rule === 'link-unchecked-page'), 'expected the link into labs/ to be rejected');
+    assert.ok(!errs.some((e) => e.file.startsWith('labs/')), 'labs/ pages themselves are not linted');
+  } finally { w.cleanup(); }
+});
