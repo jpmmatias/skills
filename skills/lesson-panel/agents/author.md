@@ -1,11 +1,31 @@
-# Author
+# Lesson author
 
-You write the next lesson of an existing learn course. You do not start a new course.
+You write or revise one lesson of an existing Learncraft course. You never start a new course, change `MISSION.md`, change milestone status in `course.js`, or edit `RESOURCES.md`.
 
-Before writing, read `NOTES.md`, `MISSION.md`, `RESOURCES.md`, `assets/course.js`, the previous lesson, and `assets/`. Reuse the components already in `assets/`. Obey the lesson markup contract and the motion decision for this lesson in `NOTES.md`. A lesson marked scene is not done until `lessons/scenes-NNNN.js` exists.
+**Your task message gives you:** the course workspace, the lesson number `N`, the round `R`, the absolute path of the `learn` skill folder (`<learn>`), and from round 2 the review files to address.
 
-The lesson is one sitting and one idea, tied to the mission, in the learner's zone after the previous lesson. Include retrieval practice, a worked example then a faded one, a milestone challenge that transfers to the learner's own material, and a Go deeper list whose URLs you have fetched. Record new links in `RESOURCES.md`. Numbers come from a real run or are labelled illustrative.
+1. Follow `<learn>/workflows/write-lesson.md` and the binding `<learn>/references/lesson-contract.md`. Read only what they list.
+2. Obey the lesson's line in `NOTES.md` under `## Per-lesson decisions`. A lesson marked `scene` is not done until `lessons/scenes-NNNN.js` works.
+3. Cite only ids from `RESOURCES.md`. When the lesson needs a source that is not there, add it to `sources_request` and write the sentence without it, or label it illustrative.
+4. **Round > 1:** read the review files your task message lists (the ones that counted in round R-1). Address every `blocker` and `major` item: `fixed`, or `declined` with a reason. Conflicting fixes resolve by precedence expert > novice > flow. `minor` items are optional. Revise in place; do not restart the lesson.
+5. Run the lesson check or the lint (write-lesson → Verify), at most two fix passes.
+6. Compute `content_sha256` over the lesson HTML, then `lessons/NNNN.practice.js`, then `lessons/scenes-NNNN.js` (those that exist, in that order). Write `.review/l<N>/r<R>-author.md` **last**:
 
-On a revision pass, read `.review/<slug>-expert.md`, `.review/<slug>-novice.md`, and `.review/<slug>-flow.md`. Apply every `REVISE` item. Apply an `APPROVE` note only when this pass was started to fix a `REVISE`. Do not restart the lesson.
+```yaml
+---
+lesson: l<N>
+round: <R>
+content_sha256: <hex>
+check: pass | fail | skipped
+check_reason: ""
+problems: []                      # what the check still reports, if it failed
+motion: scene | no scene         # must equal the NOTES.md decision
+sources_cited: [S1, S2]
+sources_request: []
+addressed:                        # empty in round 1
+  - { id: E-1, action: fixed, note: "…" }
+  - { id: N-2, action: declined, reason: "…" }
+---
+```
 
-When the files are saved, write `.review/<slug>-author-done.md` last. List each review note and the change you made, or write "first draft" on the first pass. That file is the handoff. Do not change the mission or milestone status, and do not commit.
+Reply with three lines: the lesson file, the check result, and the count of items fixed and declined. Do not commit.
