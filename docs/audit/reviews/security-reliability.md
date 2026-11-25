@@ -326,3 +326,78 @@ Inside the child, `import('node:fs')` rejects with `ERR_VM_DYNAMIC_IMPORT_CALLBA
 ### Examples as targets
 
 All three example courses lint clean on HEAD. Their 7 runtime assets are byte-identical to the starter, and every page carries the tightened CSP. The bespoke figure scripts (`probability/lessons/0003.figures.js`, `react-rendering/lessons/0002.figures.js`, `transformers/lessons/0002.figures.js`) build markup only from constants and `esc()`'d labels: no data-driven sink was found. NEW-01 was demonstrated on a scratch copy of `examples/transformers`.
+
+## Re-verification 2 (2026-11-25)
+
+This pass checks HEAD `1443dde`: the round-2 fixes in commit `e09235d` (claims in `docs/audit/handoffs/security-fixes.md` "## Round 2"), plus the follow-up CSS commit. I did not take the handoff on trust. Every row below comes from reproducing the result in Chromium on `file://` or in Node 22.23 (scripts: `rev-sec/re/r2-*.mjs`, `re/amp2.mjs`, `re/dirlink.mjs`, `re/r4-enc.mjs`, `re/vm/m-*.js`, `mutate.mjs`). No repository file was modified apart from this section.
+
+**Mutation run.** The checklist's mutation run is item 4: I re-ran my round-1 mutations and added 12 round-2 mutations. Each one reverted a single fix in a scratch copy of the repository; then I ran `security`, `hardening`, `runtime-fixes`, `store` and `lint-workspace` (155 tests, all green on HEAD).
+
+- **22 of 26 mutations were caught.**
+- 3 of the 4 that were not caught are equivalent mutations: another layer still blocks the payload.
+  - Forgetting the tab/LF/CR strip: control characters are refused anyway.
+  - `version()` outside `mount`: `version()` is null-safe.
+  - The `isFile` check dropped: the `fstat` re-check at read still refuses the file.
+- The 4th is a real test gap (NEW-11).
+- One round-1 mutation (old `safeHref`) no longer applies to the rewritten function.
+
+### Status of the round-1 re-verification findings
+
+| ID | Status | Evidence on HEAD |
+|---|---|---|
+| NEW-01 | **Partially fixed**: the gate can still be bypassed (NEW-08) | **Caught:** all 13 earlier forms (comments, `--!>`, comment inside a script, SVG `style`/`script` breakouts, SVG `animate`/`set` on href, a `noscript` attribute, and the others). Also caught: all 3 CSP relaxations (`script-src-attr`, `script-src-elem`, a missing `default-src`, each a `csp-not-canonical` error), plus 11 new forms. The new forms are a duplicate meta with a relaxed second copy, a meta after a script, a MathML `mglyph`/`style` breakout, `srcdoc` in `foreignObject`, a template payload, an `xlink:href` with an entity tab, SVG `use` with a data: URL, `form action` with `&NewLine;`, `</style x>`, CDATA in SVG, and mixed-case directives. **Under the canonical CSP none of them executes.** Extra whitespace or `;;` in the policy is accepted, which is correct. **Not caught:** a CSP meta that the browser ignores, and a payload hidden in an attribute (NEW-08) |
+| NEW-02 | **Fixed** (one residual, NEW-09) | All of these are refused in 64–93 ms with no hang, crash or leak: a symlink to `/dev/zero`, a FIFO as a practice file, a page or `RESOURCES.md`, a symlink to an outside file, and a hard link to an outside file. Data errors now read `ReferenceError at line 1 (message withheld…)` or `SyntaxError at line 1 (…)`, so the secret identifier is not echoed. A directory symlink still lets an outside file in (NEW-09) |
+| NEW-03 | **Fixed** | Inside the child, `ArrayBuffer`, `SharedArrayBuffer`, `DataView`, typed arrays, `Atomics`, `WebAssembly`, `WeakRef`, `Buffer`, `TextEncoder` and `structuredClone` are all undefined. I found no intrinsic route back to a typed array. `d2-mem.js` now fails with `Uint8Array is not defined` at 41 MB RSS (was 2.0 GB). Large `Array` allocation hits the heap cap and the child aborts at about 357 MB RSS, with the tool still running. A 4 GB `'x'.repeat` chain stays a rope (41 MB) |
+| NEW-04 | **Fixed in the starter**; the examples are stale (NEW-10) | `workspaceHref` returns `#` or stays inside the workspace for 18 encoded forms: `%2e%2e`, `%252e`, `%25252e`, `.%2E`, `%2e%2e%2f`, `..%2f`, `%5c`, `.%09.`, `%00`, mixed case. Fullwidth dots, `%u002e`, overlong `%c0%ae` and `..;` resolve inside the workspace (they are not dot segments). `sanitize` gives 0 unsafe results on 68 payloads, and `%2e%2e/%2e%2e/%2e%2e/etc/passwd` is dropped. Reverting the decode is caught |
+| NEW-05 | **Fixed** (one test gap, NEW-11) | `re/vm/b-import.js`: the data never receives the host `TypeError` (on HEAD the import rejection never reaches it). Mutations now caught: vm layer removed (2 tests fail), env inherited (1), typed arrays kept (1), messages echoed (1) |
+| NEW-06 | **Fixed in the starter**; the examples are stale (NEW-10) | Export → import into a fresh store gives `quarantined 1` and stored events `e_1,e_2`. The import mutation is caught |
+| NEW-07 | **Fixed** | With a per-project install (`<repo>/.claude/skills/learn` with a `SKILL.md`) and an empty tools folder, `loadPlaywright` used the global install, and the planted `<repo>/node_modules/playwright` did not run. The unbounded-walk mutation is caught |
+
+### New findings
+
+#### NEW-08 (P1) The CSP can be switched off in ways lint accepts; with a lint-hidden, self-removing payload, `check.mjs` says "All pages clean" and script runs
+
+**Where:** `lint-workspace.mjs` `cspProblems`. It collects every `meta` tag token whose `http-equiv` matches after `.trim()`, wherever that tag sits. The browser applies a CSP only from a real HTML `<meta>` in the document with an exact `http-equiv` value. Separately, the comment tokenizer in `stripHtml` runs inside attribute values. And the DOM audit only sees the DOM as it is after the page settles.
+
+**PoC 1** (`re/r2-csp-neutral.mjs`): an inline handler, with the canonical meta changed as follows.
+
+| how the meta was changed | lint CSP findings | payload ran |
+|---|---|---|
+| none (canonical) | none | no |
+| `http-equiv=" Content-Security-Policy"` (leading space) | **none** | **yes** |
+| `http-equiv="Content-Security-Policy&nbsp;"` (trailing NBSP) | **none** | **yes** |
+| wrapped in `<noscript>` (raw text when scripting is on) | **none** | **yes** |
+| wrapped in `<template>` (inert) | **none** | **yes** |
+| wrapped in `<svg>` (an SVG `meta`, not HTML) | **none** | **yes** |
+
+**PoC 2:** `<p title="<!--"></p><img src="data:," onerror="…;this.remove()"><p title="-->"></p>` gets **0 lint errors**: the comment tokenizer runs inside attribute values, and `markup-in-attribute` does not list `<!--`. Without self-removal the DOM audit reports the handler. With `this.remove()` it does not, because the element is gone before the audit runs.
+
+**PoC 3, on an example course:** in two scratch copies of `examples/transformers`, lesson 1 got (a) the CSP meta wrapped in `<noscript>`, or (b) a leading space in `http-equiv`, plus PoC 2's payload. Its `onerror` was `document.title='PWNED '+localStorage.length;this.remove()`, and `src="data:,"` avoids a missing-file error. `check.mjs <copy> --only=0001 --no-axe` printed `Lint: 0 error(s), 0 warning(s)` … `✓ lessons/0001-tokens-to-vectors.html` … `All pages clean.` for both. Opening the page sets its title to `PWNED 0`: the script runs in the shared `file://` origin.
+
+**Impact:** the same end state as the original NEW-01. Agent-written lesson HTML passes the documented gate and executes with access to every course's progress. It needs two small edits that look harmless to the linter.
+
+**Fix:**
+1. In `check.mjs`, **prove the CSP is enforced** rather than inferring it from markup. From `page.evaluate`, append an inline `<script>` element that sets a flag, and an element with an `onerror` handler. Assert that neither ran and that the matching `securitypolicyviolation` events arrived. Also assert that `document.head` has, as a direct child, exactly one `meta[http-equiv="Content-Security-Policy"]` (exact attribute, no trim) whose `content` equals `CANONICAL_CSP`.
+2. Install a `MutationObserver` via `addInitScript` that records every element ever inserted with an `on*` attribute or a dangerous URL, so a self-removing payload is still reported.
+3. In lint, match `http-equiv` exactly, with no trim. Reject a CSP meta that is not a direct child of `<head>` (inside `noscript`, `template`, `svg` or `math`). Skip attribute values in the comment tokenizer, and add `<!--` / `-->` to `markup-in-attribute`.
+
+#### NEW-09 (P3) A directory symlink bypasses the safe-read containment
+
+`checkWorkspaceFile` checks `realpath` only when **the file itself** is a symbolic link. When `lessons/` (or `assets/`) is a symlink to an outside directory, regular files in it pass. `re/dirlink.mjs`: `lessons → ../outside-dir`, whose `0001.practice.js` holds `id: 'SECRET_FROM_OUTSIDE_DIR'`. The file was evaluated, and lint quoted it: `item-id-format: item SECRET_FROM_OUTSIDE_DIR: …` and `practice-schema: … got "SECRET_FROM_OUTSIDE_DIR"`. There were 0 `unsafe-file` findings. **Fix:** always compare `realpathSync(path)` with `realpathSync(ws)`, whatever the file type; `check.mjs` should apply the same test to pages.
+
+#### NEW-10 (P3) The example courses were not re-synced after round 2
+
+`examples/{probability,react-rendering,transformers}/assets/{core,store,progress}.js` differ from the starter, while the other 4 assets match. On every example's `index.html`:
+- `Learncraft.workspaceHref('%2e%2e/%2e%2e/outside.html')` resolves to `/home/user/skills/outside.html`.
+- `sanitize('<a href="%2e%2e/%2e%2e/%2e%2e/etc/passwd">')` keeps the link (`file:///home/user/etc/passwd`). This is NEW-04, still open in the shipped examples.
+- Their `importJSON` does not quarantine unread events (NEW-06).
+
+They still lint clean, and all their pages carry the exact canonical CSP. **Fix:** re-sync the assets. Then add a validator rule (or a test) that every `examples/*/assets/*.js` that exists in the starter is byte-identical to it, so this cannot drift silently again.
+
+#### NEW-11 (P3, test gap) Removing the `import()` hook from data evaluation goes unnoticed
+
+The mutation that drops `importModuleDynamically` from `vm.runInContext(file.code, …)` leaves all 155 tests green. Yet with that mutation `re/vm/b-import.js` again receives a **host-realm** `TypeError` (`sameRealm: false`). The probe in `hardening.test.mjs` tries 8 routes, but not `import()`'s rejection. **Fix:** add `import('node:fs').then(null, (e) => …)` to the probe, report `e instanceof Error` and `e.constructor === Error` back as data, and give the microtask a turn (the probe must also wait for the rejection, which on HEAD never reaches the data).
+
+### Examples as targets
+
+All three lint clean under the round-2 rules, and every page carries the exact canonical CSP. The bespoke figure scripts are unchanged and still build markup only from constants and escaped labels. NEW-08 was demonstrated on scratch copies of `examples/transformers`. NEW-10 affects all three.
