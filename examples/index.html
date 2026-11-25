@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'">
+<title>Learncraft · Example courses</title>
+<meta name="description" content="Three example courses made in the Learncraft format: How Transformers Work, React Rendering Internals, and Probability & Statistics by experiment. Static pages, no learner data.">
+<style>
+/* Same tokens as skills/learn/starter/assets/style.css, kept inline so this page has no dependency on any one course. */
+:root {
+  --bg: #fbfaf7; --fg: #1d1c1a; --muted: #6b6760; --rule: #e4e0d8; --accent: #9a3b1b; --code-bg: #f1eee8;
+  --font-body: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #171614; --fg: #ebe7df; --muted: #a29d93; --rule: #34312c; --accent: #e08a62; --code-bg: #24221f; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 18px/1.6 var(--font-body); }
+main { max-width: 42rem; margin: 0 auto; padding: 3rem 16px 4rem; }
+h1, h2, h3 { font-weight: 600; text-wrap: balance; }
+h1 { font-size: 2.1rem; line-height: 1.2; margin: 0 0 .5rem; }
+h2 { font-size: 1.35rem; line-height: 1.3; margin: 0 0 .25rem; }
+.kicker { color: var(--muted); font: 600 .8rem/1.3 var(--font-ui); letter-spacing: .08em; text-transform: uppercase; margin: 0 0 .5rem; }
+.lede { color: var(--muted); font-size: 1.15rem; line-height: 1.5; margin: 0; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code { font: 14.5px/1.5 var(--font-mono); background: var(--code-bg); padding: .08em .3em; border-radius: 5px; overflow-wrap: anywhere; }
+pre { font: 14px/1.5 var(--font-mono); background: var(--code-bg); padding: .9rem 1rem; border-radius: 5px; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+.notice { border-left: 3px solid var(--accent); padding: .15rem 0 .15rem 1rem; margin: 2rem 0 0; font: .95rem/1.55 var(--font-ui); }
+.notice strong { font-weight: 600; }
+ol.courses { list-style: none; padding: 0; margin: 2.5rem 0 0; border-top: 1px solid var(--rule); }
+ol.courses > li { padding: 1.75rem 0; border-bottom: 1px solid var(--rule); }
+.desc { margin: .25rem 0 .75rem; }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0 0 .9rem; font: .92rem/1.5 var(--font-ui); }
+dt { color: var(--muted); font-weight: 600; font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; padding-top: .12rem; }
+dd { margin: 0; }
+.open { font: 600 1rem var(--font-ui); }
+.open a { margin-right: 1.25rem; white-space: nowrap; }
+h2.section { margin-top: 3rem; }
+footer { color: var(--muted); font: .9rem/1.5 var(--font-ui); margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+@media (max-width: 480px) { dl { grid-template-columns: 1fr; gap: 0 0; } dd { margin-bottom: .5rem; } }
+</style>
+</head>
+<body>
+<main>
+  <p class="kicker">Learncraft · Example courses</p>
+  <h1>What a course looks like</h1>
+  <p class="lede">Learncraft turns an AI coding agent into a teacher that writes the course to your own folder. These three courses use the same files and runtime it produces: a dashboard, short lessons, practice, a review page and sources.</p>
+
+  <p class="notice"><strong>Example course — no learner data.</strong> These courses were written by hand to Learncraft's lesson format to show its output; they are not a recording of an agent session. The milestones belong to a made-up learner, and nothing has been answered yet. Practice you do here is saved only in this browser.</p>
+
+  <ol class="courses">
+    <li>
+      <h2><a href="transformers/index.html">How Transformers Work</a></h2>
+      <p class="desc">What happens inside the LLM you call through an API, from your prompt to each token of the reply.</p>
+      <dl>
+        <dt>Lessons</dt><dd>From text to vectors · Self-attention · Blocks and generation</dd>
+        <dt>Interactive</dt><dd>A positional-encoding explorer, an attention explorer with a causal-mask grid, a step-through decoder block, a narrated motion scene of generation one token at a time, and a temperature explorer</dd>
+        <dt>For</dt><dd>Developers who use LLM APIs; vectors and dot products, no calculus</dd>
+      </dl>
+      <p class="open"><a href="transformers/index.html">Open the course →</a><a href="transformers/review.html">Review page</a></p>
+    </li>
+    <li>
+      <h2><a href="react-rendering/index.html">React Rendering Internals</a></h2>
+      <p class="desc">Stop guessing why components re-render: predict what React does after a state update, and back every fix with evidence.</p>
+      <dl>
+        <dt>Lessons</dt><dd>What “render” means · How a state update spreads · Effects, Strict Mode and memoization</dd>
+        <dt>Interactive</dt><dd>Step-through flow diagrams of trigger → render → commit, and a render simulator that shows which components render after a state update, with and without <code>memo</code></dd>
+        <dt>For</dt><dd>Frontend developers working in React 18 or 19</dd>
+      </dl>
+      <p class="open"><a href="react-rendering/index.html">Open the course →</a><a href="react-rendering/review.html">Review page</a></p>
+    </li>
+    <li>
+      <h2><a href="probability/index.html">Probability &amp; Statistics, by experiment</a></h2>
+      <p class="desc">Reason about randomness in A/B tests and dashboards: simulate it, measure its noise, and weigh evidence against base rates.</p>
+      <dl>
+        <dt>Lessons</dt><dd>Distributions and sampling · Expected value and variance · Conditional probability and base rates</dd>
+        <dt>Interactive</dt><dd>A sampler that draws from a distribution you define, a sample mean that narrows as n grows, and a natural-frequency tree for base rates</dd>
+        <dt>For</dt><dd>Developers who read experiment dashboards; high-school algebra</dd>
+      </dl>
+      <p class="open"><a href="probability/index.html">Open the course →</a><a href="probability/review.html">Review page</a></p>
+    </li>
+  </ol>
+
+  <h2 class="section">Make your own</h2>
+  <p>In Claude Code:</p>
+  <pre><code>/plugin marketplace add jpmmatias/skills
+/plugin install learn@jpmmatias</code></pre>
+  <p>Then, in an empty folder, run <code>/learn:learn &lt;topic&gt;</code>. Other agents and install methods, the guide and the source are in the <a href="https://github.com/jpmmatias/skills">jpmmatias/skills repository</a>.</p>
+
+  <footer>Learncraft is MIT-licensed. Every page here is static HTML that also opens from disk; no page loads anything from the network.</footer>
+</main>
+</body>
+</html>
