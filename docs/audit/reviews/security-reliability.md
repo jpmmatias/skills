@@ -457,3 +457,54 @@ Why each layer misses it:
 ### Examples as targets
 
 All three examples lint clean and their assets match the starter. NEW-12 was demonstrated on a scratch copy of `examples/transformers`. Its six pages, including `reference/cheat-sheet.html`, which round 2 reported for horizontal scroll, all pass `check.mjs` unmodified.
+
+## Re-verification 4 (2026-11-25)
+
+This pass checks HEAD `be0d788`. Its design:
+- lint checks the raw text between `<head>` and the CSP meta;
+- `check.mjs` records every `Debugger.scriptParsed` in the page's default world and fails any page that compiles a script whose URL is the page's own;
+- the enforcement probe runs in a CDP isolated world, and its result is read from `scriptParsed`.
+
+I reproduced everything in Chromium on `file://` (scratchpad `rev-sec/re/r4-*.{sh,mjs}`), on scratch copies of `examples/transformers`. No repository file was changed except this section.
+
+### Status
+
+| ID | Status | Evidence on HEAD |
+|---|---|---|
+| NEW-12 | **Fixed as reported**, but the gate is bypassed another way (NEW-13) | Two PoCs now fail the page: `r3-prescript.sh` (an inline script before the meta, hidden from lint) and `r3-chain.sh` with the plain, tamper and navigate variants. The design holds against these: page code cannot rewrite DevTools events. With the canonical CSP, every way a *workspace script file* tried to create inline code was blocked (`re/r4-dyn.mjs`): `eval`, `new Function`, `setTimeout` with a string, a `javascript:` link click, a `srcdoc` iframe, a `data:` iframe, a `blob:` worker, `<script src="data:…">`, an inline import map, an inline SVG `<script>` via `innerHTML`, and an `onclick` set with `setAttribute`. I found no way to make the probe report "enforced" falsely: its DOM writes come from the isolated world, and page code must already be running to interfere with them (see NEW-13 and the known residual below) |
+
+### New findings
+
+#### NEW-13 (P1) A lesson that loads *itself* as a script runs code from its own HTML; adding `?query` to the src makes `check.mjs` report it clean
+
+**Where:** CSP `script-src 'self'`, which on `file://` matches any local file, including `.html` files. The lint script-path rule and the DOM audit allow any file in the page's folder or `assets/`, with no requirement that it be a `.js` file. In `check.mjs`, the inline-code test is `compiled.filter((c) => c.url === pageUrl)`, an exact string comparison.
+
+**PoC** (`re/r4-polyglot.sh`): the lesson HTML is also a valid classic script. It starts `<!--\n<payload>/*\n-->`, which the HTML parser reads as a comment before the doctype and JavaScript reads as a line comment, the payload, then a block comment. The file ends `<!-- */ -->`. Before `</body>` it adds `<script src="0001-tokens-to-vectors.html?v=2"></script>`.
+
+| src | lint | `check.mjs` | opening the page |
+|---|---|---|---|
+| `0001-tokens-to-vectors.html?v=2` | 0 errors | **✓, `All pages clean.`, exit 0** | title `PWNED 0`, console empty, `localStorage` written |
+| `…html#x` / `…html` | 0 errors | ✗ `1 inline script(s) or handler(s) compiled` (the URL matches `pageUrl`) | runs |
+
+**Impact:** script in the lesson HTML runs under the canonical CSP and passes the gate, so the agent-written page executes with access to every course's progress. The `#`/plain variants show that only the URL comparison stops it; the CSP does not. The same works with any non-`.js` workspace file written as a polyglot (another lesson, `RESOURCES.md`, a reference page).
+
+**Fix:**
+1. **Lint and DOM audit:** a `<script src>` must end in `.js`, after removing `?`/`#`, and resolve to `assets/*.js`, `lessons/NNNN.practice.js`, `lessons/scenes-NNNN.js` or a `.js` file in the page's own folder. Reject any query string or fragment.
+2. **check.mjs:** allow-list compiled script URLs the same way, after stripping query and fragment. Fail any `scriptParsed` whose URL path is not an allowed `.js` file, including the page itself, other HTML pages and Markdown, rather than testing only `url === pageUrl`.
+
+#### NEW-14 (P2) HTML pages outside `index.html`, `review.html`, `lessons/*.html` and `reference/*.html` are never linted or checked
+
+**Where:** `lint-workspace.mjs` `listHtml` and the page list in `check.mjs`. Both include only those four places, top level only, `.html` only.
+
+**PoC:** in a scratch copy of `examples/transformers` I added three pages, each with an inline `<script>` that writes `localStorage` and the title:
+- `labs/01-demo/index.html`; labs are a documented workspace folder: SKILL.md lists `labs/NN-name/`;
+- `lessons/extra/notes.html`;
+- `lessons/0004-bonus.htm`.
+
+Lesson 1 links to all three. Result: `check.mjs <copy> --no-axe` gives lint 0 errors, ✓ on 6 pages, `All pages clean.`, exit 0. Clicking "Open the lab" in lesson 1 set the title to `PWNED 1`: same origin, so the page can read and write every course's progress.
+
+**Fix:** lint and check every `*.htm`/`*.html` in the workspace, recursively; skip only `.check/`, `.review/`, `node_modules/` and `progress/`, and refuse special files as now. Alternatively, fail on any page linked from a checked page that the check did not open.
+
+### Known residual (unchanged, by design)
+
+Code in workspace **script files** (`assets/*.js`, practice, scene and figure files) runs with page privileges. The inline-code defences do not claim to cover it. NEW-13 differs: it hides code in a *page*, not in a script file, and the check reports that page clean.
