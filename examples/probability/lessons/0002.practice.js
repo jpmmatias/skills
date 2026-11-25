@@ -30,9 +30,9 @@ Learncraft.practice(2, [
     ] },
   { id: 'l2-fade-arm-diff', type: 'fade', objective: 'l2.o2',
     prompt: 'Arm A’s conversion rate has a standard error of 0.4 points; arm B, with more visitors, has 0.3 points. The arms have different visitors. Complete the standard error of the difference B − A, in points.',
-    template: 'SE(B − A) = √({{a}}² + {{b}}²) = {{se}}',
-    blanks: { a: ['0.4', '.4', '0.3', '.3'], b: ['0.3', '.3', '0.4', '.4'], se: ['0.5', '.5'] },
-    labels: { a: 'one arm’s standard error', b: 'the other arm’s standard error', se: 'the standard error of the difference' },
+    template: 'SE(B − A) = √(SE_A² + SE_B²) = √({{a}}² + {{b}}²) = {{se}}',
+    blanks: { a: ['0.4', '.4'], b: ['0.3', '.3'], se: ['0.5', '.5'] },
+    labels: { a: 'arm A’s standard error', b: 'arm B’s standard error', se: 'the standard error of the difference' },
     tolerance: 0.005,
     why: 'Independent arms: the variances add, even for a difference, because Var(−A) = Var(A). √(0.16 + 0.09) = √0.25 = 0.5 points, more than either arm alone.' },
 ]);

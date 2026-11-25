@@ -125,7 +125,7 @@
       </tbody>
     </table>
   </div>
-  <p>Real daily numbers often wobble more than this table predicts: the true rate itself shifts with the weekday or a campaign, n changes from day to day, and the same users come back. The SE is the floor that sampling alone sets.</p>
+  <p>Real daily numbers often wobble more than this table predicts: the true rate itself shifts with the weekday or a campaign, n changes from day to day, and the same users come back. The SE is the wobble that sampling alone produces; other causes add to it, so on average the daily SD is at least the SE, though over just 14 days it can come out a little below it by chance.</p>
   <p>So a day with 2,500 visitors that reads 10.5% instead of 10% has moved by less than one standard error: well within what noise alone produces. To halve the noise, from 0.6 to 0.3 points, you need 4 × 2,500 = 10,000 visitors.</p>
   <h3>Comparing two arms</h3>
   <p>An A/B test looks at a <em>difference</em>: rate B − rate A. The two arms have different visitors, so their rates are independent, and the rules for sums apply. Var(−A) = (−1)²·Var(A) = Var(A), so the variances add even though the rates are subtracted:</p>
@@ -148,6 +148,7 @@
       <li>n, σ (with how it was computed) and SE = σ/√n are reported for one day, and the arithmetic reproduces the SE to 2 significant figures.</li>
       <li>The standard deviation of at least 14 daily values is reported next to the SE, with one sentence saying which is larger and by what factor, and, if the factor is above 1.5, one named reason (the true rate changes by day, n changes by day, or users are counted more than once).</li>
       <li>The number of users needed to halve the SE is stated and equals 4 × the day’s n.</li>
+      <li>The SE of the difference between two of the 14 days (or two arms) is computed as √(SE₁² + SE₂²), and the result is compared with √2 × one day’s SE.</li>
     </ol>
     <p>When you are done, send your work to your teacher in the terminal.</p>
   </section>

@@ -27,4 +27,4 @@ Every number a lesson states was recomputed by a Node script during authoring (f
 - `Learncraft.explorable` has `reseed()` but no built-in *New seed* button; each figure here adds its own button (and keeps its own seed, because it draws its sample from a cached per-seed stream rather than the `rng` passed to `render`).
 - `Learncraft.histogram` joins the expected values with a dashed polyline, which suggests values between the integers; for a PMF, dots or a short tick per bar would be more faithful (review CP-25).
 - `diagram.js` bars: `data-bars` keys that look like integers ("1", "2") are reordered ahead of other keys by JavaScript object ordering; accept an array of pairs or document it.
-- A `recall` item has one `tolerance` for all its accepted answers, so an item cannot accept both `0.16` and `16` (percent) with sensible tolerances. These lessons ask for one unit explicitly in the prompt.
+- Recall items could accept both units with per-entry `{ answer, tolerance }`; these lessons ask for one unit instead, to keep the prompt unambiguous.

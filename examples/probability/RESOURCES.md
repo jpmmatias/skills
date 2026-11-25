@@ -40,7 +40,7 @@ Claims L2:
 Researched 2026-11-25 · offline (host allowlist) · 0 of 1 fetches
 
 - [S5] [How to improve Bayesian reasoning without instruction: Frequency formats](https://serval.unil.ch/notice/serval:BIB_285729DDD792) — Gerd Gigerenzer & Ulrich Hoffrage / Psychological Review 102(4), 684–704, 1995 · paper 21 pp · tier T1 · unverified (index-only; not fetched after the allowlist blocked the other hosts) · open copy: https://pages.ucsd.edu/~scoulson/203/GG_How_1995.pdf
-  The paper that argues Bayesian inference is easier when the information is given as natural frequencies (counts out of a population) than as single-event probabilities, and reports experiments in which frequency formats raised the share of Bayesian answers. The index snippets support only that summary, not any specific percentage, so the lesson quotes no figures from it. The link is a university library record; the DOI was not confirmed in this session and is not given.
+  The paper that argues Bayesian inference is easier when the information is given as natural frequencies (counts out of a population) than as single-event probabilities, and reports experiments in which frequency formats raised the share of Bayesian answers. The index snippets support only that summary, not any specific percentage, so the lesson quotes no figures from it. The link is a university library record; the DOI recalled by the reviewer is listed under Verification debt, unconfirmed.
 
 Claims L3:
 - L3-C1 · consensus · — (derived on the page) · "P(A | B) = P(A and B) / P(B); Bayes' rule P(A | B) = P(B | A)·P(A) / P(B), with P(B) from the law of total probability"

@@ -289,3 +289,69 @@ All of the following agree with my independent recomputation (`verify.js`: every
 **Contract checks:** at least 3 items per objective with at least 1 non-choice item in every lesson. Interleaving is present in L3 (l2.o2, l1.o2). Each lesson has a worked → faded sequence and one "why does this line exist?" prompt. Each challenge has 3–4 observable criteria on the learner's own data. Options are shuffled at runtime. Each lesson has a primary source and a Go deeper list of 3 links. Every figure has a text alternative built from the same data. Pages work at 390 px with no horizontal scroll, and there are no console errors.
 
 **Grounding:** every source is marked unverified, with reasons and Verification debt entries. Claims L1-C3 and L3-C3 carry the span on the page. Derived results (L1-C1, C2; L2-C1 to C3; L3-C1, C2, C4) are presented as derived, and illustrative inputs are labelled illustrative. Titles, authors and years for S1 to S5 match the reviewer's recollection (unverified). The exceptions are listed in CP-05 to CP-07 and CP-23.
+
+## Re-check (revision 1)
+
+Re-checked 2026-11-25 against the files as committed in `5699dcb` ("Revise the Probability example after independent review") and the author's list in `docs/audit/handoffs/F3-probability.md` → "Revision 1". I used my own new scripts in the session scratchpad `rev-prob/`: `recheck.js` for the numbers and `browse3.js` for Chromium, where the answer keys go through the runtime's `Learncraft.acceptsAnswer`. I did not reuse the author's `sim2.mjs`. There are no console errors, and every page plus the cheat sheet has scrollWidth 390 at 390 px.
+
+**Verdict:** all 23 fixes hold. Both declines are reasonable. The new arm-difference teaching and the four new items are mathematically correct. The revision adds four P3 nits and one P2 gap (CP-26 to CP-30 below). No P0 or P1 remains.
+
+| CP | Status | Evidence (current text, file:line) |
+|---|---|---|
+| CP-01 | Fixed | `0001-…html:114`: "With `<`, value x owns exactly the slice [P(X ≤ x − 1), P(X ≤ x)) … With `<=`, the slices become (left edge, right edge] … a u of exactly 0 … would land on the first value even if its probability is 0, and a u exactly on an edge would go to the value on its left. Edge hits are rare (one chance in 2³² per edge …)". This matches my `sampleLE` and `sampleLT` runs. |
+| CP-02 | Fixed | `0002-…html:86`: "when X and Y are independent (more generally, whenever Cov(X, Y) = 0)". `:87`: "independence, or at least zero covariance". `:94` adds "any pair with zero covariance adds the same way, even if dependent". Also fixed in `RESOURCES.md:33` and `cheat-sheet.html:46`. |
+| CP-03 | Fixed, correct | `0002-…html:29`: "…moves one day's or one arm's number. The difference between two independent arms wobbles √2 times as much…". New "Comparing two arms" section (`:130-133`): SE(B − A) = √(SE_A² + SE_B²), and √(0.6² + 0.6²) = 0.8485, so "≈ 0.85" checks. "A lift of half a point … well within what noise alone produces" is 0.5/0.849 = 0.59 SE, which checks. Var(−A) = Var(A) is justified, and the arms' independence rests on "different visitors". Hypothesis tests are correctly set out of scope. The objective, the canDo (`course.js:28,31`), cheat-sheet row and rule 4, and ledger L2-C6 are all consistent. |
+| CP-04 | Fixed, correct | `0003.practice.js:75` (`l3-interleave-sim-count-2`): "The next run will be pulled below 10" / "…A count below 13 is likely next time (about 79% of runs are), but only because 13 is above the expected 10, and that would be just as likely after a run of 7." I get P(Bin(1000, 0.01) < 13) = 0.7925. The new distractor `:73` "The generator must be biased" is fine. |
+| CP-05 | Fixed | `0003-…html:59`: "The tempting answer is "about 90%", but 90% is the sensitivity…", with no span and no citation. |
+| CP-06 | Fixed | `0003-…html:67`: "…reported experiments in which more people reached the correct answer when … natural frequencies … than when it was given as probabilities". The span and S5 citation are kept, and the claim now matches L3-C3. |
+| CP-07 | Fixed | `0002-…html:114`: the naming sentence is inside the `unverified` span. `RESOURCES.md:35`: "— (derived on the page; S2 for the applied-statistics name, unverified)". |
+| CP-08 | Fixed, correct | `0003.practice.js:58-64` (`l3-fade-bayes-2`): 0.14 / 0.22 = 0.63636. In the runtime, 0.636 and 0.64 are accepted, while 0.7 (the power) and 0.63 are rejected. No blank's answer appears in the template any more. Nit: the prior and the FPR are still stated in the prompt, which is acceptable for a faded item. |
+| CP-09 | Fixed, correct | `0002.practice.js:11-18` (`l2-dependent-sum`): Var X = 10 × 0.25 = 2.5 and Cov(X, 10 − X) = −2.5, both recomputed, so 2·Cov = −5 cancels 2.5 + 2.5. All four explanations are right. Removing `l2-var-difference` and `l2-fade-se` leaves 3 items per objective, each set with a non-choice item. That meets the contract. |
+| CP-10 | Partly declined: **reasonable** | E[aX + b] and Var(aX + b) now carry weight (Var(−A) for the arm difference, Var(sum/n) for σ/√n), and the covariance reveal is the lesson's required "why does this line exist?" prompt. The load is still the heaviest of the three lessons; that is a design choice, not an error. |
+| CP-11 | Fixed | `0003-…html:113`: "The four leaf counts of the tree, kept unrounded (decimals allowed), add up to 1,000…" |
+| CP-12 | Fixed | `0002-…html:143` (the fallback varies p between 9% and 11%), `:149` (a named reason when the factor is above 1.5), and the new paragraph at `:128`. See CP-27 for one phrase. |
+| CP-13 | Fixed | `0003-…html:81`: "…that is at base rate = FPR / (sensitivity + FPR)". 0.09/0.99 = 0.0909 gives exactly 50%. Also added to the cheat sheet. |
+| CP-14 | Fixed | `0001-…html:122`: "almost always sits within about 1.5 points … whatever p you choose" plus a 500-seed note. See CP-28 for the count. |
+| CP-15 | Fixed | The text says "about 1% (0.99%)". The new `pc()` (`0003.figures.js:23`) shows 2 significant figures below 10%, and the Chromium readout reads "= 9 / 908.1 = 0.99%". |
+| CP-16 | Fixed | `0002-…html:94`: "so 2·Cov(X, Y) = −35/6 exactly cancels the two variances of 35/12 each." |
+| CP-17 | Fixed | `0001.practice.js:109`: "It heads toward 0.5, as the early 7 of 10 become negligible", with the corrected explanation. The new L1 prose (`:123`) checks: 3/30 is 10 points and 3/10,000 is 0.03 points. The option lengths are 59/52/53/54, within ±25%. |
+| CP-18 | Fixed | `0002.practice.js:24`: "how many users do you need in total?" |
+| CP-19 | Fixed | The option lengths of `l3-interleave-sim-count-2` are 33/28/28/36 (ratio 0.78), and the correct option is no longer the longest. |
+| CP-20 | Fixed, correct | `0003-…html:84`: "(a one-sided 5% test; a two-sided 5% test flags 2.5% as wins and 2.5% as losses, and power here means the power for the size of improvement a helpful change typically has)". |
+| CP-21 | Fixed, correct | `0003-…html:81`: "…for how far you can trust a positive. (For trusting a negative, it is the other way round.)" The added "perfect 100% sensitivity … only to about 10%" checks: 0.01/0.0991 = 0.1009, and Chromium shows 10% at 99% sensitivity. Also fixed in the cheat sheet, rule 5. |
+| CP-22 | Fixed | `0002-…html:129`: "well within what noise alone produces." |
+| CP-23 | Fixed (one nit) | `RESOURCES.md:3,14,28` name the hosts tried and not tried. `NOTES.md:9` says `sources: pending`. L1 says "both textbooks". L1-C4 and L2-C5 are added, and the S5 debt records the DOI as unconfirmed. Nit: the S5 annotation at `RESOURCES.md:43` still says "the DOI … is not given", which now contradicts the Verification debt entry. Suggested: "the DOI recalled by the reviewer is listed under Verification debt, unconfirmed". |
+| CP-24 | Fixed | `NOTES.md:27`: "`Learncraft.explorable` has `reseed()` but no built-in *New seed* button…" |
+| CP-25 | Declined: **reasonable** | Shared component; recorded upstream at `NOTES.md:28`. |
+
+### New findings from the revision
+
+#### CP-26 · P3 · `l2-fade-arm-diff` accepts the same SE in both slots
+`lessons/0002.practice.js:34`: `blanks: { a: ['0.4', '.4', '0.3', '.3'], b: ['0.3', '.3', '0.4', '.4'], … }`. The runtime grades each blank on its own. Verified in Chromium: a = 0.4, b = 0.4 is marked correct in both slots, although √(0.4² + 0.4²) ≠ 0.5. The `se` blank still needs 0.5, so the item is not fully defeated. Corrected:
+```js
+template: 'SE(B − A) = √(SE_A² + SE_B²) = √({{a}}² + {{b}}²) = {{se}}',
+blanks: { a: ['0.4', '.4'], b: ['0.3', '.3'], se: ['0.5', '.5'] },
+labels: { a: 'arm A’s standard error', b: 'arm B’s standard error', se: 'the standard error of the difference' },
+```
+
+#### CP-27 · P3 · "The SE is the floor" overstates what one sample of 14 days shows
+`lessons/0002-expected-value-and-variance.html:128`: "The SE is the floor that sampling alone sets." The SE is a floor for the *expected* day-to-day variance, not for an observed SD. With a constant true rate (p = 0.1, n = 2,500, 14 days, 2,000 simulated fortnights), the sample SD came out *below* the SE 56% of the time. A learner with steady real data who finds SD < SE could think they made a mistake. Corrected: "The SE is the wobble that sampling alone produces; other causes add to it, so on average the daily SD is at least the SE, though over just 14 days it can come out a little below it by chance."
+
+#### CP-28 · P3 · "27 of 9,500 runs" does not reproduce exactly
+`lessons/0001-distributions-and-sampling.html:122`: "27 of 9,500 runs at 10,000 draws exceeded 1.5 points, the worst by 2.0". My rerun, re-implementing the figure's own `pmf()` and sampler, gives **26** strictly above 1.5 points (28 at ≥ 1.5), worst 2.04. The result is the same for seeds 1–500, 0–499 and 7–506. The conclusion is unaffected. Corrected: "about 0.3% of 9,500 runs (26 to 28, depending on the seeds and the cut-off) exceeded 1.5 points, the worst by 2.0."
+
+#### CP-29 · P3 · NOTES upstream note says the runtime lacks a feature it has
+`NOTES.md:30`: "A `recall` item has one `tolerance` for all its accepted answers, so an item cannot accept both `0.16` and `16` (percent) with sensible tolerances." This is false. `assets/practice.js:7` and `:155`, and the lesson contract's `recall` row, support per-entry `{ answer, tolerance }`. This existed before the revision; I missed it in the first pass. Corrected: delete the note, or replace it with "Recall items could accept both units with per-entry `{ answer, tolerance }`; these lessons ask for one unit instead, to keep the prompt unambiguous."
+
+#### CP-30 · P2 · The new l2.o2 canDo is not covered by the m2 challenge
+The canDo is now "…compute the standard error of a sample mean and of an A/B difference" (`course.js:28`, objective `:31`). The challenge criteria (`0002-…html:148-150`) never ask for a difference. The lesson contract asks the 2–4 criteria to cover the canDo together, and there is room for a fourth. Add as criterion 4: "The SE of the difference between two of the 14 days (or two arms) is computed as √(SE₁² + SE₂²), and the result is compared with √2 × one day's SE."
+
+### Verified in this pass
+- Arm difference 0.8485. Faded item 0.5. Half-point lift = 0.59 SE.
+- `l3-fade-bayes-2` = 0.63636, and 0.64 is within its tolerance of 0.005.
+- Perfect sensitivity at 1% base rate and 91% specificity gives 0.1009. Crossover base rate 0.0909.
+- Var(heads in 10 flips) = 2.5, Cov(X, 10 − X) = −2.5.
+- For Bin(1000, 0.01): P(< 13) = 0.7925 and P(7 ≤ X ≤ 13) = 0.737.
+- L1 surplus: 10 points after 30 draws, 0.03 points after 10,000.
+- The runtime accepts every intended answer of the new items and rejects the misconception answers: 0.7 for `post`, the sum 0.7 for `se`, and 0.2 for `notprior`.
+- The other figures and numbers are unchanged from the first pass and still verify.
