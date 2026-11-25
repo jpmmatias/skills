@@ -1,8 +1,10 @@
 // Worked example of a motion scene (from the "Building Reliable AI Agents" course, Lesson 1).
-// Embed with <div class="scene" data-scene="one-prompt-many-answers"></div>, then load assets/scene.js and this file.
-// Real data: the Thinking Machines Lab experiment (Qwen3-235B, 1,000 runs at temperature 0,
-// 80 unique completions, split at token 103 into 992 "Queens, New York" / 8 "New York City").
-// Illustrative (labelled on screen): the triage token probabilities, the near-tie values, the 19/20 rate.
+// Embed with <div class="scene" data-scene="one-prompt-many-answers"></div>, then load core.js, viz.js, scene.js and this file.
+// Every number here is ILLUSTRATIVE and labelled so on screen: the token probabilities, the near-tie, the
+// 1,000-runs / 80-unique figures and the 19/20 rate. The run counts echo a Thinking Machines Lab blog post on
+// nondeterminism in LLM inference (2025), but that source could not be fetched to check them
+// (unverified: the page could not be fetched on 2026-11-25), so they are not presented as real data. In a course, cite real figures with
+// a RESOURCES.md entry and <sup class="cite"><a data-src="S3">…</a></sup>, or label them illustrative like this.
 
 Scene.register('one-prompt-many-answers', {
   title: 'One prompt, many answers',
@@ -52,7 +54,7 @@ Scene.register('one-prompt-many-answers', {
     const real = S.svg('text', { x: 486, y: 504, class: 'sc-mono' }, server, '');
 
     const badge = S.svg('g', {}, root);
-    S.svg('rect', { x: 520, y: 382, width: 370, height: 48, rx: 24, class: 'sc-badge' }, badge);
+    S.svg('rect', { x: 520, y: 382, width: 370, height: 48, rx: 24, class: 'sc-badge', style: 'fill: var(--sc-panel)' }, badge);
     S.svg('text', { x: 705, y: 412, 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 700 }, badge, 'grade the rate, not one roll');
 
     return { term, model, ctx, ctx2, tempT, barsG, bars, pick, paths, packet, server, slots, batchT, tie, real, badge };
@@ -96,11 +98,11 @@ Scene.register('one-prompt-many-answers', {
         r.tie[0].setAttribute('width', flip ? 88 : 92); r.tie[1].setAttribute('width', flip ? 92 : 88);
         r.tie[0].setAttribute('class', flip ? 'sc-bar' : 'sc-win'); r.tie[1].setAttribute('class', flip ? 'sc-win' : 'sc-bar');
       } },
-      { t: 15000, d: 700, f: (r, p) => { r.real.textContent = p > 0 ? '1,000 runs → 80 unique · 992 vs 8 at token 103' : ''; fade(r.real, p); } },
-      { t: 15000, d: 500, f: (r, p) => r.term.set(7, 'out', [{ t: '# Thinking Machines, real data, temp 0:', c: 'muted' }], p) },
+      { t: 15000, d: 700, f: (r, p) => { r.real.textContent = p > 0 ? 'e.g. 1,000 runs → 80 unique (illustrative)' : ''; fade(r.real, p); } },
+      { t: 15000, d: 500, f: (r, p) => r.term.set(7, 'out', [{ t: '# illustrative numbers, temp 0:', c: 'muted' }], p) },
       { t: 15500, d: 500, f: (r, p) => r.term.set(8, 'out', [{ t: '1,000 runs → ', c: 'muted' }, { t: '80 unique completions', c: 'gold' }], p) },
       // 5 · so grade the rate
-      { t: 18000, d: 500, f: (r, p) => { if (p > 0) r.server.style.opacity = lerp(1, 0.18, p); fade(r.badge, p); } },
+      { t: 18000, d: 500, f: (r, p) => { if (p > 0) r.server.style.opacity = lerp(1, 0.12, p); fade(r.badge, p); } },
       { t: 18200, d: 500, f: (r, p) => r.term.set(9, 'out', [{ t: '# many trials → grader → rate', c: 'muted' }], p) },
       { t: 18800, d: 700, f: (r, p) => r.term.set(10, 'out', [{ t: '✓✓✓✓✗✓✓✓✓✓ ✓✓✓✓✓✓✓✓✓✓', c: 'ok' }], p) },
       { t: 19600, d: 600, f: (r, p) => r.term.set(11, 'out', [{ t: 'pass rate ', c: 'muted' }, { t: '19/20 = 0.95', c: 'gold' }, { t: '  (illustrative)', c: 'muted' }], p) },
@@ -114,8 +116,8 @@ Scene.register('one-prompt-many-answers', {
       say: 'Same prompt, second trial. This time the twenty percent token wins. Nothing changed except the roll.' },
     { t: 8000, title: 'Temperature 0', caption: 'Temperature 0 means "always take the top token". In theory, that makes every trial identical.',
       say: 'Temperature zero means: always take the top token. In theory, that makes every trial identical.' },
-    { t: 12000, title: 'Batching tips the scale', caption: 'But the server batches your request with others. The numbers shift with batch size, and a near-tie can flip. In a real run, 1,000 trials at temperature 0 gave <b>80</b> different completions.',
-      say: 'But the server batches your request with other people\'s. The numbers shift slightly with batch size, and a near tie can flip. In a real experiment, a thousand runs at temperature zero produced eighty different completions.' },
+    { t: 12000, title: 'Batching tips the scale', caption: 'But the server batches your request with others. The numbers shift with batch size, and a near-tie can flip. Illustrative numbers: 1,000 trials at temperature 0 can still give <b>dozens</b> of different completions.',
+      say: 'But the server batches your request with other people\'s. The numbers shift slightly with batch size, and a near tie can flip. So even at temperature zero, a thousand runs can produce dozens of different completions. These numbers are illustrative.' },
     { t: 18000, title: 'Grade the rate', caption: 'So don\'t assert on one roll. Run many trials, grade each with properties, and report a pass rate.',
       say: 'So do not assert on one roll. Run many trials, grade each one, and report a pass rate.' },
   ],

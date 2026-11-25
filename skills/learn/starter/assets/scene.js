@@ -1,229 +1,215 @@
-// Motion-scene player: narrated, scrubbable explainer animations (video-explainer style) inside lessons.
+// Motion-scene player: narrated, scrubbable explainer animations inside lessons.
+// Needs core.js and viz.js (the player is Learncraft.timeline). Classic script, ES2017.
 //
-//   <div class="scene" data-scene="my-scene"></div>
+//   <div class="scene" data-scene="my-scene"></div>          (or <div data-lc="scene" data-scene="my-scene">)
 //   <script src="../assets/scene.js"></script>
-//   <script> Scene.register('my-scene', { title, total, setup(stage, S) { …return refs }, beats: […], chapters: […] }) </script>
+//   <script src="scenes-0003.js"></script>   → Scene.register('my-scene', { title, total, poster, setup, beats, chapters, phone })
 //
-// A scene is a pure function of time, so play, pause, scrub and chapter-jump all work:
-//   setup(stage, S)  builds the SVG/terminal once and returns refs.
-//   beats: [{ t, d, f(refs, p) }]   from time t (ms), over d ms, set ABSOLUTE state for progress p in 0..1.
-//                                   f must be idempotent: the player calls every beat on every frame.
-//   chapters: [{ t, title, caption, say }]   on-screen caption + optional narration (browser speech).
-// Helpers on S: svg(tag, attrs, parent, text) · terminal(stage, box) · seg(p, a, b) · lerp · ease
+// A scene is a pure function of time, so play, pause, scrub and chapter jumps all work:
+//   setup(stage, S, root)  builds the SVG (root, viewBox 960×540) and terminals once and returns refs.
+//   beats: [{ t, d, f(refs, p) }]  from time t (ms), over d ms, set ABSOLUTE state for progress p in 0..1.
+//                                  f must be idempotent: the player calls every beat on every frame, in order.
+//   chapters: [{ t, title, caption, say }]  3–6 chapters. caption allows <b> <em> <code> <a> (sanitised);
+//                                  say is the optional narration (browser speech, COURSE.lang).
+//   total: ms (default: last beat end + 1.2 s).
+//   poster: ms | 'start' | 'end' (default 'end'): the frame shown before play, in print and on load.
+//                                  It must stand alone as a static diagram.
+//   phone: { focus: [x, y, w, h] }  stage region kept on screens under 480px (default: the bounding box of
+//                                  the SVG content). On phones, terminals move below the stage at 12px and
+//                                  the SVG is cropped to the focus, so keep the mechanism ≤ ~480 units wide.
+// Helpers on S: svg(tag, attrs, parent, text) · terminal(stage, box) · seg(p, a, b) · lerp · ease · clamp
 //               fade(el, p) · draw(path, p) · along(path, p) → {x,y} · layers(svg, cx, cy, rings) · highlight(code)
-// Watching earns no XP (it's consumption). Under prefers-reduced-motion, beats jump straight to their end state.
+// Each scene mounts through Learncraft.mount, so a broken scene shows an error box and the others keep working.
+// The stage is aria-hidden; the caption (polite live region, chapter changes only) and the Transcript
+// disclosure carry the content. Reduced motion: Play steps chapter by chapter, beats jump to their end state.
+// Watching earns no XP (it's consumption). Always follow a scene with retrieval practice.
 (function () {
-  const NS = 'http://www.w3.org/2000/svg';
-  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
-  const lerp = (a, b, p) => a + (b - a) * p;
-  const ease = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
-  const seg = (p, a, b) => clamp((p - a) / (b - a));
-  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  'use strict';
+  var L = window.Learncraft;
+  if (!L || !L.timeline) { console.error('scene.js: load assets/core.js and assets/viz.js first'); window.Scene = { S: {}, register: function () {} }; return; }
+  var NS = 'http://www.w3.org/2000/svg', V = L.viz;
+  var clamp = V.clamp, lerp = V.lerp, ease = V.ease;
+  var seg = function (p, a, b) { return clamp((p - a) / (b - a)); };
+  var esc = L.esc, sanitize = L.sanitize || L.esc;
+  var PHONE = 480;
 
-  function svg(tag, attrs = {}, parent, text) {
-    const n = document.createElementNS(NS, tag);
-    for (const k in attrs) n.setAttribute(k, attrs[k]);
+  function svg(tag, attrs, parent, text) {
+    var n = document.createElementNS(NS, tag);
+    for (var k in attrs || {}) n.setAttribute(k, attrs[k]);
     if (text != null) n.textContent = text;
-    if (parent) parent.append(n);
+    if (parent) parent.appendChild(n);
     return n;
   }
-  const fade = (el, p) => { el.style.opacity = p; };
+  var fade = function (el, p) { el.style.opacity = p; };
   function draw(path, p) {
-    const len = path._len || (path._len = path.getTotalLength());
+    var len = path._len || (path._len = path.getTotalLength());
     path.style.strokeDasharray = len;
     path.style.strokeDashoffset = len * (1 - p);
   }
   function along(path, p) {
-    const len = path._len || (path._len = path.getTotalLength());
+    var len = path._len || (path._len = path.getTotalLength());
     return path.getPointAtLength(len * p);
   }
 
-  // Syntax highlighting for shell / TS / JSON-ish snippets (works on partially typed text).
-  const RE = /(\/\/.*$)|('(?:[^'\\]|\\.)*'?|"(?:[^"\\]|\\.)*"?|`[^`]*`?)|(\$[A-Za-z_]+)|\b(\d+(?:\.\d+)?)\b|\b(const|let|await|import|from|if|return|new|for|of)\b|([A-Za-z_]\w*)(?=\s*:)|([A-Za-z_]\w*)(?=\()/g;
-  const CLS = [null, 'com', 'str', 'var', 'num', 'kw', 'key', 'fn'];
+  // Syntax highlighting for shell / TS / JSON-ish snippets (works on partially typed text). Output is escaped.
+  var RE = /(\/\/.*$)|('(?:[^'\\]|\\.)*'?|"(?:[^"\\]|\\.)*"?|`[^`]*`?)|(\$[A-Za-z_]+)|\b(\d+(?:\.\d+)?)\b|\b(const|let|await|import|from|if|return|new|for|of)\b|([A-Za-z_]\w*)(?=\s*:)|([A-Za-z_]\w*)(?=\()/g;
+  var CLS = [null, 'com', 'str', 'var', 'num', 'kw', 'key', 'fn'];
   function highlight(src) {
-    let out = '', last = 0, m;
+    var out = '', last = 0, m;
     RE.lastIndex = 0;
     while ((m = RE.exec(src))) {
       if (m[0] === '') { RE.lastIndex++; continue; }
       out += esc(src.slice(last, m.index));
-      const g = m.findIndex((x, i) => i > 0 && x !== undefined);
-      out += `<span class="sc-${CLS[g]}">${esc(m[0])}</span>`;
+      var g = 1; while (g < m.length && m[g] === undefined) g++;
+      out += '<span class="sc-' + CLS[g] + '">' + esc(m[0]) + '</span>';
       last = m.index + m[0].length;
     }
     return out + esc(src.slice(last));
   }
 
-  // Terminal panel. Lines are set per beat: t.set(i, kind, content, p)
-  //   kind 'cmd' (prompt + highlighted), 'code' (highlighted), 'out' (content = [{t, c}] with c '' | 'gold' | 'ok' | 'muted')
-  function terminal(stage, { x, y, w, h, title = 'zsh' }) {
-    const el = document.createElement('div');
+  // Terminal panel. Lines are set per beat: term.set(i, kind, content, p)
+  //   kind 'cmd' (prompt + highlighted), 'code' (highlighted), 'out' (content = [{ t, c }] with c '' | 'gold' | 'ok' | 'muted')
+  function terminal(stage, box) {
+    var el = document.createElement('div');
     el.className = 'sc-term';
-    Object.assign(el.style, { left: x + '%', top: y + '%', width: w + '%', height: h + '%' });
-    el.innerHTML = `<div class="sc-term-bar"><i></i><i></i><i></i><span>${esc(title)}</span></div><pre class="sc-term-body"></pre>`;
-    stage.append(el);
-    const body = el.querySelector('pre'), lines = [];
-    const api = {
-      el,
-      set(i, kind, content, p) { lines[i] = { kind, content, p }; },
-      render() {
-        let html = '';
-        for (const L of lines) {
-          if (!L || L.p <= 0) continue;
-          let row;
-          if (L.kind === 'out') {
-            const total = L.content.reduce((n, s) => n + s.t.length, 0);
-            let left = Math.ceil(total * L.p);
-            row = L.content.map((s) => { const t = s.t.slice(0, Math.max(0, left)); left -= s.t.length; return t ? `<span class="sc-o-${s.c || 'plain'}">${esc(t)}</span>` : ''; }).join('');
+    el.style.left = box.x + '%'; el.style.top = box.y + '%'; el.style.width = box.w + '%'; el.style.height = box.h + '%';
+    el.innerHTML = '<div class="sc-term-bar"><i></i><i></i><i></i><span>' + esc(box.title || 'zsh') + '</span></div><pre class="sc-term-body"></pre>';
+    stage.appendChild(el);
+    var body = el.querySelector('pre'), lines = [], lastHtml = null;
+    var api = {
+      el: el, lines: lines,
+      set: function (i, kind, content, p) { lines[i] = { kind: kind, content: content, p: p }; },
+      render: function () {
+        var html = '';
+        lines.forEach(function (Ln) {
+          if (!Ln || Ln.p <= 0) return;
+          var row;
+          if (Ln.kind === 'out') {
+            var total = Ln.content.reduce(function (n, s) { return n + s.t.length; }, 0), left = Math.ceil(total * Ln.p);
+            row = Ln.content.map(function (s) { var x = s.t.slice(0, Math.max(0, left)); left -= s.t.length; return x ? '<span class="sc-o-' + (s.c || 'plain') + '">' + esc(x) + '</span>' : ''; }).join('');
           } else {
-            const t = L.content.slice(0, Math.ceil(L.content.length * L.p));
-            row = (L.kind === 'cmd' ? '<span class="sc-prompt">$</span> ' : '') + highlight(t);
+            var x = Ln.content.slice(0, Math.ceil(Ln.content.length * Ln.p));
+            row = (Ln.kind === 'cmd' ? '<span class="sc-prompt">$</span> ' : '') + highlight(x);
           }
-          html += row + (L.p < 1 ? '<span class="sc-cursor">▌</span>' : '') + '\n';
-        }
-        body.innerHTML = html;
+          html += row + (Ln.p < 1 ? '<span class="sc-cursor">▌</span>' : '') + '\n';
+        });
+        if (html !== lastHtml) { body.innerHTML = html; lastHtml = html; }
       },
     };
     (stage._terms || (stage._terms = [])).push(api);
     return api;
   }
 
-  // Concentric layers (shell ⊃ kernel ⊃ hardware style). rings: [{ r, label, sub, cls, inner }] painted in order, so pass the OUTERMOST first.
+  // Concentric layers (shell ⊃ kernel ⊃ hardware). rings: [{ r, label, sub, cls, inner }], OUTERMOST first.
   function layers(root, cx, cy, rings) {
-    return rings.map((ring) => {
-      const g = svg('g', { class: 'sc-layer ' + (ring.cls || '') }, root);
-      svg('circle', { cx, cy, r: ring.r }, g);
-      // inner (core) rings are labelled at their centre; outer rings just inside their top edge
+    return rings.map(function (ring) {
+      var g = svg('g', { class: 'sc-layer ' + (ring.cls || '') }, root);
+      svg('circle', { cx: cx, cy: cy, r: ring.r }, g);
       svg('text', { x: cx, y: ring.inner ? cy - 4 : cy - ring.r + 26, 'text-anchor': 'middle', class: 'sc-layer-label' }, g, ring.label);
       if (ring.sub) svg('text', { x: cx, y: ring.inner ? cy + 16 : cy - ring.r + 46, 'text-anchor': 'middle', class: 'sc-layer-sub' }, g, ring.sub);
       return g;
     });
   }
 
-  const S = { svg, terminal, seg, lerp, ease, fade, draw, along, layers, highlight, clamp };
-  const registry = {};
+  var S = { svg: svg, terminal: terminal, seg: seg, lerp: lerp, ease: ease, fade: fade, draw: draw, along: along, layers: layers, highlight: highlight, clamp: clamp };
+  var registry = {};
 
   function mount(host, def) {
+    var chapters = def.chapters && def.chapters.length ? def.chapters : [{ t: 0, title: def.title || '', caption: '' }];
+    var beats = def.beats || [];
+    var total = def.total || Math.max.apply(null, beats.map(function (b) { return b.t + (b.d || 0); }).concat([0])) + 1200;
     host.classList.add('sc-player');
     host.tabIndex = 0;
     host.setAttribute('role', 'region');
-    host.setAttribute('aria-label', 'Animated explainer: ' + def.title);
-    host.innerHTML =
-      `<div class="sc-stage"><div class="sc-title">${esc(def.title)}</div></div>` +
-      `<div class="sc-cap" aria-live="polite"></div>` +
-      `<div class="sc-ctrl"><button class="sc-play" aria-label="Play">▶</button>` +
-      `<input class="sc-scrub" type="range" min="0" step="10" aria-label="Timeline">` +
-      `<span class="sc-time"></span><button class="sc-voice" title="Narration (browser voice)" aria-pressed="false">🔇</button>` +
-      `<button class="sc-full" title="Full screen" aria-label="Full screen">⛶</button></div>` +
-      `<div class="sc-chapters"></div>`;
-    const stage = host.querySelector('.sc-stage');
-    const root = svg('svg', { viewBox: '0 0 960 540', class: 'sc-svg' }, stage);
-    const refs = def.setup(stage, S, root);
-    const beats = def.beats, chapters = def.chapters;
-    const total = def.total || Math.max(...beats.map((b) => b.t + (b.d || 0))) + 1200;
-    const cap = host.querySelector('.sc-cap'), play = host.querySelector('.sc-play'), scrub = host.querySelector('.sc-scrub');
-    const time = host.querySelector('.sc-time'), voice = host.querySelector('.sc-voice'), chapWrap = host.querySelector('.sc-chapters');
-    scrub.max = total;
-    const chapBtns = chapters.map((c, i) => {
-      const b = document.createElement('button');
-      b.innerHTML = `<b>${i + 1}</b> ${esc(c.title)}`;
-      b.onclick = () => { stop(); seek(RM ? chapEnd(i) : c.t); };
-      chapWrap.append(b);
-      return b;
-    });
-    const chapEnd = (i) => (i + 1 < chapters.length ? chapters[i + 1].t - 1 : total);
-    const chapAt = (t) => { let k = 0; chapters.forEach((c, i) => { if (t >= c.t) k = i; }); return k; };
+    host.setAttribute('aria-label', V.tr('scene', { title: def.title || '' }));
+    host.innerHTML = '<div class="sc-stage" aria-hidden="true"><div class="sc-title">' + esc(def.title || '') + '</div></div>' +
+      '<div class="sc-side" aria-hidden="true"></div><div class="sc-cap"></div>';
+    var stage = host.querySelector('.sc-stage'), side = host.querySelector('.sc-side'), cap = host.querySelector('.sc-cap');
+    var root = svg('svg', { viewBox: '0 0 960 540', class: 'sc-svg', focusable: 'false' }, stage);
+    var refs = def.setup(stage, S, root);
+    var terms = stage._terms || [];
+    var narrate = false, failed = false;
 
-    let t = 0, playing = false, last = 0, narrate = false, curChap = -1, raf = 0;
-    function seek(nt) {
-      t = clamp(nt, 0, total);
-      for (const b of beats) {
-        let p = b.d ? clamp((t - b.t) / b.d) : t >= b.t ? 1 : 0;
-        if (RM) p = p > 0 ? 1 : 0;
-        b.f(refs, p);
-      }
-      (stage._terms || []).forEach((x) => x.render());
-      const k = chapAt(t);
-      if (k !== curChap) {
-        curChap = k;
-        showCap(k);
-        chapBtns.forEach((b, i) => b.classList.toggle('on', i === k));
-        if (playing && narrate) speak(chapters[k].say || chapters[k].caption);
-      }
-      scrub.value = t;
-      time.textContent = `${(t / 1000).toFixed(1)}s / ${(total / 1000).toFixed(1)}s`;
+    function showCap(k) {
+      var c = chapters[k];
+      cap.innerHTML = '<b>' + esc(c.title || '') + '</b> ' + (narrate ? '' : sanitize(c.caption || ''));
     }
-    // Redundancy principle: with narration on, show only the chapter title, not the same words twice.
-    function showCap(k) { cap.innerHTML = `<b>${esc(chapters[k].title)}</b> ${narrate ? '' : chapters[k].caption}`; }
-    function speak(text) {
-      if (!('speechSynthesis' in window)) return;
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g, ''));
-      u.rate = 1.02;
-      speechSynthesis.speak(u);
-    }
-    function frame(now) {
-      if (!playing) return;
-      let nt = t + (now - last); last = now;
-      // With narration on, hold at a chapter boundary until the voice finishes.
-      const next = chapters[curChap + 1];
-      if (narrate && speechSynthesis.speaking) {
-        const boundary = next ? next.t - 1 : total;
-        if (nt >= boundary) nt = boundary;
-      }
-      seek(nt);
-      if (t >= total) return stop(true);
-      raf = requestAnimationFrame(frame);
-    }
-    function start() {
-      if (RM) { // reduced motion: step chapter by chapter instead of animating
-        const k = t >= total ? 0 : Math.min(chapters.length - 1, chapAt(t) + (t >= chapEnd(chapAt(t)) ? 1 : 0));
-        curChap = -1; seek(chapEnd(k));
-        if (narrate) speak(chapters[k].say || chapters[k].caption);
-        return;
-      }
-      if (t >= total) { curChap = -1; seek(0); }
-      playing = true; last = performance.now();
-      play.textContent = '❚❚'; play.setAttribute('aria-label', 'Pause');
-      const k = chapAt(t);
-      if (narrate) speak(chapters[k].say || chapters[k].caption);
-      raf = requestAnimationFrame(frame);
-    }
-    function stop(ended) {
-      playing = false; cancelAnimationFrame(raf);
-      if ('speechSynthesis' in window) speechSynthesis.cancel();
-      play.textContent = ended ? '↺' : '▶'; play.setAttribute('aria-label', ended ? 'Replay' : 'Play');
-    }
-    play.onclick = () => (playing ? stop() : start());
-    scrub.oninput = () => { stop(); seek(+scrub.value); };
-    voice.onclick = () => {
-      narrate = !narrate;
-      voice.textContent = narrate ? '🔊' : '🔇'; voice.setAttribute('aria-pressed', narrate);
-      if (curChap >= 0) showCap(curChap);
-      if (!narrate && 'speechSynthesis' in window) speechSynthesis.cancel();
-    };
-    host.querySelector('.sc-full').onclick = () => (document.fullscreenElement ? document.exitFullscreen() : host.requestFullscreen?.());
-    host.addEventListener('keydown', (e) => {
-      if (e.target.tagName === 'INPUT') return;
-      if (e.key === ' ') { e.preventDefault(); playing ? stop() : start(); }
-      if (e.key === 'ArrowRight') { stop(); seek(chapters[Math.min(chapters.length - 1, curChap + 1)].t); }
-      if (e.key === 'ArrowLeft') { stop(); seek(chapters[Math.max(0, curChap - 1)].t); }
+    var tl = L.timeline({
+      host: host, total: total, chapters: chapters, prefix: 'sc', keyStep: 1000,
+      ui: { play: true, scrub: true, time: true, narration: chapters.some(function (c) { return c.say || c.caption; }), fullscreen: host, chapters: true },
+      onSeek: function (t, info) {
+        var reduced = info.reduced;
+        for (var i = 0; i < beats.length; i++) {
+          var b = beats[i], p = b.d ? clamp((t - b.t) / b.d) : t >= b.t ? 1 : 0;
+          if (reduced) p = p > 0 ? 1 : 0;
+          b.f(refs, p);
+        }
+        terms.forEach(function (x) { x.render(); });
+        if (info.changed && !failed) showCap(info.chapter);
+      },
+      onNarration: function (on) { narrate = on; showCap(Math.max(0, tl.chapter())); },
+      onError: function (e, t) { failed = true; cap.textContent = V.tr('sceneError', { t: (t / 1000).toFixed(1) }); },
     });
-    // Poster frame: show the finished picture until the learner presses play (a static diagram on its own).
-    seek(def.poster === 'start' ? 0 : total);
-    play.textContent = '▶';
+    host.appendChild(tl.el);
+    host.appendChild(tl.chapters);
+
+    // Transcript: every chapter's title and caption, readable without playing anything.
+    var det = document.createElement('details'); det.className = 'sc-transcript';
+    var sum = document.createElement('summary'); sum.textContent = V.tr('transcript');
+    var ol = document.createElement('ol');
+    chapters.forEach(function (c) {
+      var li = document.createElement('li'), b = document.createElement('b'), span = document.createElement('span');
+      b.textContent = c.title || ''; span.innerHTML = sanitize(c.caption || '');
+      li.append(b, ' ', span); ol.appendChild(li);
+    });
+    det.append(sum, ol); host.appendChild(det);
+
+    var poster = typeof def.poster === 'number' ? clamp(def.poster, 0, total) : def.poster === 'start' ? 0 : total;
+    tl.set(poster);
+    cap.setAttribute('aria-live', 'polite'); // after the first caption, so page load doesn't announce it
+
+    // Phone layout: below 480px the 960-wide stage would shrink text to ~5px. Crop the SVG to the
+    // mechanism and move terminals under the stage at a fixed, readable size.
+    var focus = null, phone = false;
+    terms.forEach(function (x) { x.el.style.setProperty('--sc-lines', String(Math.max(1, x.lines.length))); });
+    function setPhone(on) {
+      if (on === phone) return;
+      phone = on;
+      host.classList.toggle('sc-phone', on);
+      terms.forEach(function (x) { (on ? side : stage).appendChild(x.el); });
+      if (on && !focus) {
+        if (def.phone && def.phone.focus) focus = def.phone.focus;
+        else { var bb = root.getBBox(); focus = bb.width > 0 ? [bb.x - 10, bb.y - 44, bb.width + 20, bb.height + 54] : [0, 0, 960, 540]; } // extra top room for the title
+        focus = focus.map(function (v) { return Math.round(v); });
+      }
+      root.setAttribute('viewBox', on ? focus.join(' ') : '0 0 960 540');
+      stage.style.aspectRatio = on ? focus[2] + ' / ' + focus[3] : '';
+      tl.render();
+    }
+    var check = function () { setPhone(host.getBoundingClientRect().width < PHONE && host.getBoundingClientRect().width > 0); };
+    check();
+    var ro = 'ResizeObserver' in window ? new ResizeObserver(check) : null;
+    if (ro) ro.observe(host);
+    return { timeline: tl, destroy: function () { tl.destroy(); if (ro) ro.disconnect(); } };
   }
 
-  window.Scene = {
-    S,
-    register(id, def) { registry[id] = def; },
-  };
-  document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.scene[data-scene]').forEach((el) => {
-      const def = registry[el.dataset.scene];
-      if (def) mount(el, def);
-      else el.textContent = 'Missing scene: ' + el.dataset.scene;
+  function mountById(el) {
+    if (el._lcScene) return el._lcScene;
+    var id = el.getAttribute('data-scene'), def = registry[id];
+    if (!def) {
+      console.error('[learncraft] Missing scene: ' + id + ' (is scenes-NNNN.js loaded after scene.js?)');
+      el.innerHTML = '<p class="lc-error" role="alert">Missing scene: ' + esc(id) + '</p>';
+      return null;
+    }
+    el._lcScene = mount(el, def);
+    return el._lcScene;
+  }
+
+  window.Scene = { S: S, register: function (id, def) { registry[id] = def; }, mount: mountById };
+  L.register('scene', { mount: function (el) { return mountById(el); } });
+  L.ready(function () {
+    document.querySelectorAll('.scene[data-scene]:not([data-lc])').forEach(function (el) {
+      L.mount(el, 'scene "' + el.getAttribute('data-scene') + '"', mountById);
     });
   });
 })();

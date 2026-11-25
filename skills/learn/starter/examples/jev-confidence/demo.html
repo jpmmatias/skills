@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jev-confidence: a bespoke module example</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="../../assets/theme.css">
+<link rel="stylesheet" href="jev-confidence.css">
+</head>
+<body>
+<main>
+<p class="kicker">Starter kit · bespoke module example</p>
+<h1>Confidence bands (jev-confidence)</h1>
+<p class="lede">Course-specific components from one course, kept as a worked example of a module that registers with
+<code>Learncraft.register</code>. See <a href="README.md">README.md</a>. The labelled results in the explorer are synthetic.</p>
+
+<h2>Bands</h2>
+<figure><div data-lc="jev-bands" data-act="0.8" data-confirm="0.5" data-marker="0.42"></div>
+<figcaption>Below 0.5 a human handles it; 0.5–0.8 a human approves; from 0.8 the agent acts.</figcaption></figure>
+
+<h2>Confidence bars</h2>
+<figure><div data-lc="confidence-bars" data-bars='{"refund":0.61,"complaint":0.27,"return":0.12}' data-confidence="0.42"
+  data-bars-alt='{"refund":0.97,"complaint":0.02,"return":0.01}' data-confidence-alt="0.95" data-alt-label="Show a clear ticket"></div>
+<figcaption>Illustrative probabilities.</figcaption></figure>
+
+<h2>Band quiz</h2>
+<div data-lc="band-quiz" id="demo-band" data-act="0.8" data-confirm="0.5" data-seed="3"></div>
+
+<h2>Threshold explorer</h2>
+<div data-lc="threshold-explorer" id="demo-explorer" data-seed="7" data-n="80" data-target="0.95" data-start="0.5"></div>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/viz.js"></script>
+<script src="../../assets/diagram.js"></script>
+<script src="jev-confidence.js"></script>
+</body>
+</html>

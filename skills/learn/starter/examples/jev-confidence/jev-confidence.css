@@ -1,0 +1,54 @@
+/* Course-specific styles for the jev-confidence example module (and the decision colours its scenes used).
+   Load after style.css. The --act / --confirm / --triage tokens are defined HERE, not in the generic
+   runtime: one course's semantics ("green means auto-act") shouldn't ship to a yoga or history course. */
+:root {
+  --act: #2f6b3a; --act-bg: #dcebdc;
+  --confirm: #6f5000; --confirm-bg: #f5e8c4;
+  --triage: #a12a2a; --triage-bg: #f3d9d6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --act: #8fd19c; --act-bg: #1f3a24; --confirm: #e8c46a; --confirm-bg: #3d3216; --triage: #f09a9a; --triage-bg: #432222; }
+}
+:root[data-theme="dark"] { --act: #8fd19c; --act-bg: #1f3a24; --confirm: #e8c46a; --confirm-bg: #3d3216; --triage: #f09a9a; --triage-bg: #432222; }
+
+/* confidence bands (numberline zones with cls z-*) */
+.dg .dg-z.z-act { fill: var(--act-bg); fill-opacity: 1; } .dg .dg-z.z-confirm { fill: var(--confirm-bg); fill-opacity: 1; } .dg .dg-z.z-triage { fill: var(--triage-bg); fill-opacity: 1; }
+.dg .z-act + text, .dg .z-act + text + text { fill: var(--act); }
+.dg .z-confirm + text, .dg .z-confirm + text + text { fill: var(--confirm); }
+.dg .z-triage + text, .dg .z-triage + text + text { fill: var(--triage); }
+.dg-blind .dg-z.z-act, .dg-blind .dg-z.z-confirm, .dg-blind .dg-z.z-triage { fill: var(--code-bg); }
+.dg-blind .dg-zl, .dg-blind .dg-zs, .dg-blind + .dg-zone-notes, .dg-blind .dg-zone-notes { visibility: hidden; }
+.dg .t-act { fill: var(--act); font-weight: 700; } .dg .t-confirm { fill: var(--confirm); font-weight: 700; } .dg .t-triage { fill: var(--triage); font-weight: 700; }
+
+/* band quiz */
+[data-lc="band-quiz"], .band-quiz { margin: 1rem 0; }
+.band-quiz p, [data-lc="band-quiz"] p { margin: 0 0 .5rem; }
+.band-quiz .quiz-opts, [data-lc="band-quiz"] .quiz-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.band-quiz .quiz-opts button, [data-lc="band-quiz"] .quiz-opts button,
+.dg-again { font: 14px var(--font-ui); padding: .4rem .9rem; cursor: pointer; background: var(--bg); color: var(--fg);
+  border: 1px solid var(--control-border, var(--muted)); border-radius: var(--radius-sm); min-height: 2.25rem; }
+.band-quiz .quiz-opts button.ok, [data-lc="band-quiz"] .quiz-opts button.ok { border: 2px solid var(--ok); color: var(--ok); }
+.band-quiz .quiz-opts button.bad, [data-lc="band-quiz"] .quiz-opts button.bad { border: 2px dashed var(--bad); color: var(--bad); text-decoration: line-through; }
+.dg-again { border-color: var(--signal, var(--accent)); }
+
+/* threshold explorer (synthetic data): right = filled dot, wrong = ×, so colour is never the only cue */
+.dg .te-human { fill: var(--code-bg); } .dg .te-auto { fill: var(--act-bg); opacity: .55; }
+.dg .te-ok { fill: var(--ok); } .dg .te-bad { stroke: var(--bad); stroke-width: 2; fill: none; }
+.dg .te-dim { opacity: .25; }
+.dg .te-line { stroke: var(--signal, var(--accent)); stroke-width: 2.5; }
+.dg .te-bucket { fill: var(--muted); }
+
+/* before/after worked examples */
+.ba .bad { border-left-color: var(--triage); } .ba .good { border-left-color: var(--act); }
+.ba .bad .tag { color: var(--triage); } .ba .good .tag { color: var(--act); }
+
+/* decision colours used by that course's motion scenes */
+.sc-svg .sc-z-triage { fill: rgba(239,107,107,.22); } .sc-svg .sc-z-confirm { fill: rgba(242,184,75,.25); } .sc-svg .sc-z-act { fill: rgba(111,207,151,.22); }
+.sc-svg .sc-t-triage { fill: var(--sc-red); } .sc-svg .sc-t-confirm { fill: var(--sc-amber); } .sc-svg .sc-t-act { fill: var(--sc-green); }
+.sc-svg .sc-x-act { stroke: var(--sc-green); } .sc-svg .sc-x-confirm { stroke: var(--sc-amber); } .sc-svg .sc-x-triage { stroke: var(--sc-red); }
+.sc-svg [class^="sc-glow-"] { opacity: 0; }
+.sc-svg .sc-glow-act { fill: rgba(111,207,151,.25); } .sc-svg .sc-glow-confirm { fill: rgba(242,184,75,.25); } .sc-svg .sc-glow-triage { fill: rgba(239,107,107,.25); }
+.sc-svg .sc-ring { fill: none; stroke: var(--sc-amber); stroke-width: 4; stroke-linecap: round; }
+.sc-svg .sc-ring.late { stroke: var(--sc-red); }
+.sc-svg .sc-retune { fill: none; stroke: var(--sc-gold); stroke-width: 2.5; }
+.sc-svg .sc-lines { fill: var(--sc-muted); } .sc-svg .sc-lines.on { fill: var(--sc-gold); font-weight: 700; }
