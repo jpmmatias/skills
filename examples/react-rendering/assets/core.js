@@ -84,17 +84,35 @@
     }
     return p.slice(0, 2) !== '//'; // a plain relative path or query
   }
+  function pctDecodeAll(s) { // until stable, so %2e%2e and %252e%252e are both seen as ".." (NEW-04)
+    for (var i = 0; i < 5; i++) {
+      var n; try { n = decodeURIComponent(s); } catch (e) { n = s.replace(/%2e/gi, '.').replace(/%2f/gi, '/').replace(/%5c/gi, '\\'); }
+      if (n === s) break; s = n;
+    }
+    return s;
+  }
+  function staysInside(p, base) { // a relative path (also once fully percent-decoded) must resolve inside the workspace
+    if (!rootURL) return true;
+    try {
+      var a = new URL(p, base).href, b = new URL(pctDecodeAll(p), base).href;
+      return a.indexOf(rootURL) === 0 && b.indexOf(rootURL) === 0;
+    } catch (e) { return false; }
+  }
   function safeHref(h) { // → the normalised href, or null when it is not allowed
     if (h == null) return null;
     var raw = urlProbe(h), dec = urlProbe(decodeRefs(h));
-    if (raw === '' || !hrefOk(raw) || !hrefOk(dec)) return null;
+    if (raw === '' || !hrefOk(raw) || !hrefOk(dec) || !hrefOk(pctDecodeAll(raw))) return null;
+    var relative = raw.charAt(0) !== '#' && !/^[A-Za-z][A-Za-z0-9+.-]*:/.test(raw);
+    if (relative && !staysInside(raw, doc.baseURI)) return null; // e.g. %2e%2e/%2e%2e/etc/passwd
     return raw;
   }
   // A link to a file inside the workspace, built from course data (lesson files, evidence records): relative,
   // no "..", no scheme, no backslash. Anything else becomes "#" so a data field can never pick the target.
   function workspaceHref(rel) {
     var p = urlProbe(String(rel == null ? '' : rel)).replace(/^\.\//, '');
-    if (!p || !hrefOk(p) || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(p) || p.charAt(0) === '/' || /(^|\/)\.\.(\/|$)/.test(decodeRefs(p))) return '#';
+    var d = pctDecodeAll(decodeRefs(p));
+    if (!p || !hrefOk(p) || !hrefOk(d) || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(p) || p.charAt(0) === '/' || d.charAt(0) === '/' ||
+      /(^|\/)\.\.(\/|$)/.test(d) || !staysInside(p, rootURL)) return '#';
     return rootURL + p;
   }
   function clean(node) {

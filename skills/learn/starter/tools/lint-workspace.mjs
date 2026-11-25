@@ -318,13 +318,22 @@ const SCRIPTISH = /^(script-src|script-src-attr|script-src-elem|default-src|work
  * stylesheet, and exactly the template policy (CANONICAL_CSP). Even markup the regex lint misses cannot run under it.
  */
 export function cspProblems(all) {
-  const metas = all.filter((t) => t.name === 'meta' && /^content-security-policy$/i.test((t.attrs['http-equiv'] || '').trim()));
+  // Browsers match http-equiv exactly (ASCII case-insensitive, no trimming): a value with surrounding spaces or a
+  // non-breaking space is IGNORED by the browser, so it must not satisfy this check (NEW-08). Near-misses are errors.
+  const looksLike = (t) => t.name === 'meta' && /content-security-policy/i.test(t.attrs['http-equiv'] || '');
+  const exact = (t) => /^content-security-policy$/i.test(t.attrs['http-equiv'] || '');
+  const nearMiss = all.filter((t) => looksLike(t) && !exact(t));
+  const metas = all.filter((t) => t.name === 'meta' && exact(t));
   if (!metas.length) return [{ rule: 'csp-missing', message: 'no Content-Security-Policy <meta>: copy the one from the page template (templates/*.html) into <head>' }];
   const out = [];
+  if (nearMiss.length) out.push({ rule: 'csp-not-canonical', message: `http-equiv must be exactly "Content-Security-Policy" (no spaces or other characters around it); the browser ignores "${nearMiss[0].attrs['http-equiv']}"` });
   if (metas.length > 1) out.push({ rule: 'csp-duplicate', message: `${metas.length} Content-Security-Policy <meta> tags: keep exactly one, the template's` });
   const meta = metas[0];
   const early = all.find((t) => t.start < meta.start && (t.name === 'script' || t.name === 'body' || (t.name === 'link' && /stylesheet/i.test(t.attrs.rel || '')) || t.name === 'style'));
   const head = all.find((t) => t.name === 'head');
+  // The meta must sit directly in <head>: inside <noscript>, <template>, <svg> or <math> the browser does not apply it (NEW-08).
+  const wrapper = all.find((t) => /^(noscript|template|svg|math|object|iframe)$/.test(t.name) && t.start < meta.start && (!head || t.start > head.start));
+  if (wrapper) out.push({ rule: 'csp-late', message: `the Content-Security-Policy <meta> must be a direct child of <head>; inside <${wrapper.name}> the browser ignores it` });
   if (early || (head && meta.start < head.start)) out.push({ rule: 'csp-late', message: `the Content-Security-Policy <meta> must be in <head>, before any script or stylesheet${early ? ` (found after <${early.name}>)` : ''}` });
   const { dir, dup } = parseCsp(meta.attrs.content);
   const diffs = [];

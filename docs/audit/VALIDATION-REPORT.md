@@ -8,16 +8,16 @@ All results below were measured in this environment on 2026-11-25 against the wo
 
 | Check | Command | Result |
 |---|---|---|
-| Unit, integration, browser and security tests | `node --test tests/*.test.mjs` | **269 / 269 pass**, 0 skipped (≈ 40 s). 183 before the security fixes. |
+| Unit, integration, browser and security tests | `node --test tests/*.test.mjs` | **279 / 279 pass**, 0 skipped (≈ 45 s). 183 before the security fixes. |
 | Repository validation: skill metadata, marketplace, links, JSON, schemas, subagent ↔ role sync, example courses | `node scripts/validate.mjs --strict` | 0 errors, 0 warnings |
 | Plugin marketplace manifest | `claude plugin validate . --strict` | Validation passed |
 | Plugin install with dependency resolution | throwaway HOME, `claude plugin install curriculum-planner@…` | `learn` installed as a dependency; a `claude -p` session listed 5 skills and 4 subagents (workstream A, 2026-11-25) |
 | Workspace lint: schemas, ids, citations, CSP, unsafe markup | `node skills/learn/starter/tools/lint-workspace.mjs examples/<course>` | clean on all three courses |
-| Browser check: JS errors, missing files, overflow at 390px, light, dark and reduced motion, real-DOM script inspection, CSP violations, axe | `node skills/learn/starter/tools/check.mjs examples/<course>` | **19 / 19 pages clean**: Transformers 6, React 7, Probability 6. axe: **0 violations**. "Needs manual review" nodes are mostly SVG text contrast, which axe cannot resolve; those pairs were computed by hand in the frontend audit. |
+| Browser check: JS errors, missing files, overflow at 390px, light, dark and reduced motion, real-DOM script inspection, inserted-element recording, CSP enforcement probe, CSP violations, axe | `node skills/learn/starter/tools/check.mjs examples/<course>` | **19 / 19 pages clean**: Transformers 6, React 7, Probability 6. axe: **0 violations**. "Needs manual review" nodes are mostly SVG text contrast, which axe cannot resolve; those pairs were computed by hand in the frontend audit. |
 | Starter templates | scratch workspace from `starter/templates` + `assets`, Chromium | No JS errors; practice renders and records; no horizontal scroll at 1280 or 390 |
 | Stricter CSP on `file://` | same scratch workspace | Loads cleanly with `object-src`, `base-uri` and `form-action` set to `'none'` |
 | Persistence and migration (store) | in the test suite | v0 → v2 migration, v0 key untouched, first try immutable across reload, Leitner transitions, import dedupe and quarantine round trip, blocked storage, quota |
-| Security regressions | `tests/security.test.mjs`, `tests/hardening.test.mjs`, `tests/runtime-fixes.test.mjs` | Pass. Mutation check by the fix engineer: 12 of 12 single-fix reverts make a test fail; every new test fails on the pre-fix code except 4 sanity checks. |
+| Security regressions | `tests/security.test.mjs`, `tests/hardening.test.mjs`, `tests/runtime-fixes.test.mjs`, `tests/csp-enforcement.test.mjs` | Pass. Every new test fails on the code before its fix, except sanity checks: rounds 1–2 checked by the fix engineer (12 of 12 single-fix reverts caught), round 3 by the orchestrator (8 of 8 against the previous `HEAD` tools). The independent reviewer's own mutation run caught 22 of 26 reverts; the one real gap, NEW-11, is listed below. |
 | Instruction cost (deterministic, bytes/4) | `node evaluations/runners/instruction-cost.mjs [--ref f8aaf973]` | See [evaluation](#evaluation-results) |
 | Workspace rubric (deterministic) | `node evaluations/runners/score-workspace.mjs <course>` | See [evaluation](#evaluation-results) |
 | Skills CLI discovery | `npx skills add . --list` (workstream E) | lists all 5 skills |

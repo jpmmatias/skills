@@ -156,6 +156,22 @@ for (const rel of pages) {
     page.on('pageerror', (e) => problems.push(`${tag} JS error: ${e.message}`));
     // Every CSP violation is an error: under the template policy a clean page has none (NEW-01).
     await page.addInitScript(() => { window.__lcCsp = []; document.addEventListener('securitypolicyviolation', (e) => window.__lcCsp.push(`${e.effectiveDirective} blocked ${e.blockedURI || 'inline'}${e.sample ? ' (' + e.sample.slice(0, 40) + ')' : ''}`)); });
+    // Record script-bearing elements as the parser and scripts insert them, so markup that removes itself after
+    // running is still seen (NEW-08). The runtime never uses inline handlers or inline scripts.
+    await page.addInitScript(() => {
+      window.__lcMut = [];
+      const flag = (el) => {
+        if (!el || el.nodeType !== 1) return;
+        for (const a of el.attributes || []) if (/^on/i.test(a.name)) window.__lcMut.push(`<${el.localName} ${a.name}> inserted`);
+        if (el.localName === 'script' && !el.getAttribute('src')) window.__lcMut.push('inline <script> inserted');
+      };
+      new MutationObserver((recs) => {
+        for (const r of recs) {
+          if (r.type === 'attributes') { if (/^on/i.test(r.attributeName || '')) window.__lcMut.push(`${r.attributeName} attribute set on <${r.target.localName}>`); continue; }
+          for (const n of r.addedNodes) { flag(n); if (n.querySelectorAll) n.querySelectorAll('*').forEach(flag); }
+        }
+      }).observe(document, { childList: true, subtree: true, attributes: true });
+    });
     page.on('console', (m) => !quiet && m.type() === 'error' && problems.push(`${tag} console: ${m.text()}`));
     page.on('requestfailed', (r) => {
       const u = r.url();
@@ -173,6 +189,22 @@ for (const rel of pages) {
     if (!settled) warnings.push(`${tag} animations still running after the settle timeout; screenshots may show mid-tween frames`);
     const info = await page.evaluate(domAudit);
     for (const v of await page.evaluate(() => window.__lcCsp || []).catch(() => [])) problems.push(`${tag} CSP violation: ${v}`);
+    for (const v of await page.evaluate(() => window.__lcMut || []).catch(() => [])) problems.push(`${tag} security: ${v}`);
+    // Prove the CSP is enforced, rather than trusting how the <meta> looks (NEW-08): an inline script and an inline
+    // handler inserted now must both be blocked. Runs after the page's own violations were collected.
+    if (pass.key === 'light-900') {
+      quiet = true; // the browser logs the blocked probe as a console error: that is the expected outcome
+      const probe = await page.evaluate(() => {
+        const s = document.createElement('script'); s.textContent = 'window.__lcProbeInline = 1'; document.head.append(s);
+        const d = document.createElement('div'); d.setAttribute('onclick', 'window.__lcProbeAttr = 1'); document.body.append(d); d.click();
+        s.remove(); d.remove();
+        return { inline: window.__lcProbeInline === 1, attr: window.__lcProbeAttr === 1 };
+      }).catch((e) => ({ error: e.message.split('\n')[0] }));
+      await page.waitForTimeout(50);
+      quiet = false;
+      if (probe.error) problems.push(`security: CSP enforcement probe failed to run (${probe.error})`);
+      else if (probe.inline || probe.attr) problems.push(`security: the Content-Security-Policy is NOT enforced on this page (${[probe.inline && 'an inline script ran', probe.attr && 'an inline handler ran'].filter(Boolean).join(', ')}); use the exact <meta> from the page template, directly in <head>`);
+    }
     if (pass.key === 'light-900') for (const f of await page.evaluate(securityAudit, wsUrl + '/').catch((e) => [`security audit failed: ${e.message.split('\n')[0]}`])) problems.push(`security: ${f}`);
     if (info.scrollWidth > pass.width + 1) problems.push(`${tag} horizontal scroll: page is ${info.scrollWidth}px wide`);
     for (const e of info.errors) problems.push(`${tag} component failed to mount: ${e}`);

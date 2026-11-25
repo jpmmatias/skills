@@ -59,7 +59,7 @@
     'record.title': 'Your record', 'record.export': 'Export progress', 'record.import': 'Import progress',
     'record.help': 'Progress lives in this browser only. Export it to keep a copy or to share it with your teacher; import it in another browser. The export includes what you typed in recall answers, so your teacher can see your reasoning.',
     'record.xp': '{xp} XP from first-try answers',
-    'record.imported': 'Imported: {added} new, {skipped} already here.', 'record.importErrors': '{n} could not be read.',
+    'record.imported': 'Imported: {added} new, {skipped} already here.', 'record.importErrors': '{n} could not be read.', 'record.kept': '{n} kept unread (written by a newer version of the course runtime).',
     'record.notSaved': 'Imported {added} into this page only: they are NOT saved (browser storage is full or blocked). Export now to keep them.',
     'record.tooBig': '{reason}',
     'storage.lost': 'Your last answers were not saved: browser storage is full or blocked. Practice still works; use Export on the course page before you close this page.',
@@ -99,7 +99,7 @@
     'record.title': 'Seu registro', 'record.export': 'Exportar progresso', 'record.import': 'Importar progresso',
     'record.help': 'O progresso fica só neste navegador. Exporte para guardar uma cópia ou compartilhar com o professor; importe em outro navegador. A exportação inclui o que você digitou nas respostas de memória, para o professor ver o seu raciocínio.',
     'record.xp': '{xp} XP de respostas certas na primeira tentativa',
-    'record.imported': 'Importado: {added} novos, {skipped} já existiam.', 'record.importErrors': '{n} não puderam ser lidos.',
+    'record.imported': 'Importado: {added} novos, {skipped} já existiam.', 'record.importErrors': '{n} não puderam ser lidos.', 'record.kept': '{n} guardados sem leitura (gravados por uma versão mais nova do curso).',
     'record.notSaved': '{added} importados só nesta página: NÃO foram salvos (o armazenamento do navegador está cheio ou bloqueado). Exporte agora para guardá-los.',
     'record.tooBig': 'Nada foi importado (o arquivo passa do limite): {reason}',
     'storage.lost': 'Suas últimas respostas não foram salvas: o armazenamento do navegador está cheio ou bloqueado. A prática continua funcionando; use Exportar na página do curso antes de fechar esta página.',
@@ -292,12 +292,13 @@
       rd.onload = () => {
         const r = safe(() => s.importJSON(String(rd.result)), null);
         if (!r) return say(t('record.bad'));
-        const errs = (r.errors || []).length;
-        const limit = !r.added && !r.skipped && errs === 1 && /limit is/.test(r.errors[0]);
+        const kept = +r.quarantined || 0, errs = Math.max(0, (r.errors || []).length - kept);
+        const tail = (kept ? ' ' + t('record.kept', { n: kept }) : '') + (errs ? ' ' + t('record.importErrors', { n: errs }) : '');
+        const limit = !r.added && !r.skipped && !kept && errs === 1 && /limit is/.test(r.errors[0]);
         say(limit ? t('record.tooBig', { reason: r.errors[0] })
-          : !r.added && !r.skipped && errs ? t('record.bad')
-            : r.added && r.persisted === false ? t('record.notSaved', { added: r.added }) + (errs ? ' ' + t('record.importErrors', { n: errs }) : '')
-              : t('record.imported', { added: r.added || 0, skipped: r.skipped || 0 }) + (errs ? ' ' + t('record.importErrors', { n: errs }) : ''));
+          : !r.added && !r.skipped && !kept && errs ? t('record.bad')
+            : (r.added || kept) && r.persisted === false ? t('record.notSaved', { added: r.added + kept }) + tail
+              : t('record.imported', { added: r.added || 0, skipped: r.skipped || 0 }) + tail);
         e.target.value = '';
         rerender();
       };

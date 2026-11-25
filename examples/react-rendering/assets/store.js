@@ -539,17 +539,24 @@
         res.errors.push('The file has ' + p.events.length + ' events; the limit is ' + MAX_IMPORT_EVENTS + '. Nothing was imported.');
         return res;
       }
-      var seen = map(), incoming = [], latest = now() + DAY;
-      p.events.forEach(function (e, i) {
-        if (e && typeof e === 'object' && e.source == null) e = Object.assign({}, e, { source: 'import' });
+      var seen = map(), incoming = [], unread = [], latest = now() + DAY;
+      p.events.forEach(function (raw, i) {
+        var e = raw && typeof raw === 'object' && raw.source == null ? Object.assign({}, raw, { source: 'import' }) : raw;
         var c = sanitizeEvent(e);
         if (!c.error && ms(c.event.at) > latest) c = { error: 'bad at (in the future)' };
-        if (c.error) { if (res.errors.length < 50) res.errors.push('events[' + i + ']: ' + c.error); return; }
+        if (c.error) {
+          if (res.errors.length < 50) res.errors.push('events[' + i + ']: ' + c.error);
+          if (raw && typeof raw === 'object' && !Array.isArray(raw)) unread.push(raw); // kept unread, as on load (NEW-06)
+          return;
+        }
         if (ids[c.event.id] || seen[c.event.id]) { res.skipped++; return; }
         seen[c.event.id] = 1; incoming.push(c.event); res.added++;
       });
-      if (incoming.length) {
-        merge(incoming);
+      var q0 = quarantine.length;
+      if (unread.length) addQuarantine(unread);
+      flag('quarantined', quarantine.length - q0); // non-enumerable: events this runtime cannot read, kept for a newer one
+      if (incoming.length || quarantine.length > q0) {
+        if (incoming.length) merge(incoming);
         var w = write();
         flag('persisted', w.persisted); if (!w.persisted) flag('reason', w.reason);
         notify({ type: 'import', persisted: w.persisted });

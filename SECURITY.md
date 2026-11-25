@@ -34,3 +34,5 @@ Out of scope: issues that need an attacker who already controls your agent, your
 Please report privately through GitHub: on the repository page, open **Security → Report a vulnerability** (GitHub private vulnerability reporting / security advisories). Include the affected file or skill, steps to reproduce (a minimal `course.js` or lesson is ideal), and the impact you observed.
 
 Do not open a public issue for a vulnerability. This is a personal project maintained in spare time: expect an acknowledgement within about a week. Fixes are released as a new version in the marketplace manifest and noted in the changelog; you are credited unless you ask not to be.
+
+- **Open (P3, NEW-11):** removing the loader's `import()` hook would not make any test fail, although the hook itself is in place and blocks host error objects today.

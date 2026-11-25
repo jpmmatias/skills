@@ -54,6 +54,13 @@ export function checkWorkspaceFile(path, { root = null, maxBytes = MAX_SOURCE * 
   let st;
   try { st = lstatSync(path); } catch (e) { return { error: `cannot be read (${e.code || 'error'})` }; }
   let real = resolve(path);
+  // A symbolic link anywhere in the path (e.g. lessons/ -> /elsewhere) must not lead outside the workspace (NEW-09):
+  // compare real paths, not only when the file itself is a link.
+  {
+    let rp, base;
+    try { rp = realpathSync(path); base = realpathSync(root || dirname(dirname(resolve(path)))); } catch { return { error: 'is a broken symbolic link (refused)' }; }
+    if (!inside(base, rp)) return { error: 'resolves outside the workspace through a symbolic link (refused)' };
+  }
   if (st.isSymbolicLink()) {
     let base;
     try { real = realpathSync(path); base = realpathSync(root || dirname(dirname(resolve(path)))); } catch { return { error: 'is a broken symbolic link (refused)' }; }
