@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "fixture",
+  "owner": {
+    "name": "Fixture Owner"
+  },
+  "plugins": [
+    {
+      "name": "alpha",
+      "source": ".",
+      "skills": [
+        "./skills/alpha"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "beta",
+      "source": ".",
+      "skills": [
+        "./skills/beta"
+      ],
+      "dependencies": [
+        "alpha"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}

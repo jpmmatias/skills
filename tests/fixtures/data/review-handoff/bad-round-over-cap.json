@@ -1,0 +1,22 @@
+{
+  "lesson": "l3",
+  "file": "lessons/0003-batching.html",
+  "profile": "balanced",
+  "round": 5,
+  "round_cap": 2,
+  "status": "in_review",
+  "budget": {
+    "fetches_used": 5,
+    "fetches_max": 8,
+    "agent_calls_used": 4
+  },
+  "history": [
+    {
+      "round": 1,
+      "verdicts": {
+        "expert": "REVISE",
+        "novice": "APPROVE"
+      }
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learncraft figure and motion examples</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body>
+<main>
+<p class="kicker">Starter kit · examples</p>
+<h1>Figures, explorables and motion</h1>
+<p class="lede">Reference markup for the generic components in <code>assets/diagram.js</code>, <code>assets/viz.js</code> and
+<code>assets/scene.js</code>. Every figure here renders its final state without waiting for animation, works with the keyboard, and
+steps instead of animating when the reader prefers reduced motion. This page is an example, not a course: it has no progress.</p>
+
+<h2 id="bars">Bars</h2>
+<!-- Categorical values. The largest is signalled; the text alternative lists every value. -->
+<figure>
+  <div data-lc="bars" data-label="Next-token probability" data-sort="desc" data-note="illustrative probabilities"
+       data-bars='{"refund":0.61,"complaint":0.27,"return":0.12}'
+       data-alt='{"refund":0.96,"complaint":0.03,"return":0.01}' data-alt-label="Show a clearer ticket"
+       data-summary="Weight is spread over three tokens." data-alt-summary="One token holds almost all the weight."></div>
+  <figcaption>Illustrative next-token probabilities for an ambiguous ticket and a clear one.</figcaption>
+</figure>
+
+<h2 id="numberline">Number line with zones</h2>
+<!-- Zones come from data; tone is optional (muted, signal, ok, bad) and a zone may add its own class. -->
+<figure>
+  <div data-lc="numberline" data-min="0" data-max="14" data-digits="1" data-label="pH at 25 °C" data-marker="5.5"
+       data-zones='[{"from":0,"to":7,"label":"Acidic","sub":"more H⁺ than OH⁻","tone":"t2"},{"from":7,"to":14,"label":"Basic","sub":"more OH⁻ than H⁺","tone":"t0"}]'
+       data-ticks="0,7,14"></div>
+  <figcaption>Pure water sits exactly on the line at 7. The marker shows an example value of 5.5.</figcaption>
+</figure>
+
+<h2 id="flow">Flow graph: a request through the layers</h2>
+<!-- Nodes and edges from data. Steps are optional; without them the graph is static. The poster is the whole graph. -->
+<div data-lc="flow" data-flow='{
+  "title": "A page request",
+  "nodes": [{"id":"browser","label":"Browser"},{"id":"cdn","label":"CDN","sub":"edge cache"},{"id":"lb","label":"Load balancer"},{"id":"app","label":"App server"},{"id":"db","label":"Database"}],
+  "edges": [{"from":"browser","to":"cdn","label":"GET /cart"},{"from":"cdn","to":"lb","label":"miss"},{"from":"lb","to":"app","label":"route"},{"from":"app","to":"db","label":"SELECT"},
+            {"from":"db","to":"app","label":"rows"},{"from":"app","to":"lb","label":"HTML"},{"from":"lb","to":"cdn","label":"200"},{"from":"cdn","to":"browser","label":"200"}],
+  "steps": [
+    {"edges":[0],"caption":"The browser asks the CDN for <code>/cart</code>. A cart is personal, so the edge cache has no copy."},
+    {"edges":[1,2],"caption":"On a miss the CDN forwards the request; the load balancer picks one healthy app server."},
+    {"edges":[3,4],"caption":"The app server queries the database for this user’s cart and gets rows back."},
+    {"edges":[5,6,7],"caption":"The rendered page travels back out the same way. Every hop adds latency, which is why cacheable pages skip most of them."}],
+  "summary": "The full round trip: down through four layers and back. Press Next to follow one hop at a time."}'></div>
+
+<h2 id="stepper">Stepper (hand-drawn SVG)</h2>
+<!-- Authors draw the SVG; groups with data-step appear in order and their .arrow paths draw with a packet. Use a unique marker id. -->
+<div class="stepper">
+  <svg viewBox="0 0 640 150" class="dg">
+    <defs><marker id="ah-dns" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs>
+    <g data-step="1"><rect class="node" x="10" y="50" width="130" height="50" rx="6"/><text class="t-title" x="75" y="80" text-anchor="middle">Laptop</text></g>
+    <g data-step="2"><rect class="node" x="250" y="50" width="140" height="50" rx="6"/><text class="t-title" x="320" y="72" text-anchor="middle">Resolver</text><text class="t-mono" x="320" y="90" text-anchor="middle">1.1.1.1</text>
+      <path class="arrow" d="M140,75 L248,75" style="marker-end:url(#ah-dns)"/><text class="t-mono" x="194" y="66" text-anchor="middle">example.org?</text></g>
+    <g data-step="3"><rect class="node" x="500" y="50" width="130" height="50" rx="6"/><text class="t-title" x="565" y="72" text-anchor="middle">Authoritative</text><text class="t-mono" x="565" y="90" text-anchor="middle">NS</text>
+      <path class="arrow" d="M390,75 L498,75" style="marker-end:url(#ah-dns)"/><text class="t-mono" x="444" y="66" text-anchor="middle">ask owner</text></g>
+    <g data-step="4"><path class="arrow" d="M500,100 C420,140 220,140 140,100" style="marker-end:url(#ah-dns)"/><text class="t-mono" x="320" y="144" text-anchor="middle">93.184.215.14</text></g>
+  </svg>
+  <div class="captions">
+    <p data-step="1">Your laptop needs an IP address for a name it has never seen.</p>
+    <p data-step="2">It asks a recursive resolver, which does the legwork on its behalf.</p>
+    <p data-step="3">The resolver asks the server that is authoritative for the domain.</p>
+    <p data-step="4">The answer comes back (here an illustrative address) and is cached for next time.</p>
+  </div>
+</div>
+
+<h2 id="binary-search">Algorithm, stepped: binary search</h2>
+<!-- Bespoke module on Learncraft.timeline: examples/binary-search.js -->
+<div data-lc="binary-search" data-values="2,5,8,12,16,23,38,56,72,91,95,99" data-target="56"></div>
+
+<h2 id="sampling">Explorable: sampling converges</h2>
+<!-- Bespoke module on Learncraft.explorable + Learncraft.histogram: examples/sampling-explorer.js -->
+<div data-lc="sampling-explorer" id="ex-sampling" data-seed="7" data-target="2"></div>
+
+<h2 id="scene">Motion scene</h2>
+<!-- examples/scenes-0001-sampling.js, the worked example of Scene.register -->
+<div class="scene" data-scene="one-prompt-many-answers"></div>
+</main>
+<script src="../assets/core.js"></script>
+<script src="../assets/viz.js"></script>
+<script src="../assets/diagram.js"></script>
+<script src="../assets/scene.js"></script>
+<script src="binary-search.js"></script>
+<script src="sampling-explorer.js"></script>
+<script src="scenes-0001-sampling.js"></script>
+</body>
+</html>

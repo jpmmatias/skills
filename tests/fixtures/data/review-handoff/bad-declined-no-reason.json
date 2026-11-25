@@ -1,0 +1,19 @@
+{
+  "lesson": "l3",
+  "round": 2,
+  "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "check": "skipped",
+  "check_reason": "no-playwright",
+  "motion": "scene",
+  "sources_cited": [
+    "S3",
+    "S4"
+  ],
+  "sources_request": [],
+  "addressed": [
+    {
+      "id": "N-1",
+      "action": "declined"
+    }
+  ]
+}

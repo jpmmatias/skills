@@ -1,0 +1,20 @@
+[
+  {
+    "id": "l3-attn-weights",
+    "type": "choice",
+    "objective": "l3.o1",
+    "prompt": "What do the attention weights of one query sum to?",
+    "options": [
+      {
+        "text": "1",
+        "correct": true,
+        "why": "They come out of a softmax."
+      },
+      {
+        "text": "The sequence length",
+        "why": "That is the number of weights, not their sum.",
+        "correct": true
+      }
+    ]
+  }
+]

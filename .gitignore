@@ -1,3 +1,4 @@
 node_modules/
 package-lock.json
+!skills/learn/starter/tools/package-lock.json
 .check/

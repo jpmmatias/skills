@@ -1,27 +1,18 @@
 ---
 name: lesson-panel
-description: Run a four-agent lesson review on a learn course. Use when the user asks to continue a course with a review panel, create a lesson and have it judged, or names an author plus an expert, a novice, and a course-flow reviewer. The author writes one lesson; the other three review it; their notes go back to the author until all three approve.
+description: Learncraft lesson panel. Use when the user wants the next lesson of a learn course written and independently reviewed, asks for a review panel, or names an author with expert, novice or course-flow reviewers. Reviewers run as separate subagents in capped rounds with versioned verdict files. Requires the learn skill.
 argument-hint: "Which course or lesson should the panel take next?"
 ---
 
-Run the lesson panel on the current learn course. The course is the directory that contains `MISSION.md` and `assets/course.js`. Follow the `learn` skill for how a lesson is built. This skill only adds the four roles and the review loop.
+# Learncraft · lesson panel
 
-Read the role, then do that role. The prompts are [author](agents/author.md), [expert](agents/expert.md), [novice](agents/novice.md), and [flow](agents/flow.md).
+**Requires the `learn` skill**, installed next to this one. This skill's folder is `${CLAUDE_SKILL_DIR}` (if that appears unexpanded, use the folder that contains this SKILL.md), so `learn` is at `${CLAUDE_SKILL_DIR}/../learn/`.
 
-## Loop
+1. Check that `${CLAUDE_SKILL_DIR}/../learn/workflows/review-panel.md` exists. If not, load the `learn` skill (`/learn`, or `/learn:learn` as a plugin): its text names its folder.
+2. If `learn` is not installed, **stop** and give the learner the install command; do not improvise the procedure:
+   - Claude Code plugin: `/plugin install learn@jpmmatias`
+   - Any agent: `npx skills add jpmmatias/skills --skill learn --skill lesson-panel`
+3. Read `learn/SKILL.md` for the workspace map and invariants. In `learn`'s workflow and reference files, the `CLAUDE_SKILL_DIR` placeholder (written in `${…}` form) means the `learn` folder, not this one.
+4. Follow `learn/workflows/review-panel.md`.
 
-1. Pick the next lesson: the first entry in `assets/course.js` whose file is missing, unless the user named one. Slug it `lN` from the lesson number.
-2. Run the author on that lesson. The author is the only role that edits the course. The author finishes by writing `.review/<slug>-author-done.md`.
-3. When that note exists, run the expert, the novice, and the flow at the same time. Each writes `.review/<slug>-<role>.md` and does not edit the lesson.
-4. If any verdict is `REVISE`, send all three notes to the author and repeat from step 2 on the same lesson. The author applies the notes in place.
-5. Stop when all three verdicts are `APPROVE`. A note inside an `APPROVE` does not start another round.
-
-Completion: three `APPROVE` files exist for this draft, and the lesson file matches the last author note.
-
-## Handoff
-
-Reviewers read the lesson that is on disk. They start after the author note exists. A missing note means the draft is not ready; it is not a review of the page.
-
-Send the author the three review files in one pass. A second pass starts only after that revision is saved and the author note is rewritten.
-
-Leave `MISSION.md` and milestone status unchanged. Do not commit unless the user asks.
+The role prompts are [author](agents/author.md), [expert](agents/expert.md), [novice](agents/novice.md) and [flow](agents/flow.md). They are the source of truth for the native subagents (`lesson-author` and so on) shipped with the `learn` plugin; agents without those use these files as generic subagent prompts.

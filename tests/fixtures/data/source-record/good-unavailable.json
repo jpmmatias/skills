@@ -1,0 +1,9 @@
+{
+  "id": "S9",
+  "url": "https://example.org/paywalled",
+  "title": "A paywalled paper",
+  "type": "paper",
+  "tier": "T1",
+  "status": "unavailable",
+  "reason": "paywall, no preview"
+}

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1 · One prompt, many answers</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body data-lesson="1">
+<main>
+  <div id="progress"></div>
+  <nav class="links"><a href="../index.html">← Course</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+  <div class="kicker">Lesson 1 · Milestone: Measure</div>
+  <h1>One prompt, many answers</h1>
+  <p class="lede">The same prompt can return different outputs. That is the system, not a flaky test.</p>
+
+  <p>By the end you can <strong>replace an exact-match test with property checks over many trials</strong>.</p>
+
+  <div class="terms">
+    <div class="term"><b>trial</b>One attempt at a task.</div>
+    <div class="term"><b>grader</b>Code that decides whether one trial passed.</div>
+    <div class="term"><b>pass rate</b>The share of trials that passed.</div>
+  </div>
+
+  <h2>Watch it happen</h2>
+  <div class="scene" data-scene="one-prompt-many-answers"></div>
+
+  <h2>Where the weight goes</h2>
+  <figure>
+    <div data-bars='{"refund":0.61,"complaint":0.27,"return":0.12}' data-confidence="0.42"
+         data-bars-alt='{"refund":0.97,"complaint":0.02,"return":0.01}' data-confidence-alt="0.95" data-alt-label="Show a clear ticket"></div>
+    <figcaption>Illustrative token probabilities for two tickets.</figcaption>
+  </figure>
+
+  <h2>Which band does it land in?</h2>
+  <figure>
+    <div data-bands data-act="0.8" data-confirm="0.5" data-marker="0.42"></div>
+    <figcaption>A confidence of 0.42 goes to a human.</figcaption>
+  </figure>
+
+  <h2>One call, step by step</h2>
+  <div class="stepper">
+    <svg class="dg" viewBox="0 0 640 140" role="img" aria-label="Request flow: code, model, router">
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="ah"/></marker></defs>
+      <g data-step="1"><rect class="node" x="20" y="40" width="140" height="56" rx="6"/><text class="t-title" x="90" y="73" text-anchor="middle">Your code</text></g>
+      <g data-step="2"><path class="arrow" d="M160 68 L240 68"/><rect class="node-hot" x="250" y="40" width="140" height="56" rx="6"/><text class="t-title" x="320" y="73" text-anchor="middle">Model</text></g>
+      <g data-step="3"><path class="arrow" d="M390 68 L470 68"/><rect class="node" x="480" y="40" width="140" height="56" rx="6"/><text class="t-title" x="550" y="73" text-anchor="middle">Router</text></g>
+    </svg>
+    <div class="captions">
+      <p data-step="1">Your code sends the ticket and a typed question.</p>
+      <p data-step="2">The model returns an answer and a confidence.</p>
+      <p data-step="3">The router compares confidence with the act and confirm lines.</p>
+    </div>
+  </div>
+
+  <h2>Check yourself</h2>
+  <div class="quiz-q" data-answer="The test's criterion" data-why="Every failure was a valid answer, so the grader is wrong, not the model.">
+    <p>An exact-match test fails 40% of the time, but every failing output is valid JSON with the right intent. What is broken?</p>
+    <div class="quiz-opts"><button>The test's criterion</button><button>The model's accuracy</button><button>The API seed</button></div>
+  </div>
+  <div class="quiz-q" data-answer="A pass rate" data-why="One trial is one roll; a rate over many trials is the measurement.">
+    <p>What should a variance-aware eval report?</p>
+    <div class="quiz-opts"><button>A pass rate</button><button>A single ✓ or ✗</button></div>
+  </div>
+  <p class="quiz-score"></p>
+
+  <div class="box challenge" id="challenge">
+    <h3>🏆 Milestone challenge: Measure</h3>
+    <p>Run the same prompt 20 times at temperature 0 and 0.8. Send back both pass rates and the criterion you would put in CI.</p>
+    <p><strong>Pass criteria:</strong> real runs, criterion justified with your measured numbers.</p>
+  </div>
+
+  <h2>Go deeper</h2>
+  <ul class="deeper"><li><a href="https://example.com/">Primary source</a> <span>placeholder link for the fixture</span></li></ul>
+  <footer>Questions? Ask your teacher in the terminal.</footer>
+</main>
+<script src="../assets/course.js"></script>
+<script src="../assets/progress.js"></script>
+<script src="../assets/quiz.js"></script>
+<script src="../assets/diagram.js"></script>
+<script src="../assets/scene.js"></script>
+<script src="scenes-0001.js"></script>
+</body>
+</html>

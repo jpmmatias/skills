@@ -1,0 +1,31 @@
+{
+  "v": 1,
+  "id": "e_mi4c1b00_k2p9",
+  "at": "2026-11-25T09:15:00.000Z",
+  "course": "transformers-from-scratch",
+  "kind": "review_session",
+  "source": "browser",
+  "context": "review",
+  "lesson": 3,
+  "objective": "l3.o1",
+  "item": null,
+  "itemType": null,
+  "itemVersion": null,
+  "session": "s_mi4c0y00zz01",
+  "attemptInSession": null,
+  "firstEver": null,
+  "outcome": "correct",
+  "score": 1,
+  "assisted": false,
+  "results": [
+    {
+      "item": "l3-recall-softmax",
+      "outcome": "correct"
+    },
+    {
+      "item": "l3-attn-weights",
+      "outcome": "correct"
+    }
+  ],
+  "passed": true
+}

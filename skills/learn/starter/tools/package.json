@@ -1,9 +1,15 @@
 {
-  "name": "learn-tools",
+  "name": "learncraft-tools",
   "private": true,
   "type": "module",
-  "description": "Workspace checks for the learn skill. Not copied into workspaces.",
+  "description": "Lesson-check tools for the learn skill (Learncraft). Never copied into course workspaces; courses have no dependencies.",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
-    "playwright": "^1.50.0"
+    "playwright": "1.63.0"
+  },
+  "optionalDependencies": {
+    "axe-core": "4.10.2"
   }
 }

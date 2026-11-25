@@ -1,0 +1,6 @@
+{
+  "type": "object",
+  "properties": { "id": { "type": "string" }, "x": { "$ref": "#/$defs/missing" } },
+  "if": { "required": ["id"] },
+  "examples": [{ "id": 5 }]
+}

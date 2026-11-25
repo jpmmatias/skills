@@ -1,0 +1,12 @@
+[
+  {
+    "id": "l3-order-steps",
+    "type": "order",
+    "objective": "l3.o2",
+    "prompt": "Put the steps of one attention head in order.",
+    "steps": [
+      "a",
+      "b"
+    ]
+  }
+]

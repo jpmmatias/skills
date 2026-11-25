@@ -1,0 +1,20 @@
+[
+  {
+    "id": "l3-fade-qkv",
+    "type": "fade",
+    "objective": "l3.o2",
+    "prompt": "Complete the scaled dot product.",
+    "template": "scores = Q · {{K}}ᵀ / √{{d_k}}",
+    "blanks": {
+      "K": [
+        "K"
+      ],
+      "d_k": [
+        "d_k"
+      ],
+      "extra": [
+        "x"
+      ]
+    }
+  }
+]

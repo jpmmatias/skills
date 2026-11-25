@@ -1,0 +1,15 @@
+{
+  "id": "LR-0004",
+  "kind": "demonstrated",
+  "milestone": "m2",
+  "result": "pass",
+  "criteria": [
+    {
+      "text": "Computes the attention weights for a 3-token input",
+      "status": "met",
+      "evidence": "weights.py lines 4–12"
+    }
+  ],
+  "transfer": false,
+  "date": "2026-11-24"
+}

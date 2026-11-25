@@ -1,40 +1,21 @@
-// Reusable quiz component.
-// Markup: <div class="quiz-q" data-answer="X" data-why="explanation">
-//           <p>Question</p><div class="quiz-opts"><button>X</button><button>Y</button></div>
-//         </div>
-// Optional <div class="quiz-score"></div> anywhere shows the running score.
-// Options are shuffled so their position never hints at the answer.
+// Backward compatibility only. Lessons written before Learncraft 2 load course.js → progress.js → quiz.js
+// (→ diagram.js). Quizzes are now rendered by practice.js from data (lessons/NNNN.practice.js), and the
+// .quiz-q / .fade markup in those older lessons is upgraded in place by practice.js: stable ids, per-option
+// feedback, announced results, first try kept. This file only makes sure that runtime is on the page.
+// New lessons do not include it.
 (function () {
-  const qs = [...document.querySelectorAll('.quiz-q')];
-  const score = document.querySelector('.quiz-score');
-  let answered = 0, correct = 0;
-
-  const render = () => {
-    if (score) score.textContent = `${correct} / ${qs.length} correct on first try` + (answered < qs.length ? ` · ${qs.length - answered} left` : ' · done');
-  };
-
-  qs.forEach((q, qi) => {
-    const opts = q.querySelector('.quiz-opts');
-    const btns = [...opts.children];
-    for (let i = btns.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [btns[i], btns[j]] = [btns[j], btns[i]];
-    }
-    btns.forEach((b) => opts.appendChild(b));
-
-    const fb = document.createElement('div');
-    fb.className = 'quiz-fb';
-    q.appendChild(fb);
-    let first = true;
-
-    btns.forEach((b) => b.addEventListener('click', () => {
-      const right = b.textContent.trim() === q.dataset.answer;
-      b.classList.add(right ? 'ok' : 'bad');
-      if (first) { answered++; if (right) correct++; first = false; render(); window.Progress && Progress.record('q' + (qi + 1), right); }
-      fb.className = 'quiz-fb ' + (right ? 'ok' : 'bad');
-      fb.textContent = right ? '✓ ' + (q.dataset.why || '') : '✗ Not quite — try again.';
-      if (right) btns.forEach((x) => (x.disabled = true));
-    }));
-  });
-  render();
+  var me = document.currentScript, LC = window.Learncraft || {};
+  if (!me) return;
+  var base = me.src.replace(/[^\/?#]*([?#].*)?$/, '');
+  var need = [];
+  if (!LC.ready) need.push('core.js');
+  if (!LC.store) need.push('store.js');
+  if (!LC.practiceItems) need.push('practice.js'); // core.js defines a queueing practice(); practiceItems is practice.js's own
+  if (!need.length) return;
+  if (document.readyState === 'loading') {
+    // Parser-inserted, so they run in order before the next <script> tag in the lesson.
+    document.write(need.map(function (f) { return '<script src="' + base + f + '"></' + 'script>'; }).join(''));
+  } else {
+    need.forEach(function (f) { var s = document.createElement('script'); s.src = base + f; s.async = false; document.head.appendChild(s); });
+  }
 })();

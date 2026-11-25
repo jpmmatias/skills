@@ -1,0 +1,25 @@
+{
+  "lesson": "l3",
+  "round": 2,
+  "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "check": "skipped",
+  "check_reason": "no-playwright",
+  "motion": "scene",
+  "sources_cited": [
+    "S3",
+    "S4"
+  ],
+  "sources_request": [],
+  "addressed": [
+    {
+      "id": "E-2",
+      "action": "fixed",
+      "note": "recomputed 0.83 → 0.81"
+    },
+    {
+      "id": "N-1",
+      "action": "declined",
+      "reason": "conflicts with E-1 (scope); precedence: expert"
+    }
+  ]
+}

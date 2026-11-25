@@ -1,0 +1,18 @@
+{
+  "lesson": "l3",
+  "role": "expert",
+  "round": 2,
+  "reviewed_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "independence": "subagent",
+  "verdict": "REVISE",
+  "items": [
+    {
+      "id": "E-1",
+      "severity": "major",
+      "location": "#worked-example",
+      "quote": "0.83",
+      "problem": "Arithmetic error in the softmax.",
+      "fix": "Recompute: 0.81."
+    }
+  ]
+}

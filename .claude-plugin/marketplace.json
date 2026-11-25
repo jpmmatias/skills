@@ -1,7 +1,7 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "jpmmatias",
-  "description": "Agent skills by João Pedro Matias",
+  "description": "Learncraft: turn your AI coding agent into a personal learning environment. Skills by João Pedro Matias.",
   "owner": {
     "name": "João Pedro Matias",
     "url": "https://github.com/jpmmatias"
@@ -10,57 +10,130 @@
     {
       "name": "learn",
       "source": ".",
-      "description": "Teach a concept from first principles: mental models, annotated examples, diagrams and narrated motion scenes, with stateful courses that span sessions.",
-      "author": { "name": "João Pedro Matias" },
+      "description": "Learncraft: turn your AI coding agent into a personal learning environment. Quick explanations, one-sitting lessons and multi-session courses with practice, spaced review and evidence-gated milestones, as local files.",
+      "version": "2.0.0",
+      "author": {
+        "name": "João Pedro Matias"
+      },
       "homepage": "https://github.com/jpmmatias/skills",
       "repository": "https://github.com/jpmmatias/skills",
       "license": "MIT",
-      "keywords": ["learning", "teaching", "courses", "education"],
-      "skills": ["./skills/learn"]
+      "keywords": [
+        "learncraft",
+        "learning",
+        "teaching",
+        "courses",
+        "education"
+      ],
+      "skills": [
+        "./skills/learn"
+      ],
+      "agents": [
+        "./subagents/lesson-author.md",
+        "./subagents/lesson-expert.md",
+        "./subagents/lesson-novice.md",
+        "./subagents/lesson-flow.md"
+      ]
     },
     {
       "name": "lesson-panel",
       "source": ".",
-      "description": "Four-agent review for a learn lesson: an author writes it, then an expert, a novice, and a course-flow reviewer send notes back until all three approve.",
-      "author": { "name": "João Pedro Matias" },
+      "description": "Learncraft lesson panel: the next lesson is written, then reviewed by independent expert, novice and course-flow subagents in capped rounds. Needs the learn plugin.",
+      "version": "2.0.0",
+      "author": {
+        "name": "João Pedro Matias"
+      },
       "homepage": "https://github.com/jpmmatias/skills",
       "repository": "https://github.com/jpmmatias/skills",
       "license": "MIT",
-      "keywords": ["learning", "teaching", "review", "courses"],
-      "skills": ["./skills/lesson-panel"]
+      "keywords": [
+        "learncraft",
+        "learning",
+        "teaching",
+        "review",
+        "courses"
+      ],
+      "skills": [
+        "./skills/lesson-panel"
+      ],
+      "dependencies": [
+        "learn"
+      ]
     },
     {
       "name": "curriculum-planner",
       "source": ".",
-      "description": "Turn a course mission into the milestone map and ordered lesson list in assets/course.js, with a scene or lab decision per lesson, before any lesson is written.",
-      "author": { "name": "João Pedro Matias" },
+      "description": "Learncraft curriculum planner: turns a course mission and diagnostic into milestones, lessons and objectives in assets/course.js, with motion, lab and prerequisite decisions. Needs the learn plugin.",
+      "version": "2.0.0",
+      "author": {
+        "name": "João Pedro Matias"
+      },
       "homepage": "https://github.com/jpmmatias/skills",
       "repository": "https://github.com/jpmmatias/skills",
       "license": "MIT",
-      "keywords": ["learning", "teaching", "curriculum", "courses"],
-      "skills": ["./skills/curriculum-planner"]
+      "keywords": [
+        "learncraft",
+        "learning",
+        "teaching",
+        "curriculum",
+        "courses"
+      ],
+      "skills": [
+        "./skills/curriculum-planner"
+      ],
+      "dependencies": [
+        "learn"
+      ]
     },
     {
       "name": "source-researcher",
       "source": ".",
-      "description": "Fill RESOURCES.md for a lesson with fetched, typed, annotated sources, so the author cites verified links and never invents a URL.",
-      "author": { "name": "João Pedro Matias" },
+      "description": "Learncraft source researcher: fills RESOURCES.md for a lesson with fetched, tiered and dated sources and a claims ledger, so lessons never cite an invented link. Needs the learn plugin.",
+      "version": "2.0.0",
+      "author": {
+        "name": "João Pedro Matias"
+      },
       "homepage": "https://github.com/jpmmatias/skills",
       "repository": "https://github.com/jpmmatias/skills",
       "license": "MIT",
-      "keywords": ["learning", "teaching", "research", "sources"],
-      "skills": ["./skills/source-researcher"]
+      "keywords": [
+        "learncraft",
+        "learning",
+        "teaching",
+        "research",
+        "sources"
+      ],
+      "skills": [
+        "./skills/source-researcher"
+      ],
+      "dependencies": [
+        "learn"
+      ]
     },
     {
       "name": "challenge-reviewer",
       "source": ".",
-      "description": "Grade a learner's milestone challenge against the lesson's pass criteria, write the learning record, and mark the milestone mastered only when the work earns it.",
-      "author": { "name": "João Pedro Matias" },
+      "description": "Learncraft challenge reviewer: grades a learner's challenge against its stated criteria, writes the learning record, and masters a milestone only when every criterion is met. Needs the learn plugin.",
+      "version": "2.0.0",
+      "author": {
+        "name": "João Pedro Matias"
+      },
       "homepage": "https://github.com/jpmmatias/skills",
       "repository": "https://github.com/jpmmatias/skills",
       "license": "MIT",
-      "keywords": ["learning", "teaching", "review", "milestones"],
-      "skills": ["./skills/challenge-reviewer"]
+      "keywords": [
+        "learncraft",
+        "learning",
+        "teaching",
+        "review",
+        "milestones"
+      ],
+      "skills": [
+        "./skills/challenge-reviewer"
+      ],
+      "dependencies": [
+        "learn"
+      ]
     }
   ]
 }

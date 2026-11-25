@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Lesson 3 · Effects and Strict Mode</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body data-lesson="3">
+<main>
+  <nav class="links" aria-label="Course"><a href="../index.html">← Course map</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a> <a href="../review.html">Review</a></nav>
+
+  <header>
+    <p class="kicker">Lesson 3 · Diagnose with evidence</p>
+    <h1>Effects and Strict Mode</h1>
+    <p class="lede">Two things make React look busier than it is: Effects that seem to run at odd moments, and development-only double calls. This lesson places Effects in the update sequence and separates Strict Mode’s deliberate repeats from real bugs.</p>
+    <div id="progress"></div>
+  </header>
+
+  <p><strong>Why this matters for your mission:</strong> the second milestone asks you to explain a surprising re-render or Effect run from evidence. Before you can blame a component, you need to know when its Effects run, and which repeats only happen on your development machine.</p>
+
+  <h2>Effects run after the commit</h2>
+  <p>An Effect is code that runs <em>because the component was displayed</em>, to synchronise with something outside React<sup class="cite"><a href="../RESOURCES.md#s20" data-src="S20">20</a></sup>. The docs place it precisely: “Effects run at the end of a commit after the screen updates”<sup class="cite"><a href="../RESOURCES.md#s12" data-src="S12">12</a></sup>. So the render you met in lessons 1–2 is already over, and the DOM is already updated, when your Effect starts. Predict before stepping through: after a <em>click</em>, can your Effect run before the browser paints?</p>
+  <div data-lc="flow" data-flow='{
+    "title": "An update with an Effect",
+    "nodes": [{"id":"trigger","label":"Trigger","sub":"set state"},{"id":"render","label":"Render","sub":"call components"},{"id":"commit","label":"Commit","sub":"update the DOM"},{"id":"paint","label":"Paint","sub":"the browser"},{"id":"effect","label":"Effects","sub":"useEffect setup"}],
+    "edges": [{"from":"trigger","to":"render","label":"queue"},{"from":"render","to":"commit","label":"compare"},{"from":"commit","to":"paint","label":"screen"},{"from":"paint","to":"effect","label":"then"}],
+    "steps": [
+      {"edges":[0,1],"caption":"<b>Trigger and render</b> as in lesson 2: the handler finishes, then React calls the components. Effects do not run during rendering."},
+      {"edges":[2],"caption":"<b>Commit, then paint.</b> React updates the DOM; the browser can now paint the new screen."},
+      {"edges":[3],"caption":"<b>Effects.</b> After the commit, React runs the Effects whose dependencies changed (and those with no dependency array). For an update that was not caused by an interaction, React generally lets the browser paint first. For a click or other interaction, React <i>may</i> run the Effect before the paint, so do not rely on the order between paint and Effect."}],
+    "summary": "Trigger → render → commit → paint → Effects. Press Next to step through and check your prediction."}'></div>
+  <p>The answer is yes: the drawing shows the usual order, but it is not guaranteed. If an Effect was not caused by an interaction, React “will generally let the browser paint the updated screen first”; if it was caused by an interaction such as a click, React “may run your Effect before the browser paints”<sup class="cite"><a href="../RESOURCES.md#s13" data-src="S13">13</a></sup>. What you <em>can</em> rely on is that the Effect runs after the commit.</p>
+  <p>If an Effect must finish before the user sees the screen, for example measuring and positioning a tooltip so it does not flicker, the docs point to <code>useLayoutEffect</code>, which blocks the paint, and add that this “shouldn’t be needed for the vast majority of Effects”<sup class="cite"><a href="../RESOURCES.md#s13" data-src="S13">13</a></sup>.</p>
+
+  <h3>Worked example: the Effect that costs a second render</h3>
+  <pre tabindex="0"><code>function Profile({ first, last }) {
+  const [fullName, setFullName] = useState('');
+  useEffect(() =&gt; {
+    setFullName(first + ' ' + last);   // ① runs after the commit
+  }, [first, last]);
+  return &lt;h1&gt;{fullName}&lt;/h1&gt;;           // ② first commit shows ''
+}</code></pre>
+  <ol class="anno-list">
+    <li>The first render returns an empty heading, React commits it, and only then does the Effect run.</li>
+    <li>The Effect’s set call triggers a whole new render and commit. The docs describe this as restarting “the whole process from scratch”<sup class="cite"><a href="../RESOURCES.md#s20" data-src="S20">20</a></sup>.</li>
+  </ol>
+  <p>The fix the docs give is to compute it during rendering: <code>const fullName = first + ' ' + last;</code><sup class="cite"><a href="../RESOURCES.md#s20" data-src="S20">20</a></sup>. <b>Why does line ① exist at all, if the value can be computed in the render?</b> Answer for yourself: what is outside React here that needs synchronising?</p>
+  <div data-practice-item="l3-order-effect"></div>
+  <div data-practice-item="l3-effect-sets-state"></div>
+  <div data-practice-item="l3-layout-recall"></div>
+
+  <h2>Strict Mode: double calls on purpose, in development only</h2>
+  <p>If you see a component log twice or an Effect connect, disconnect and connect again, check whether you are in development with <code>&lt;StrictMode&gt;</code> on before you call it a bug. Strict Mode repeats certain calls to expose impure rendering and missing cleanup, and “all of these checks are development-only and do not impact the production build”<sup class="cite"><a href="../RESOURCES.md#s14" data-src="S14">14</a></sup>.</p>
+  <div class="table-wrap">
+    <table>
+      <caption class="lc-muted">What runs, with Strict Mode on, in React 19</caption>
+      <thead><tr><th scope="col">Code</th><th scope="col">Development (Strict Mode)</th><th scope="col">Production build</th></tr></thead>
+      <tbody>
+        <tr><td>Component body (top-level code)</td><td>called twice, on every render<sup class="cite"><a href="../RESOURCES.md#s14" data-src="S14">14</a></sup></td><td>called once</td></tr>
+        <tr><td>Event handlers</td><td>not repeated<sup class="cite"><a href="../RESOURCES.md#s14" data-src="S14">14</a></sup></td><td>run when the event fires</td></tr>
+        <tr><td><code>useEffect</code> on the first mount</td><td>setup → cleanup → setup<sup class="cite"><a href="../RESOURCES.md#s12" data-src="S12">12</a></sup></td><td>setup once</td></tr>
+        <tr><td>Ref callbacks on the first mount</td><td>setup → cleanup → setup<sup class="cite"><a href="../RESOURCES.md#s14" data-src="S14">14</a></sup></td><td>once</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The right reaction to an Effect firing twice is not a <code>useRef</code> guard but a cleanup: “The right question isn’t ‘how to run an Effect once’, but ‘how to fix my Effect so that it works after remounting’”<sup class="cite"><a href="../RESOURCES.md#s12" data-src="S12">12</a></sup>. With a correct cleanup, the user cannot tell setup → cleanup → setup from a single setup.</p>
+  <div class="box">
+    <p class="kicker">Version note: React 18 → 19</p>
+    <p>The Effect double-run on mount arrived with React 18, as a new development-only Strict Mode check<sup class="cite"><a href="../RESOURCES.md#s9" data-src="S9">9</a></sup>. React 19 changed two details: during the development double render, <code>useMemo</code> and <code>useCallback</code> reuse the memoized results from the first render, and ref callbacks are double-invoked on the initial mount<sup class="cite"><a href="../RESOURCES.md#s15" data-src="S15">15</a></sup>. If your team is on React 18, the ref-callback row does not apply: the double call of ref callbacks is one of the React 19 changes<sup class="cite"><a href="../RESOURCES.md#s15" data-src="S15">15</a></sup>.</p>
+  </div>
+  <div data-practice-item="l3-strict-effect"></div>
+  <div data-practice-item="l3-strict-body"></div>
+  <div data-practice-item="l3-strict-handler"></div>
+  <p>One more, from lesson 2: Effects see a snapshot of state, just like event handlers.</p>
+  <div data-practice-item="l3-interleave-snapshot"></div>
+
+  <section class="challenge" id="challenge" data-kind="lesson" aria-labelledby="challenge-h">
+    <p class="kicker">Lesson challenge</p>
+    <h2 id="challenge-h">One Effect, two builds</h2>
+    <p>Pick one Effect in your own app that sets something up: a subscription, a timer, a listener or a fetch. Add a <code>console.log</code> at the start of its setup and one in its cleanup (add a cleanup if it has none, and say so). Mount the component in development with Strict Mode on, then in a production build, and copy both console sequences.</p>
+    <h3>What to send back</h3>
+    <p>The Effect’s code with the two log lines and its dependency array, the two console sequences, and one sentence per extra line in the development sequence.</p>
+    <h3>Pass criteria</h3>
+    <ol class="criteria">
+      <li>The code shows the setup log, the cleanup log and the dependency array (or “no array”).</li>
+      <li>Two console sequences for the same mount are included, one labelled development (Strict Mode) and one labelled production build.</li>
+      <li>Each line that appears only in the development sequence is attributed to a named cause (Strict Mode remount, or a dependency change), and the answer states whether the cleanup undoes what the setup started.</li>
+    </ol>
+    <p>When you are done, send your work to your teacher in the terminal.</p>
+  </section>
+
+  <h2>Go deeper</h2>
+  <p><b>Primary source:</b> <a href="https://react.dev/learn/synchronizing-with-effects">Synchronizing with Effects</a> on react.dev (docs, 26 min). The section “How to handle the Effect firing twice in development?” is the one to keep open while you do the challenge.</p>
+  <ul class="deeper">
+    <li><a href="https://react.dev/learn/you-might-not-need-an-effect">You Might Not Need an Effect</a> <span>Docs, 21 min. The common Effects that cause extra render passes, and what to write instead.</span></li>
+    <li><a href="https://react.dev/reference/react/useEffect">useEffect reference</a> <span>Docs, 19 min. The caveats list is the exact contract for when Effects run relative to paint, and when <code>useLayoutEffect</code> is the right tool.</span></li>
+    <li><a href="https://react.dev/reference/react/StrictMode">StrictMode reference</a> <span>Docs, 8 min. Every development-only check, with the bugs each one is designed to surface.</span></li>
+  </ul>
+  <p>Stuck on something, or curious about a case in your code? Ask your agent a follow-up question in the terminal.</p>
+  <nav class="links" aria-label="Lessons"><a href="0002-state-updates.html">← Previous: How a state update spreads</a> <a href="0004-memoization.html">Next: When memoization skips work →</a> <a href="../reference/cheat-sheet.html">Cheat sheet</a></nav>
+  <footer>Sources: <a href="../RESOURCES.md">RESOURCES.md</a> · Example course: no learner progress is included.</footer>
+</main>
+<script src="../assets/core.js"></script>
+<script src="../assets/store.js"></script>
+<script src="../assets/course.js"></script>
+<script src="0003.practice.js"></script>
+<script src="../assets/progress.js"></script>
+<script src="../assets/practice.js"></script>
+<script src="../assets/viz.js"></script>
+<script src="../assets/diagram.js"></script>
+</body>
+</html>

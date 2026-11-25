@@ -1,0 +1,74 @@
+<!doctype html>
+<!-- Lesson template: copy to lessons/NNNN-slug.html. Replace every CAPITALISED placeholder; delete the guide comments.
+     lang: the course language (COURSE.lang). Interface strings follow it; write the prose in it too.
+     No inline <script>: the Content-Security-Policy below only allows script files from this workspace,
+     and blocks every network request (connect-src 'none'), so a course works offline and cannot phone home. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Lesson N · LESSON TITLE</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body data-lesson="1">
+<main>
+  <nav class="links" aria-label="Course"><a href="../index.html">← Course map</a> <a href="../review.html">Review</a></nav>
+
+  <header>
+    <p class="kicker">Lesson N · MILESTONE LABEL</p>
+    <h1>LESSON TITLE</h1>
+    <p class="lede">ONE SENTENCE: THE PROBLEM THIS LESSON SOLVES.</p>
+    <!-- The goal ("By the end you can …" from course.js canDo), the milestone, practice so far and the next review. -->
+    <div id="progress"></div>
+  </header>
+
+  <!-- Prose and figures. Cite sources: <sup class="cite"><a href="../RESOURCES.md#s3" data-src="S3">3</a></sup>
+       A claim resting on an unverified source: <span class="unverified" title="Not independently verified">…</span> -->
+  <h2>SECTION HEADING</h2>
+  <p>PROSE.</p>
+
+  <!-- Retrieval practice comes from lessons/NNNN.practice.js (data), rendered here as one list.
+       To place one item elsewhere (after the section it checks): <div data-practice-item="ITEM-ID"></div> -->
+  <section class="practice" aria-labelledby="practice-h">
+    <h2 id="practice-h">Check yourself</h2>
+    <div data-practice-set></div>
+  </section>
+
+  <!-- The challenge is the only card on the page: a transfer task on the learner's own material. -->
+  <!-- data-kind="milestone" + data-milestone only on the last lesson of a milestone; otherwise data-kind="lesson". -->
+  <section class="challenge" id="challenge" data-kind="milestone" data-milestone="m1" aria-labelledby="challenge-h">
+    <p class="kicker">Milestone challenge</p>
+    <h2 id="challenge-h">CHALLENGE TITLE</h2>
+    <p>THE TASK, ON THE LEARNER'S OWN MATERIAL.</p>
+    <h3>What to send back</h3>
+    <p>THE CONCRETE ARTIFACTS: A RESULTS FILE, A DIFF, A WRITTEN ANSWER.</p>
+    <h3>Pass criteria</h3>
+    <ol class="criteria">
+      <li>AN OBSERVABLE CHECK.</li>
+      <li>ANOTHER OBSERVABLE CHECK.</li>
+    </ol>
+    <p>When you are done, send your work to your teacher in the terminal.</p>
+  </section>
+
+  <h2>Go deeper</h2>
+  <ul class="deeper">
+    <li><a href="https://example.org/">SOURCE TITLE</a> <span>WHY IT IS WORTH READING.</span></li>
+  </ul>
+  <footer>Questions? Ask your teacher in the terminal.</footer>
+</main>
+<script src="../assets/core.js"></script>
+<script src="../assets/store.js"></script>
+<script src="../assets/course.js"></script>
+<script src="0001.practice.js"></script>
+<script src="../assets/progress.js"></script>
+<script src="../assets/practice.js"></script>
+<!-- Optional, only when the lesson has figures or a motion scene:
+<script src="../assets/viz.js"></script>
+<script src="../assets/diagram.js"></script>
+<script src="../assets/scene.js"></script>
+<script src="scenes-0001.js"></script>
+-->
+</body>
+</html>

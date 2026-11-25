@@ -1,0 +1,56 @@
+name: Bug report
+description: Something in a skill, the course runtime, the lesson check or the tooling does not work.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Security problems go through private reporting (see SECURITY.md), not here. Never paste API keys or private course content."
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The prompt or command, and the smallest course files that show the problem (course.js, one lesson, the practice file).
+    validations:
+      required: true
+  - type: dropdown
+    id: part
+    attributes:
+      label: Part
+      options: [learn skill (instructions), lesson-panel / review subagents, curriculum-planner, source-researcher, challenge-reviewer, course runtime in the browser, check.mjs lesson check, validate.mjs / tests / CI, docs]
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Agent and version
+      placeholder: "Claude Code 2.x.y, Codex CLI …, Cursor …"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Install method
+      options: [Claude Code plugin (/plugin), npx skills add, manual copy or symlink, other]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Learncraft version or commit
+      placeholder: "2.0.0, or the commit SHA shown by claude plugin list"
+  - type: input
+    id: env
+    attributes:
+      label: OS, browser and Node version
+      placeholder: "macOS 15, Chrome 131, Node 22.20"
+  - type: textarea
+    id: output
+    attributes:
+      label: Output of check.mjs or validate.mjs, console errors, screenshots
+      render: text

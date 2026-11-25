@@ -1,0 +1,57 @@
+[
+  {
+    "id": "l3-attn-weights",
+    "type": "choice",
+    "objective": "l3.o1",
+    "prompt": "What do the attention weights of one query sum to?",
+    "options": [
+      {
+        "text": "1",
+        "correct": true,
+        "why": "They come out of a softmax."
+      },
+      {
+        "text": "The sequence length",
+        "why": "That is the number of weights, not their sum."
+      }
+    ]
+  },
+  {
+    "id": "l3-recall-softmax",
+    "type": "recall",
+    "objective": "l3.o1",
+    "prompt": "Which function turns scores into weights?",
+    "accept": [
+      "softmax"
+    ],
+    "why": "Softmax makes them positive and sum to 1."
+  },
+  {
+    "id": "l3-order-steps",
+    "type": "order",
+    "objective": "l3.o2",
+    "prompt": "Put the steps of one attention head in order.",
+    "steps": [
+      "Project to Q, K, V",
+      "Score Q against K",
+      "Softmax the scores",
+      "Weight V by the scores"
+    ]
+  },
+  {
+    "id": "l3-fade-qkv",
+    "type": "fade",
+    "objective": "l3.o2",
+    "prompt": "Complete the scaled dot product.",
+    "template": "scores = Q · {{K}}ᵀ / √{{d_k}}",
+    "blanks": {
+      "K": [
+        "K"
+      ],
+      "d_k": [
+        "d_k",
+        "dk"
+      ]
+    }
+  }
+]

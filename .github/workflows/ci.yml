@@ -1,0 +1,81 @@
+# Continuous integration for Learncraft. Repository tooling is zero-dependency (ADR-011): the validate
+# job needs no install. Only the browser job installs Playwright, from the committed lockfile in
+# skills/learn/starter/tools/. Workflows were authored offline and validated for YAML structure only.
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: validate + unit (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the instruction-cost test measures the baseline commit f8aaf973
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Validate the repository
+        run: node scripts/validate.mjs
+      - name: Unit tests (browser tests skip here with a stated reason)
+        run: node --test tests/*.test.mjs
+
+  browser:
+    name: browser smoke, security and example checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: skills/learn/starter/tools/package-lock.json
+      - name: Install the lesson-check tools (Playwright, axe-core) from the lockfile
+        run: npm ci --prefix skills/learn/starter/tools
+      - name: Install Chromium
+        run: npx --prefix skills/learn/starter/tools playwright install --with-deps chromium
+      - name: Browser smoke and security tests
+        run: node --test tests/browser-smoke.test.mjs tests/security.test.mjs
+      - name: Lesson check on every example course
+        run: node scripts/check-examples.mjs
+      - name: Keep the check screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-screenshots
+          path: examples/*/.check/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  skills-cli:
+    name: skills CLI discovers every skill
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # the skills CLI needs Node >= 22.20
+      - name: List skills with the pinned skills CLI
+        env:
+          DISABLE_TELEMETRY: "1"
+        run: |
+          npx -y skills@1.9.0 add "$PWD" --list 2>&1 | tee skills-list.txt
+          for d in skills/*/; do
+            name=$(basename "$d")
+            grep -q "$name" skills-list.txt || { echo "::error::skills CLI did not list $name"; exit 1; }
+          done

@@ -1,0 +1,10 @@
+{
+  "id": "S7",
+  "url": "https://react.dev/reference/react/useEffect",
+  "title": "useEffect",
+  "publisher": "react.dev",
+  "type": "docs",
+  "tier": "T1",
+  "status": "unverified",
+  "versionScope": "react@19.x"
+}

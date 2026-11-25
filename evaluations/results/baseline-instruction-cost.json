@@ -1,0 +1,437 @@
+{
+  "measuredAt": "2026-11-25T00:28:23.243Z",
+  "tree": "f8aaf973 (f8aaf973bd1e)",
+  "sha": "f8aaf973bd1e1af68d59e6442db25d00d6c1ccaa",
+  "layout": "v1-monolith",
+  "layoutDescription": "Baseline f8aaf973: learn/SKILL.md (369 lines) is loaded whole on every path; format files on demand; 'read ./assets/ before authoring' (SKILL.md:247); the scene example when a scene is built (SKILL.md:181); the panel runs every role in one context (AI-01). Line references are to f8aaf973.",
+  "tokensPerByte": 0.25,
+  "listing": {
+    "files": 5,
+    "tokens": 498
+  },
+  "rows": [
+    {
+      "path": "explain",
+      "profile": "all",
+      "contexts": [
+        {
+          "context": "main",
+          "files": [
+            {
+              "file": "skills/learn/SKILL.md",
+              "bytes": 34320,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 8580
+            }
+          ],
+          "missing": [],
+          "bytes": {
+            "listing": 1993,
+            "instructions": 34320,
+            "code": 0
+          },
+          "tokens": {
+            "listing": 498,
+            "instructions": 8580,
+            "code": 0,
+            "total": 9078
+          }
+        }
+      ],
+      "tokens": {
+        "mainContext": 9078,
+        "listing": 498,
+        "instructions": 8580,
+        "code": 0,
+        "total": 9078
+      }
+    },
+    {
+      "path": "new-course",
+      "profile": "all",
+      "contexts": [
+        {
+          "context": "main",
+          "files": [
+            {
+              "file": "skills/learn/SKILL.md",
+              "bytes": 34320,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 8580
+            },
+            {
+              "file": "skills/learn/MISSION-FORMAT.md",
+              "bytes": 1553,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 388
+            },
+            {
+              "file": "skills/learn/RESOURCES-FORMAT.md",
+              "bytes": 2284,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 571
+            },
+            {
+              "file": "skills/learn/LEARNING-RECORD-FORMAT.md",
+              "bytes": 2777,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 694
+            },
+            {
+              "file": "skills/learn/starter/assets/course.js",
+              "bytes": 681,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 170
+            },
+            {
+              "file": "skills/learn/starter/assets/diagram.js",
+              "bytes": 19922,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 4981
+            },
+            {
+              "file": "skills/learn/starter/assets/progress.js",
+              "bytes": 8741,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 2185
+            },
+            {
+              "file": "skills/learn/starter/assets/quiz.js",
+              "bytes": 1695,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 424
+            },
+            {
+              "file": "skills/learn/starter/assets/scene.js",
+              "bytes": 11488,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 2872
+            },
+            {
+              "file": "skills/learn/starter/assets/style.css",
+              "bytes": 21614,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 5404
+            },
+            {
+              "file": "skills/learn/starter/assets/theme.css",
+              "bytes": 206,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 52
+            },
+            {
+              "file": "skills/learn/starter/examples/scenes-0001-sampling.js",
+              "bytes": 9586,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 2397
+            }
+          ],
+          "missing": [],
+          "bytes": {
+            "listing": 1993,
+            "instructions": 40934,
+            "code": 73933
+          },
+          "tokens": {
+            "listing": 498,
+            "instructions": 10234,
+            "code": 18483,
+            "total": 29215
+          }
+        }
+      ],
+      "tokens": {
+        "mainContext": 29215,
+        "listing": 498,
+        "instructions": 10234,
+        "code": 18483,
+        "total": 29215
+      }
+    },
+    {
+      "path": "continue",
+      "profile": "all",
+      "contexts": [
+        {
+          "context": "main",
+          "files": [
+            {
+              "file": "skills/learn/SKILL.md",
+              "bytes": 34320,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 8580
+            },
+            {
+              "file": "skills/learn/RESOURCES-FORMAT.md",
+              "bytes": 2284,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 571
+            },
+            {
+              "file": "skills/learn/LEARNING-RECORD-FORMAT.md",
+              "bytes": 2777,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 694
+            },
+            {
+              "file": "skills/learn/starter/assets/course.js",
+              "bytes": 681,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 170
+            },
+            {
+              "file": "skills/learn/starter/assets/diagram.js",
+              "bytes": 19922,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 4981
+            },
+            {
+              "file": "skills/learn/starter/assets/progress.js",
+              "bytes": 8741,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 2185
+            },
+            {
+              "file": "skills/learn/starter/assets/quiz.js",
+              "bytes": 1695,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 424
+            },
+            {
+              "file": "skills/learn/starter/assets/scene.js",
+              "bytes": 11488,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 2872
+            },
+            {
+              "file": "skills/learn/starter/assets/style.css",
+              "bytes": 21614,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 5404
+            },
+            {
+              "file": "skills/learn/starter/assets/theme.css",
+              "bytes": 206,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 52
+            }
+          ],
+          "missing": [],
+          "bytes": {
+            "listing": 1993,
+            "instructions": 39381,
+            "code": 64347
+          },
+          "tokens": {
+            "listing": 498,
+            "instructions": 9845,
+            "code": 16087,
+            "total": 26430
+          }
+        }
+      ],
+      "tokens": {
+        "mainContext": 26430,
+        "listing": 498,
+        "instructions": 9845,
+        "code": 16087,
+        "total": 26430
+      }
+    },
+    {
+      "path": "panel",
+      "profile": "all",
+      "contexts": [
+        {
+          "context": "main",
+          "files": [
+            {
+              "file": "skills/lesson-panel/SKILL.md",
+              "bytes": 2076,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 519
+            },
+            {
+              "file": "skills/learn/SKILL.md",
+              "bytes": 34320,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 8580
+            },
+            {
+              "file": "skills/lesson-panel/agents/author.md",
+              "bytes": 1299,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 325
+            },
+            {
+              "file": "skills/lesson-panel/agents/expert.md",
+              "bytes": 893,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 223
+            },
+            {
+              "file": "skills/lesson-panel/agents/novice.md",
+              "bytes": 717,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 179
+            },
+            {
+              "file": "skills/lesson-panel/agents/flow.md",
+              "bytes": 836,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 209
+            },
+            {
+              "file": "skills/learn/RESOURCES-FORMAT.md",
+              "bytes": 2284,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 571
+            },
+            {
+              "file": "skills/learn/starter/assets/course.js",
+              "bytes": 681,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 170
+            },
+            {
+              "file": "skills/learn/starter/assets/diagram.js",
+              "bytes": 19922,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 4981
+            },
+            {
+              "file": "skills/learn/starter/assets/progress.js",
+              "bytes": 8741,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 2185
+            },
+            {
+              "file": "skills/learn/starter/assets/quiz.js",
+              "bytes": 1695,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 424
+            },
+            {
+              "file": "skills/learn/starter/assets/scene.js",
+              "bytes": 11488,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 2872
+            },
+            {
+              "file": "skills/learn/starter/assets/style.css",
+              "bytes": 21614,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 5404
+            },
+            {
+              "file": "skills/learn/starter/assets/theme.css",
+              "bytes": 206,
+              "kind": "code",
+              "via": "declared",
+              "tokens": 52
+            }
+          ],
+          "missing": [],
+          "bytes": {
+            "listing": 1993,
+            "instructions": 42425,
+            "code": 64347
+          },
+          "tokens": {
+            "listing": 498,
+            "instructions": 10606,
+            "code": 16087,
+            "total": 27191
+          }
+        }
+      ],
+      "tokens": {
+        "mainContext": 27191,
+        "listing": 498,
+        "instructions": 10606,
+        "code": 16087,
+        "total": 27191
+      }
+    },
+    {
+      "path": "challenge",
+      "profile": "all",
+      "contexts": [
+        {
+          "context": "main",
+          "files": [
+            {
+              "file": "skills/challenge-reviewer/SKILL.md",
+              "bytes": 3571,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 893
+            },
+            {
+              "file": "skills/learn/LEARNING-RECORD-FORMAT.md",
+              "bytes": 2777,
+              "kind": "instructions",
+              "via": "declared",
+              "tokens": 694
+            }
+          ],
+          "missing": [],
+          "bytes": {
+            "listing": 1993,
+            "instructions": 6348,
+            "code": 0
+          },
+          "tokens": {
+            "listing": 498,
+            "instructions": 1587,
+            "code": 0,
+            "total": 2085
+          }
+        }
+      ],
+      "tokens": {
+        "mainContext": 2085,
+        "listing": 498,
+        "instructions": 1587,
+        "code": 0,
+        "total": 2085
+      }
+    }
+  ]
+}
